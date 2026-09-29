@@ -21,20 +21,19 @@ if (matchMedia("(min-width: 960px)").matches) {
 const fmt = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
 const money = (n) => "$" + fmt.format(n) + " M";
 const presets = {
-  "Prueba 100": { el: 1200, wa: 240, ga: 60, elp: 100, wap: 100, gap: 100 },
-  Hotel: { el: 1200, wa: 240, ga: 60, elp: 100, wap: 100, gap: 100 },
-  Restaurante: { el: 420, wa: 90, ga: 80, elp: 100, wap: 100, gap: 100 },
-  Residencia: { el: 180, wa: 40, ga: 20, elp: 100, wap: 100, gap: 100 },
-  Oficina: { el: 260, wa: 30, ga: 12, elp: 100, wap: 100, gap: 100 },
-  Clínica: { el: 380, wa: 55, ga: 25, elp: 100, wap: 100, gap: 100 },
-  Comercio: { el: 220, wa: 35, ga: 18, elp: 100, wap: 100, gap: 100 }
+  Hotel: { el: 1200, wa: 240, ga: 60, elp: 15, wap: 25, gap: 10 },
+  Restaurante: { el: 420, wa: 90, ga: 80, elp: 12, wap: 18, gap: 12 },
+  Residencia: { el: 180, wa: 40, ga: 20, elp: 10, wap: 15, gap: 8 },
+  Oficina: { el: 260, wa: 30, ga: 12, elp: 14, wap: 10, gap: 6 },
+  Clínica: { el: 380, wa: 55, ga: 25, elp: 10, wap: 12, gap: 8 },
+  Comercio: { el: 220, wa: 35, ga: 18, elp: 12, wap: 12, gap: 8 }
 };
 const box = document.getElementById("presets");
 Object.keys(presets).forEach((name) => {
   const b = document.createElement("button");
   b.type = "button";
   b.textContent = name;
-  if (name === "Prueba 100") b.classList.add("on");
+  if (name === "Hotel") b.classList.add("on");
   b.addEventListener("click", () => applyPreset(name));
   box.appendChild(b);
 });
@@ -61,7 +60,7 @@ function render() {
   t3.textContent = before ? (100 * save / before).toFixed(1).replace(".", ",") + " %" : "0 %";
   ambitious.style.display = (ep > 25 || wp > 25 || gp > 25) ? "block" : "none";
 }
-applyPreset("Prueba 100");
+render();
 
 document.getElementById("form").addEventListener("submit", (e) => {
   e.preventDefault();
