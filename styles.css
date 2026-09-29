@@ -87,14 +87,16 @@ nav.desk a:hover { color: var(--ink); }
 #menu a { display: block; padding: 0.7rem 0; text-decoration: none; }
 #portada { padding: 3.5rem 0 2.5rem; }
 .hero { display: grid; gap: 1.75rem; }
-.hero h1 { font-size: clamp(2rem, 6vw, 3.15rem); max-width: 20ch; margin-top: 1.1rem; }
+.hero h1 { font-size: clamp(2rem, 6vw, 3.15rem); max-width: 22ch; margin-top: 1.1rem; }
 .hero .lead { max-width: 36rem; margin: 1.15rem 0 0; color: var(--muted); overflow-wrap: anywhere; }
 .hero .cta { margin-top: 1.6rem; }
 figure.sede { margin: 0; }
 figure.sede .frame {
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: #cfc6b4;
+  background:
+    linear-gradient(180deg, rgba(22,21,19,.08), rgba(22,21,19,.28)),
+    #cfc6b4;
 }
 figure.sede figcaption { margin-top: 0.65rem; font-size: 0.85rem; color: var(--muted); }
 .facts {
@@ -130,13 +132,49 @@ ol.areas li {
 }
 .phases { display: grid; gap: 0.85rem; margin-top: 1.75rem; }
 .phases div { display: grid; grid-template-columns: 2.2rem 1fr; gap: 0.6rem; }
-.modes { display: grid; gap: 1px; background: var(--line); margin-top: 1.75rem; }
-.modes article { background: var(--panel); color: var(--on-panel); padding: 1.15rem; }
-.modes h3 { font-size: 1.05rem; }
-.modes p { margin: 0.45rem 0 0; font-size: 0.88rem; color: #d4cfc6; }
-.night { display: grid; gap: 0.6rem; margin-top: 1.5rem; }
-.night span { display: block; padding: 0.85rem 1rem; background: var(--paper); border: 1px solid var(--line); font-size: 0.92rem; }
-.night b { display: block; font-weight: 500; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass); margin-bottom: 0.2rem; }
+.quote {
+  margin: 1.75rem 0 0;
+  padding: 1.35rem 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  max-width: 44rem;
+}
+.quote p { margin: 0 0 0.85rem; color: var(--ink); }
+.quote p:last-child { margin-bottom: 0; color: var(--muted); }
+.semaforo {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  margin-top: 1.75rem;
+}
+.semaforo article {
+  background: var(--panel);
+  color: var(--on-panel);
+  padding: 1.15rem;
+}
+.semaforo h3 { font-size: 1.05rem; margin-top: 0.45rem; }
+.semaforo p { margin: 0.45rem 0 0; font-size: 0.88rem; color: #d4cfc6; }
+.table-wrap { overflow-x: auto; margin-top: 1.75rem; }
+table.mapa {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+table.mapa th,
+table.mapa td {
+  text-align: left;
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+table.mapa th {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass);
+  font-weight: 500;
+}
+table.mapa td:first-child { font-weight: 500; color: var(--ink); min-width: 10rem; }
 #calc .warn {
   background: var(--ink);
   color: var(--paper);
@@ -186,8 +224,7 @@ footer {
 @media (min-width: 720px) {
   .facts { grid-template-columns: repeat(3, 1fr); }
   ol.steps, ul.cards { grid-template-columns: 1fr 1fr; }
-  .modes { grid-template-columns: 1fr 1fr; }
-  .night { grid-template-columns: 1fr 1fr; }
+  .semaforo { grid-template-columns: 1fr 1fr; }
   .grid-form { grid-template-columns: 1fr 1fr; }
   .totals { grid-template-columns: repeat(3, 1fr); }
   .split { grid-template-columns: 1fr 1.15fr; gap: 2.5rem; align-items: start; }
@@ -205,8 +242,7 @@ footer {
   ol.steps { grid-template-columns: repeat(4, 1fr); }
   ul.cards { grid-template-columns: repeat(3, 1fr); }
   ol.areas li { grid-template-columns: 2.2rem 12rem 1fr; gap: 1.25rem; align-items: start; }
-  .modes { grid-template-columns: repeat(4, 1fr); }
-  .night { grid-template-columns: repeat(4, 1fr); }
+  .semaforo { grid-template-columns: repeat(4, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
