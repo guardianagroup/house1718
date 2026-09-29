@@ -23,10 +23,10 @@ const money = (n) => "$" + fmt.format(n) + " M";
 const presets = {
   Hotel: { el: 1200, wa: 240, ga: 60, elp: 15, wap: 25, gap: 10 },
   Restaurante: { el: 420, wa: 90, ga: 80, elp: 12, wap: 18, gap: 12 },
-  Residencia: { el: 180, wa: 40, ga: 20, elp: 10, wap: 15, gap: 8 },
+  Edificio: { el: 360, wa: 80, ga: 20, elp: 12, wap: 18, gap: 8 },
+  Vivienda: { el: 180, wa: 40, ga: 20, elp: 10, wap: 15, gap: 8 },
   Oficina: { el: 260, wa: 30, ga: 12, elp: 14, wap: 10, gap: 6 },
-  Clínica: { el: 380, wa: 55, ga: 25, elp: 10, wap: 12, gap: 8 },
-  Comercio: { el: 220, wa: 35, ga: 18, elp: 12, wap: 12, gap: 8 }
+  Clínica: { el: 380, wa: 55, ga: 25, elp: 10, wap: 12, gap: 8 }
 };
 const box = document.getElementById("presets");
 Object.keys(presets).forEach((name) => {
@@ -66,16 +66,18 @@ document.getElementById("form").addEventListener("submit", (e) => {
   e.preventDefault();
   const f = e.target;
   const lines = [
-    "Evaluación inicial HOUSE 1718",
+    "HOUSE 1718 — revisión de tres facturas",
     "Nombre: " + f.nombre.value,
     "Organización: " + f.org.value,
-    "Negocio: " + f.tipo.value,
+    "Inmueble: " + f.tipo.value,
     "Ciudad: " + f.ciudad.value,
     "Teléfono: " + f.tel.value,
-    "Nota: " + f.nota.value
+    "Nota: " + f.nota.value,
+    "",
+    "Adjuntaré las últimas facturas de electricidad, agua y gas."
   ].join("\n");
-  const mail = "mailto:contacto@house1718.com?subject=" + encodeURIComponent("Evaluación inicial") + "&body=" + encodeURIComponent(lines);
+  const mail = "mailto:contacto@house1718.com?subject=" + encodeURIComponent("Revisión de facturas") + "&body=" + encodeURIComponent(lines);
   const wa = "https://wa.me/573239218906?text=" + encodeURIComponent(lines);
-  formNote.innerHTML = 'Mensaje preparado. Abrir <a href="' + mail + '">correo</a> o <a href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>.';
+  formNote.innerHTML = 'Mensaje preparado. Abrir <a href="' + mail + '">correo</a> o <a href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a> y adjuntar las facturas.';
   window.location.href = mail;
 });
