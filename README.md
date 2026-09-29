@@ -2,7 +2,7 @@
 
 Web institucional de [house1718.com](https://house1718.com).
 
-Oficina independiente de optimización de consumos en Bocagrande (Torre Empresarial Prodegi, plantas 17 y 18). Encuentra el dinero que una propiedad desperdicia en electricidad, agua y gas. No vende equipos.
+Oficina independiente de rendimiento del inmueble en Bocagrande (Torre Empresarial Prodegi, plantas 17 y 18). La propiedad debe costar menos, sentirse mejor, fallar menos y durar más. No vende equipos.
 
 ## Publicar
 
