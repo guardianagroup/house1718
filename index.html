@@ -17,6 +17,26 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Outfit:wght@300;400;500&display=swap"/>
 <link rel="stylesheet" href="/assets/styles-DM5KyzcV.css"/>
 <link rel="stylesheet" href="/assets/wa-hero.css"/>
+<link rel="stylesheet" href="/site-fixes.css"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "@id": "https://www.house1718.com/#organizacion",
+  "name": "HOUSE 1718",
+  "url": "https://www.house1718.com/",
+  "description": "Análisis independiente de costes, operación, inmuebles y rendimiento comercial en Cartagena de Indias.",
+  "telephone": "+573239218906",
+  "email": "contacto@house1718.com",
+  "image": "https://www.house1718.com/office/oficina.jpg",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Torre Empresarial Prodegi, pisos 17 y 18, Bocagrande",
+    "addressLocality": "Cartagena de Indias",
+    "addressCountry": "CO"
+  }
+}
+</script>
 </head>
 <body>
 <a class="skip" href="#contenido">Saltar al contenido</a>
@@ -26,12 +46,13 @@
 <nav class="nav-desk" aria-label="Secciones">
 <a href="#hacemos">Qué hacemos</a>
 <a href="#analizamos">Qué analizamos</a>
+<a href="#preopening">Pre-Opening</a>
 <a href="#metodo">Método</a>
 <a href="#oficina">Oficina</a>
 </nav>
 <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menú</button>
 </div>
-<nav class="nav-mob" id="menu" hidden>
+<nav class="nav-mob" id="menu" aria-label="Secciones en móvil" hidden>
 <a href="#hacemos">Qué hacemos</a>
 <a href="#analizamos">Qué analizamos</a>
 <a href="#preopening">Pre-Opening</a>
@@ -44,18 +65,19 @@
 <div class="hero-media" aria-hidden="true">
 <picture>
 <source srcset="/office/oficina.webp?v=sede" type="image/webp"/>
-<img src="/office/oficina.jpg?v=sede" width="1400" height="1120" alt="Vista al mar Caribe desde la sede de HOUSE 1718 en Bocagrande."/>
+<img src="/office/oficina.jpg?v=sede" width="1400" height="1120" fetchpriority="high" alt=""/>
 </picture>
 </div>
 <div class="hero-veil" aria-hidden="true"></div>
 <div class="wrap hero-copy">
-<p class="eyebrow">Business Performance & COS Optimization<br/>(Bocagrande)</p>
-<h1>Encontramos dónde su negocio pierde dinero,<br/>dónde puede ahorrar<br/>y qué debe cambiar para mejorar su rentabilidad.</h1>
+<p class="eyebrow">Business Performance & Cost Optimization<br/>(Bocagrande)</p>
+<h1>Encontramos dónde pierde dinero su negocio.<br/>Y qué merece la pena cambiar.</h1>
 <p class="lead">Analizamos costes, consumo, operación, experiencia y posicionamiento para convertir problemas ocultos en decisiones concretas con impacto económico real.</p>
 <div class="hero-actions">
-<a class="btn btn-light btn-dossier" href="/dosier-house-1718.pdf" target="_blank" rel="noopener noreferrer">Descargar dosier de cómo trabajamos</a>
-<a class="btn btn-wa" href="https://wa.me/573239218906?text=Hola%2C%20quiero%20una%20evaluaci%C3%B3n%20de%20HOUSE%201718" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+<a class="btn btn-light" href="https://wa.me/573239218906?text=Hola%2C%20quiero%20una%20evaluaci%C3%B3n%20de%20HOUSE%201718" target="_blank" rel="noopener noreferrer">Solicitar una evaluación</a>
+<a class="btn btn-wa btn-dossier" href="/dosier-house-1718.pdf?v=20260930-2" target="_blank" rel="noopener noreferrer">Ver cómo trabajamos</a>
 </div>
+<p class="dossier-note">PDF · 8 páginas · propuesta, método y ejemplo económico</p>
 <p class="axis">Hoteles · Restaurantes · Bares · Clínicas · Comercios · Oficinas · Edificios · Residencias</p>
 </div>
 </section>
@@ -74,9 +96,9 @@
 <p class="intro">HOUSE 1718 también acompaña proyectos que todavía no han iniciado actividad y negocios en sus primeros meses.</p>
 <p class="stage-line">Antes de abrir.<br/>Al abrir.<br/>Cuando ya está funcionando.</p>
 <div class="moments">
-<article class="moment"><h3>Pre-Opening</h3><p class="when">Antes de firmar o invertir.</p></article>
-<article class="moment"><h3>Launch</h3><p class="when">Antes y durante la apertura.</p></article>
-<article class="moment"><h3>First 90</h3><p class="when">Primeros 90 días.</p></article>
+<article class="moment"><h3>Pre-Opening</h3><p class="when">Antes de firmar o invertir.</p><p>Revisamos costes, punto de equilibrio y condiciones del espacio para identificar qué debe validarse antes de comprometer capital.</p></article>
+<article class="moment"><h3>Launch</h3><p class="when">Antes y durante la apertura.</p><p>Priorizamos las decisiones de operación, experiencia y captación que necesitan atención durante la puesta en marcha.</p></article>
+<article class="moment"><h3>First 90</h3><p class="when">Primeros 90 días.</p><p>Comparamos la operación real con las hipótesis iniciales y detectamos ajustes en costes, procesos y oferta.</p></article>
 </div>
 <div class="gonogo">
 <p class="eyebrow">HOUSE 1718 GO / NO-GO™</p>
@@ -91,13 +113,35 @@
 <div class="wrap">
 <p class="eyebrow dark">Qué analizamos</p>
 <h2>Donde otros ven un negocio, nosotros buscamos pérdidas y oportunidades.</h2>
+<div class="grid-anal">
+<article><h3>Costes y consumos</h3><p>Electricidad, agua, gas, equipos, horarios y contratos. Identificamos gastos evitables y consumos que no aportan valor.</p></article>
+<article><h3>Climatización y confort</h3><p>Temperatura, humedad, radiación solar, ventilación y mantenimiento. Buscamos mejorar el confort con una demanda energética justificada.</p></article>
+<article><h3>Operación y activos</h3><p>Procesos, mantenimiento, refrigeración, uso del espacio y respuesta ante cortes de agua o energía.</p></article>
+<article><h3>Rentabilidad y temporada baja</h3><p>Costes fijos, margen de contribución, punto de equilibrio y escenarios de caída de ventas para anticipar decisiones.</p></article>
+<article><h3>Experiencia del cliente</h3><p>Acceso, iluminación, recorridos, oferta, reservas y atención. Detectamos dónde se pierde conversión, permanencia o repetición.</p></article>
+<article><h3>Posicionamiento y captación</h3><p>Competencia, reputación, Google y Maps, canales de contacto y captación antes del viaje o en el mercado local.</p></article>
+</div>
+</div>
+</section>
+<section class="section section-cream" id="metodo">
+<div class="wrap">
+<p class="eyebrow dark">Cómo trabajamos</p>
+<h2>Del problema a una decisión concreta.</h2>
+<p class="intro">El alcance se adapta a cada negocio y a los datos disponibles. Priorizamos las actuaciones por impacto económico, inversión, urgencia y complejidad.</p>
+<ol class="steps">
+<li><span aria-hidden="true">01</span><div><h3>Evaluación inicial</h3><p>Entendemos sus objetivos, principales costes, estacionalidad y problemas. Definimos qué merece un análisis formal.</p></div></li>
+<li><span aria-hidden="true">02</span><div><h3>Datos e inspección</h3><p>Revisamos facturas, ventas agregadas, horarios, equipos y métricas. Documentamos el establecimiento con mediciones no invasivas.</p></div></li>
+<li><span aria-hidden="true">03</span><div><h3>Análisis y hoja de ruta</h3><p>Recibe los problemas detectados, las actuaciones propuestas y sus prioridades. El ahorro y la inversión se estiman con una línea base y un alcance validados.</p></div></li>
+<li><span aria-hidden="true">04</span><div><h3>Implementación y verificación</h3><p>Usted decide qué ejecutar. Podemos coordinar proveedores y especialistas, y comparar los resultados con la situación inicial.</p></div></li>
+</ol>
+<p class="fine">Los ejemplos del dosier son ilustrativos. El ahorro, el retorno y las mejoras comerciales dependen de la situación real de cada proyecto y de las medidas ejecutadas.</p>
 </div>
 </section>
 <section class="office" id="oficina">
 <div class="office-media">
 <picture>
 <source srcset="/office/oficina.webp?v=sede" type="image/webp"/>
-<img src="/office/oficina.jpg?v=sede" width="1400" height="1120" alt="Vista al mar Caribe desde la sede de HOUSE 1718 en Bocagrande."/>
+<img src="/office/oficina.jpg?v=sede" width="1400" height="1120" loading="lazy" decoding="async" alt="Vista al mar Caribe desde la sede de HOUSE 1718 en Bocagrande."/>
 </picture>
 </div>
 <div class="office-copy">
@@ -106,10 +150,19 @@
 <address>Torre Empresarial Prodegi<br/>Piso 17-18<br/>Bocagrande<br/>Cartagena de Indias<br/>Colombia</address>
 </div>
 </section>
+<section class="section section-stone" id="entregables">
+<div class="wrap">
+<p class="eyebrow dark">Qué recibe</p>
+<h2>Una hoja de ruta para tomar mejores decisiones.</h2>
+<p class="intro">Problemas documentados, actuaciones propuestas y prioridades según impacto, inversión y urgencia. Definimos qué merece atención primero y cómo verificar el resultado.</p>
+<p class="fine">El alcance, los entregables, los tiempos y los honorarios se acuerdan antes de iniciar el trabajo. Podemos empezar por un problema concreto o definir un diagnóstico integral.</p>
+</div>
+</section>
 <section class="section section-cream cta-final" id="evaluacion">
 <div class="wrap slim">
 <p class="eyebrow dark">Evaluación</p>
 <h2>¿Dónde está perdiendo dinero su negocio?</h2>
+<p class="intro">Cuéntenos qué negocio tiene, dónde está y qué le preocupa. La primera conversación sirve para orientar el análisis y determinar si un diagnóstico formal puede aportar valor.</p>
 <div class="contact-row">
 <a href="https://wa.me/573239218906" rel="noopener noreferrer">+57 323 921 8906</a>
 <a href="mailto:contacto@house1718.com">contacto@house1718.com</a>
@@ -124,6 +177,7 @@
 <p>Torre Empresarial Prodegi · Piso 17-18 · Bocagrande · Cartagena de Indias</p>
 </div>
 </footer>
-<script src="/assets/wa-hero.js" defer></script>
+<a class="mobile-contact" href="https://wa.me/573239218906?text=Hola%2C%20quiero%20evaluar%20mi%20negocio%20con%20HOUSE%201718" target="_blank" rel="noopener noreferrer">Evaluar mi negocio por WhatsApp</a>
+<script src="/site-menu.js" defer></script>
 </body>
 </html>
