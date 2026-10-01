@@ -50,6 +50,9 @@ summary:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .scenario-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:1.7rem 0;border-top:1px solid #ffffff30;border-left:1px solid #ffffff30}
 .scenario-points span{border-right:1px solid #ffffff30;border-bottom:1px solid #ffffff30;padding:.85rem 1rem;color:#d8bf98;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem}
 .scenario-model .scenario-note{color:#bbb5aa;font-size:.9rem}
+.redesign-line{border-top:1px solid #ffffff30;margin-top:1.7rem;padding-top:1.5rem}
+.redesign-line h3{font-size:1.45rem;margin-bottom:.65rem}
+.scenario-model .redesign-line p{color:#e5e0d7;max-width:46rem}
 .choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem 2.5rem;margin-top:2.8rem}
 .choice-grid article{border-top:1px solid #ffffff30;padding-top:1.15rem}
 .choice-grid span{display:block;color:#d8bf98;font-size:.72rem;letter-spacing:.12em;margin-bottom:.8rem}
