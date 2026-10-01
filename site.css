@@ -60,6 +60,12 @@ summary:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .research-band{border:1px solid #ffffff30;margin-top:3rem;padding:clamp(1.6rem,4vw,2.8rem)}
 .research-band h3{font-size:clamp(1.5rem,3vw,2.1rem);max-width:29ch}
 .research-band>p:last-child{color:#d8d2c6;max-width:48rem}
+.journey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem 2.5rem;margin-top:2.8rem}
+.journey-grid article{border-top:1px solid var(--line);padding-top:1.1rem}
+.journey-grid span{display:block;color:#665642;font-size:.72rem;letter-spacing:.12em;margin-bottom:.8rem}
+.journey-grid p,.journey-specifics p{color:var(--mute);font-size:.98rem}
+.journey-specifics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem 2.5rem;margin-top:3rem;padding:2rem;background:var(--stone)}
+.journey-specifics h3{font-size:1.4rem}
 @media(max-width:759px){.deliverables,.city-links{grid-template-columns:1fr}.city-links{gap:0}.coverage-line{font-size:.75rem;line-height:1.5;margin-bottom:1.1rem}.hero .eyebrow{font-size:.65rem}.hero .lead{font-size:1rem;line-height:1.55}.hero-actions .btn{width:100%}.hero h1{max-width:25ch}.deliverables{gap:1.5rem}}
-@media(max-width:759px){.choice-grid{grid-template-columns:1fr;gap:1.6rem}}
+@media(max-width:759px){.choice-grid,.journey-grid,.journey-specifics{grid-template-columns:1fr;gap:1.6rem}.journey-specifics{padding:1.4rem}}
 @media(max-width:479px){.scenario-points{grid-template-columns:1fr}}
