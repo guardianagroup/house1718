@@ -3,131 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Elixire · Una cámara acorazada para tus conversaciones</title>
-<meta name="description" content="Chat y documentos encriptados de extremo a extremo, con criptografía poscuántica híbrida. Sin cuenta ni número de teléfono.">
+<title>Elixire · Comprobar, no confiar</title>
+<meta name="description" content="Chat, archivos y videollamada encriptados de extremo a extremo con criptografía poscuántica híbrida. Identidad comprobada por clave. Sin cuenta ni número de teléfono.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05070a">
 <meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/elixir.css?v=20261119-3">
+<link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-10" integrity="sha384-E/Lhgdx9sh2FfEzXljlIlYAeMMI5tf9F5OLOi/c8LtEQOHwdmlu19a6TsdIl1P8Y">
 </head>
 <body>
-<div class="escena">
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
+<div class="velo-sala" aria-hidden="true"></div>
 
 <header class="cabecera">
-<p class="marca">ELIXIRE</p>
-<div class="idiomas" role="group" aria-label="Idioma · Language">
-<button type="button" data-idioma="es" aria-pressed="true">ES</button>
-<button type="button" data-idioma="en" aria-pressed="false">EN</button>
+<a class="marca" href="#inicio" aria-label="Elixire">ELIXIRE</a>
+<div class="cabecera-der">
+<nav class="par nav-principal" aria-label="Elixire">
+<a class="seg" href="#riesgo" data-t="navDescubrir">Descubrir</a>
+<a class="seg" href="#acceso" data-t="navAcceso">Acceso</a>
+</nav>
+<div class="par idiomas" role="group" aria-label="Idioma · Language">
+<button type="button" class="seg" data-idioma="es" aria-pressed="true">ES</button>
+<button type="button" class="seg" data-idioma="en" aria-pressed="false">EN</button>
+</div>
 </div>
 </header>
 
-<main class="escenario" id="escenario">
-<div class="inclina" id="inclina">
-<div class="boveda" id="boveda">
-  <div class="marco" aria-hidden="true"></div>
-  <div class="hueco" aria-hidden="true"></div>
-  <div class="camara" aria-hidden="true"></div>
-  <div class="tunel k1" aria-hidden="true"></div><div class="tunel k2" aria-hidden="true"></div><div class="tunel k3" aria-hidden="true"></div><div class="tunel k4" aria-hidden="true"></div><div class="tunel k5" aria-hidden="true"></div><div class="tunel k6" aria-hidden="true"></div><div class="tunel k7" aria-hidden="true"></div><div class="tunel k8" aria-hidden="true"></div><div class="tunel k9" aria-hidden="true"></div><div class="tunel k10" aria-hidden="true"></div>
-  <div class="puerta" id="puerta" aria-hidden="true">
-    
-    <div class="canto k16"></div><div class="canto k15"></div><div class="canto k14"></div><div class="canto k13"></div><div class="canto k12"></div><div class="canto k11"></div><div class="canto k10"></div><div class="canto k9"></div><div class="canto k8"></div><div class="canto k7"></div><div class="canto k6"></div><div class="canto k5"></div><div class="canto k4"></div><div class="canto k3"></div><div class="canto k2"></div><div class="canto k1"></div>
-    <div class="dorso"><span class="varilla a0"></span><span class="varilla a60"></span><span class="varilla a120"></span><span class="varilla a180"></span><span class="varilla a240"></span><span class="varilla a300"></span><span class="tapa"></span></div>
-    <div class="cara">
-      <div class="escalon e1"></div>
-      <div class="cerrojos"></div>
-      <div class="escalon e2"></div>
-      <div class="escalon e3"></div>
-      <div class="tornillos"></div>
-      <span class="indice"></span>
-      <div class="dial"></div>
-      <div class="volante">
-        <span class="radio a0"></span><span class="radio a60"></span><span class="radio a120"></span>
-        <span class="pomo a0"></span><span class="pomo a60"></span><span class="pomo a120"></span>
-        <span class="pomo a180"></span><span class="pomo a240"></span><span class="pomo a300"></span>
-        <span class="cubo"></span>
-      </div>
-      <div class="placa">ELIXIRE</div>
-    </div>
-  </div>
-  <span class="bisagra b1" aria-hidden="true"></span>
-  <span class="bisagra b2" aria-hidden="true"></span>
-  <span class="piloto" aria-hidden="true"></span>
+<main>
+<section class="portada" id="inicio" aria-label="Elixire">
+<div class="monolito-css" id="monolito-css" aria-hidden="true"><span class="mitad izq"></span><span class="mitad der"></span><span class="nucleo"></span></div>
 
+<div class="consola" id="consola">
+<p class="cifra" id="cifra" aria-live="polite"><span class="valor" data-t="c1v">16.600 M$</span><span class="texto" data-t="c1t">perdidos por delitos en internet en EE. UU. en 2024</span><span class="fuente" data-t="c1f">FBI · IC3 2024</span></p>
+<button type="button" class="cristal grande espejo" id="empezar"><span data-t="empezar">Empezar prueba</span></button>
 </div>
-</div>
+<a class="bajar" href="#riesgo"><span data-t="navDescubrir">Descubrir</span><i aria-hidden="true"></i></a>
+
+<section class="panel" id="panel-elige" hidden aria-labelledby="t-elige">
+<span class="etiqueta" id="t-elige" data-t="eligeTitulo">PRUEBA GRATUITA</span>
+<p class="texto-panel" data-t="eligeTexto">Una persona crea el código y se lo da a la otra. Incluye una videollamada de hasta 3 minutos.</p>
+<div class="par ancho" role="group"><button type="button" class="seg" id="crear" data-t="crear">Crear un código</button><button type="button" class="seg" id="tengo" data-t="tengo">Tengo un código</button></div>
+<p class="error" id="error-elige" role="alert"></p>
+<button type="button" class="cristal pequeno" data-cerrar-camara data-t="volver">Volver</button>
+</section>
 
 <section class="panel" id="panel-crear" hidden aria-labelledby="t-crear">
-  <span class="etiqueta" id="t-crear" data-t="tuCodigo">TU CÓDIGO</span>
-  <p class="codigo-grande" id="codigo">···· ···· ···· ····</p>
-  <p class="texto-2" data-t="daselo">Dáselo a la otra persona por otro canal. Caduca en 10 minutos y sirve una sola vez.</p>
-  <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
-  <button type="button" class="boton-luz principal-luz ancho" id="copiar"><span data-t="copiar">Copiar el código</span></button>
-  <button type="button" class="secundario" data-cerrar-camara data-t="cancelar">Cancelar</button>
+<span class="etiqueta" id="t-crear" data-t="tuCodigo">TU CÓDIGO</span>
+<p class="codigo-grande" id="codigo">···· ···· ···· ····</p>
+<p class="texto-panel" data-t="daselo">Dáselo a la otra persona por otro canal. Caduca en 10 minutos y sirve una sola vez.</p>
+<div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
+<div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
 </section>
 
 <section class="panel" id="panel-tengo" hidden aria-labelledby="t-tengo">
-  <label class="etiqueta" for="campo-codigo" id="t-tengo" data-t="tengoTitulo">TENGO UN CÓDIGO</label>
-  <input class="campo" id="campo-codigo" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX XXXX XXXX XXXX">
-  <p class="texto-2" data-t="tengoTexto">Los 16 símbolos que te han dado. Al entrar, los dos veréis las mismas cuatro palabras.</p>
-  <p class="error" id="error-codigo" role="alert"></p>
-  <button type="button" class="boton-luz principal-luz ancho" id="entrar"><span data-t="entrar">Entrar</span></button>
-  <button type="button" class="secundario" data-cerrar-camara data-t="volver">Volver</button>
+<label class="etiqueta" for="campo-codigo" id="t-tengo" data-t="tengoTitulo">TENGO UN CÓDIGO</label>
+<input class="campo" id="campo-codigo" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX XXXX XXXX XXXX">
+<p class="texto-panel" data-t="tengoTexto">Los 16 símbolos que te han dado. Al entrar, los dos veréis las mismas cuatro palabras.</p>
+<p class="error" id="error-codigo" role="alert"></p>
+<div class="par ancho" role="group"><button type="button" class="seg" id="entrar"><span data-t="entrar">Entrar</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
+</section>
 </section>
 
-<div class="consola" id="consola">
-  <p class="lema" data-t="lema">Una cámara acorazada para tus conversaciones.</p>
-  <div class="botones">
-    <button type="button" class="boton-luz principal-luz" id="crear"><span data-t="crear">Crear un código</span></button>
-    <button type="button" class="boton-luz" id="tengo"><span data-t="tengo">Tengo un código</span></button>
-  </div>
-  <span class="nota" data-t="nota">Sin cuenta · Sin teléfono</span>
-</div>
-</main>
-
-<footer class="pie">
-<span></span>
-<nav class="dock" aria-label="Elixire">
-<button type="button" data-hoja="info"><span data-t="botonInfo">Elixire</span></button>
-<button type="button" data-hoja="acceso"><span data-t="botonAcceso">Acceso</span></button>
-</nav>
-<a class="verificar" href="#verificar" data-t="verificar">Verificar esta página</a>
-</footer>
-</div>
-
-<div class="velo" id="velo" hidden></div>
-
-<section class="hoja" id="hoja-info" role="dialog" aria-modal="true" aria-labelledby="h-info" hidden>
-<div class="hoja-cab">
-<div class="pestanas" role="tablist" aria-label="Elixire" id="h-info">
-<button type="button" role="tab" aria-selected="true" aria-controls="tab-porque" id="pt-porque" data-t="tabPorque">Por qué nace</button>
-<button type="button" role="tab" aria-selected="false" aria-controls="tab-escucha" id="pt-escucha" data-t="tabEscucha">Cómo te escuchan</button>
-<button type="button" role="tab" aria-selected="false" aria-controls="tab-comparacion" id="pt-comparacion" data-t="tabComparacion">Frente a los demás</button>
-<button type="button" role="tab" aria-selected="false" aria-controls="tab-protege" id="pt-protege" data-t="tabProtege">Qué protege</button>
-</div>
-<button type="button" class="cerrar" data-cerrar data-t="cerrar">Cerrar</button>
-</div>
-
-<div class="pestana" role="tabpanel" id="tab-porque" aria-labelledby="pt-porque">
+<section class="seccion" id="riesgo" aria-labelledby="h-riesgo">
+<span class="etiqueta" data-t="riesgoEtiqueta">EL RIESGO</span>
+<h2 id="h-riesgo" data-t="riesgoTitulo">Hoy no se rompe el cifrado. Se suplanta a alguien.</h2>
 <p class="intro" data-t="porqueIntro">Hoy el dinero casi nunca se roba rompiendo un cifrado. Se roba haciéndose pasar por alguien: un directivo, un proveedor, el propio banco. La víctima, convencida, autoriza el pago ella misma.</p>
-<div class="rejilla">
-<article class="dato"><span class="cifra" data-t="d1c">2.770 millones de dólares</span><b data-t="d1t">Falso directivo y cambio de cuenta</b><p data-t="d1p">Un correo que parece del jefe o del proveedor pide pagar a otra cuenta. Solo en EE. UU., en 2024, en 21.442 denuncias.</p><span class="fuente"><a href="https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf" rel="noopener noreferrer" target="_blank" data-t="d1f">FBI · INFORME IC3 2024</a></span></article>
-<article class="dato"><span class="cifra" data-t="d2c">25,6 millones de dólares</span><b data-t="d2t">Un director clonado en videollamada</b><p data-t="d2p">En Hong Kong, un empleado de Arup hizo 15 transferencias después de una reunión en la que todos los demás eran falsos, creados con inteligencia artificial.</p><span class="fuente"><a href="https://www.scmp.com/news/hong-kong/law-and-crime/article/3263151/uk-multinational-arup-confirmed-victim-hk200-million-deepfake-scam-used-digital-version-cfo-dupe" rel="noopener noreferrer" target="_blank" data-t="d2f">ARUP · POLICÍA DE HONG KONG · 2024</a></span></article>
-<article class="dato"><span class="cifra" data-t="d3c">450,7 millones de libras</span><b data-t="d3t">Transferencias autorizadas por engaño</b><p data-t="d3p">La víctima envía ella misma el dinero, convencida por quien se hace pasar por su banco, la policía o un asesor. Reino Unido, 2024.</p><span class="fuente"><a href="https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2025-press-release" rel="noopener noreferrer" target="_blank" data-t="d3f">UK FINANCE · 2025</a></span></article>
-<article class="dato"><span class="cifra" data-t="d4c">2.950 millones de dólares</span><b data-t="d4t">Suplantaciones</b><p data-t="d4p">Alguien se presenta como un organismo, una empresa o un familiar, y pide dinero. EE. UU., 2024.</p><span class="fuente"><a href="https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024" rel="noopener noreferrer" target="_blank" data-t="d4f">FTC · 2025</a></span></article>
-<article class="dato"><span class="cifra" data-t="d5c">16.600 millones de dólares</span><b data-t="d5t">Un récord</b><p data-t="d5p">Pérdidas por delitos en internet denunciadas en EE. UU. en 2024: un 33 % más que el año anterior.</p><span class="fuente"><a href="https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf" rel="noopener noreferrer" target="_blank" data-t="d1f">FBI · INFORME IC3 2024</a></span></article>
-</div>
-<div class="recuadro hielo">
-<span class="etiqueta hielo" data-t="porEsoTitulo">POR ESO NACE ELIXIRE</span>
-<p data-t="porEso1">Quién está al otro lado no se decide por una voz, una cara o un correo: se comprueba con una clave.</p>
-<p data-t="porEso2">Lo que se escribe y lo que se envía se encripta en tu equipo, y solo el otro equipo puede abrirlo.</p>
-<p data-t="porEso3">Si alguien se pone en medio o cambia de clave, la sesión se corta y se avisa.</p>
-<p class="menor" data-t="porEso4">Ninguna herramienta impide que alguien pague fuera del canal acordado. La regla es sencilla: ningún pago importante sin confirmarlo en Elixire.</p>
-</div>
-</div>
+<ol class="libro">
+<li><span class="cifra-libro" data-t="d5c">16.600 M$</span><div><b data-t="d5t">Un récord</b><p data-t="d5p">Pérdidas por delitos en internet denunciadas en EE. UU. en 2024: un 33 % más que el año anterior.</p></div><a class="fuente" href="https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf" rel="noopener noreferrer" target="_blank" data-t="d1f">FBI · INFORME IC3 2024</a></li>
+<li><span class="cifra-libro" data-t="d1c">2.770 M$</span><div><b data-t="d1t">Falso directivo y cambio de cuenta</b><p data-t="d1p">Un correo que parece del jefe o del proveedor pide pagar a otra cuenta. Solo en EE. UU., en 2024, en 21.442 denuncias.</p></div><a class="fuente" href="https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf" rel="noopener noreferrer" target="_blank" data-t="d1f">FBI · INFORME IC3 2024</a></li>
+<li><span class="cifra-libro" data-t="d4c">2.950 M$</span><div><b data-t="d4t">Suplantaciones</b><p data-t="d4p">Alguien se presenta como un organismo, una empresa o un familiar, y pide dinero. EE. UU., 2024.</p></div><a class="fuente" href="https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024" rel="noopener noreferrer" target="_blank" data-t="d4f">FTC · 2025</a></li>
+<li><span class="cifra-libro" data-t="d3c">450,7 M£</span><div><b data-t="d3t">Transferencias autorizadas por engaño</b><p data-t="d3p">La víctima envía ella misma el dinero, convencida por quien se hace pasar por su banco, la policía o un asesor. Reino Unido, 2024.</p></div><a class="fuente" href="https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2025-press-release" rel="noopener noreferrer" target="_blank" data-t="d3f">UK FINANCE · 2025</a></li>
+<li><span class="cifra-libro" data-t="d2c">25,6 M$</span><div><b data-t="d2t">Un director clonado en videollamada</b><p data-t="d2p">En Hong Kong, un empleado de Arup hizo 15 transferencias después de una reunión en la que todos los demás eran falsos, creados con inteligencia artificial.</p></div><a class="fuente" href="https://www.scmp.com/news/hong-kong/law-and-crime/article/3263151/uk-multinational-arup-confirmed-victim-hk200-million-deepfake-scam-used-digital-version-cfo-dupe" rel="noopener noreferrer" target="_blank" data-t="d2f">ARUP · POLICÍA DE HONG KONG · 2024</a></li>
+</ol>
+</section>
 
-<div class="pestana" role="tabpanel" id="tab-escucha" aria-labelledby="pt-escucha" hidden>
+<section class="seccion" id="escucha" aria-labelledby="h-escucha">
+<span class="etiqueta" data-t="escuchaEtiqueta">CÓMO TE ESCUCHAN</span>
+<h2 id="h-escucha" data-t="escuchaTitulo">Una llamada normal se puede escuchar por el camino.</h2>
 <p class="intro" data-t="escuchaIntro">Una llamada de Vodafone a Orange solo va cifrada entre cada teléfono y su antena. Dentro de cada operadora, y entre una y otra, se puede escuchar.</p>
 <div class="cadena">
 <span class="nodo fuerte" data-t="tuTelefono">Tu teléfono</span><span class="tramo"></span>
@@ -143,14 +97,29 @@
 <p data-t="r3"><b>3 · Entre operadoras.</b> SS7 y Diameter pueden desviar llamadas y SMS sin comprobar bien quién lo pide.</p>
 <p data-t="r4"><b>4 · En el teléfono.</b> Un programa espía como Pegasus lo ve todo antes de que se cifre.</p>
 </div>
-<div class="recuadro hielo">
-<span class="etiqueta hielo" data-t="enElixire">EN ELIXIRE</span>
+<div class="recuadro">
+<span class="etiqueta" data-t="enElixire">EN ELIXIRE</span>
 <div class="cadena limpia"><span class="nodo fuerte" data-t="tuEquipo">Tu equipo</span><span class="tramo cifrado"></span><span class="nodo rele" data-t="rele">Relé · solo ve bytes</span><span class="tramo cifrado"></span><span class="nodo fuerte" data-t="suEquipo">Su equipo</span></div>
 <p class="menor" data-t="enElixireTexto">Lo que escribes se encripta en tu equipo y solo el otro equipo tiene la clave para abrirlo. Si tu equipo está infectado, quien lo controla ve tu pantalla: eso no lo arregla ninguna herramienta.</p>
 </div>
-</div>
+</section>
 
-<div class="pestana" role="tabpanel" id="tab-comparacion" aria-labelledby="pt-comparacion" hidden>
+<section class="seccion" id="solucion" aria-labelledby="h-solucion">
+<span class="etiqueta" data-t="solucionEtiqueta">LA SOLUCIÓN</span>
+<h2 id="h-solucion" data-t="solucionTitulo">Comprobar, no confiar.</h2>
+<ol class="pasos">
+<li><b data-t="s1t">Identidad por clave</b><p data-t="porEso1">Quién está al otro lado no se decide por una voz, una cara o un correo: se comprueba con una clave.</p></li>
+<li><b data-t="p2t">Nadie en medio sin que se note</b><p data-t="p2p">Al entrar, los dos ven las mismas cuatro palabras, comprometidas antes del intercambio. Si alguien se interpone, no coinciden.</p></li>
+<li><b data-t="s3t">Encriptado en tu equipo</b><p data-t="porEso2">Lo que se escribe y lo que se envía se encripta en tu equipo, y solo el otro equipo puede abrirlo.</p></li>
+<li><b data-t="s4t">Aviso al instante</b><p data-t="porEso3">Si alguien se pone en medio o cambia de clave, la sesión se corta y se avisa.</p></li>
+<li><b data-t="p5t">Nada guardado</b><p data-t="p5p">Sin cuenta ni teléfono. La conversación vive solo en la memoria de las dos pestañas: al cerrar, desaparece.</p></li>
+</ol>
+<p class="nota-final" data-t="porEso4">Ninguna herramienta impide que alguien pague fuera del canal acordado. La regla es sencilla: ningún pago importante sin confirmarlo en Elixire.</p>
+</section>
+
+<section class="seccion" id="frente" aria-labelledby="h-frente">
+<span class="etiqueta" data-t="frenteEtiqueta">FRENTE A LOS DEMÁS</span>
+<h2 id="h-frente" data-t="frenteTitulo">Sin número de teléfono, sin rastro y con la comprobación obligatoria.</h2>
 <div class="tabla">
 <table class="comparacion">
 <thead><tr><th scope="col"></th><th scope="col">WhatsApp</th><th scope="col">Telegram</th><th scope="col">Signal</th><th scope="col" class="el">Elixire</th></tr></thead>
@@ -163,29 +132,96 @@
 </table>
 </div>
 <p class="pie-tabla" data-t="pieTabla">Datos públicos de cada servicio a noviembre de 2026.</p>
-</div>
+</section>
 
-<div class="pestana" role="tabpanel" id="tab-protege" aria-labelledby="pt-protege" hidden>
-<div class="rejilla">
-<article class="dato"><b data-t="p1t">Encriptado poscuántico híbrido</b><p data-t="p1p">ML-KEM-1024 con ECDH P-384, y firmas ML-DSA-87 con ECDSA P-384. Para leer una conversación habría que romper a la vez la criptografía clásica y la poscuántica.</p></article>
-<article class="dato"><b data-t="p2t">Nadie en medio sin que se note</b><p data-t="p2p">Al entrar, los dos ven las mismas cuatro palabras, comprometidas antes del intercambio. Si alguien se interpone, no coinciden.</p></article>
-<article class="dato"><b data-t="p3t">Claves que se renuevan</b><p data-t="p3p">Una clave distinta para cada mensaje y claves nuevas cada cinco minutos: lo anterior ya no se puede leer con las nuevas.</p></article>
-<article class="dato"><b data-t="p4t">Tráfico constante</b><p data-t="p4p">Mientras la conversación está abierta salen tramas del mismo tamaño a ritmo fijo: desde fuera no se ve cuándo escribes.</p></article>
-<article class="dato"><b data-t="p5t">Nada guardado</b><p data-t="p5p">Sin cuenta ni teléfono. La conversación vive solo en la memoria de las dos pestañas: al cerrar, desaparece.</p></article>
-<article class="dato"><b data-t="p6t">Próximamente</b><p data-t="p6p">Videollamada con identidad comprobada por clave y prueba de vida al azar. Actas de entrega firmadas. Envíos de hasta 1 TB.</p></article>
+<section class="seccion" id="tecnologia" aria-labelledby="h-tecnologia">
+<span class="etiqueta" data-t="tecnologiaEtiqueta">LA TECNOLOGÍA</span>
+<h2 id="h-tecnologia" data-t="tecnologiaTitulo">Criptografía poscuántica, en tu navegador.</h2>
+<div class="tecnica">
+<article><b data-t="p1t">Encriptado poscuántico híbrido</b><p data-t="p1p">ML-KEM-1024 con ECDH P-384, y firmas ML-DSA-87 con ECDSA P-384. Para leer una conversación habría que romper a la vez la criptografía clásica y la poscuántica.</p><span class="algoritmos">ML-KEM-1024 · ML-DSA-87 · AES-256-GCM · SHA-384</span></article>
+<article><b data-t="p3t">Claves que se renuevan</b><p data-t="p3p">Una clave distinta para cada mensaje y claves nuevas cada cinco minutos: lo anterior ya no se puede leer con las nuevas.</p></article>
+<article><b data-t="t4t">Videollamada encriptada</b><p data-t="t4p">La imagen y el sonido llevan encima una capa poscuántica con claves de la conversación, y van por nuestro servidor de llamadas: ninguno de los dos ve la dirección del otro.</p></article>
+<article><b data-t="p4t">Tráfico constante</b><p data-t="p4p">Mientras la conversación está abierta salen tramas del mismo tamaño a ritmo fijo: desde fuera no se ve cuándo escribes.</p></article>
+<article><b data-t="p6t">Próximamente</b><p data-t="p6p">Prueba de vida al azar en la videollamada. Actas de entrega firmadas. Envíos de hasta 1 TB.</p></article>
 </div>
-<div class="recuadro hielo"><p class="menor" data-t="limite">Lo que ninguna herramienta puede prometer, tampoco nosotros: si un equipo está infectado, quien lo controla ve lo mismo que tú. Elixire te avisa de todo lo que puede detectar y nunca te promete lo imposible.</p></div>
+<p class="nota-final" data-t="limite">Lo que ninguna herramienta puede prometer, tampoco nosotros: si un equipo está infectado, quien lo controla ve lo mismo que tú. Elixire te avisa de todo lo que puede detectar y nunca te promete lo imposible.</p>
+</section>
+
+<section class="seccion cierre" id="acceso" aria-labelledby="h-acceso">
+<span class="etiqueta" data-t="accesoEtiqueta">ACCESO</span>
+<h2 id="h-acceso" data-t="accesoTitulo">Acceso privado</h2>
+<p class="intro" data-t="accesoTexto">Elixire es un servicio de pago. Se ofrece de forma privada a personas, despachos, clínicas y empresas que necesitan el máximo nivel de protección para lo que hablan y envían.</p>
+<div class="recuadro prueba">
+<span class="etiqueta" data-t="pruebaTitulo">PRUEBA GRATUITA</span>
+<p data-t="pruebaTexto">Una videollamada de hasta 3 minutos, con el mismo encriptado que el servicio completo.</p>
+<p class="menor" data-t="pruebasTexto">Mientras dure la fase de pruebas, el chat y el envío de archivos no tienen límite.</p>
+</div>
+<button type="button" class="cristal grande" data-empezar><span data-t="empezar">Empezar prueba</span></button>
+</section>
+</main>
+
+<footer class="pie">
+<span class="pie-marca">ELIXIRE</span>
+<a class="verificar" href="#verificar" data-t="verificar">Verificar esta página</a>
+</footer>
+
+<section class="sala" id="sala" hidden aria-label="Elixire">
+<header class="sala-cab">
+<span class="marca">ELIXIRE</span>
+<p class="sala-estado" id="sala-estado" role="status"><span class="punto" aria-hidden="true"></span><span id="sala-estado-texto" data-t="salaEstado">Encriptado poscuántico</span></p>
+<button type="button" class="cristal" id="terminar"><span data-t="terminar">Terminar</span></button>
+</header>
+<div class="sala-palabras" id="sala-palabras" hidden>
+<span class="etiqueta" data-t="palabrasEtiqueta">PALABRAS DE VERIFICACIÓN</span>
+<p class="palabras" id="palabras"></p>
+<p class="palabras-ayuda" id="palabras-ayuda" data-t="palabrasAyuda">Leedlas en voz alta. Si no coinciden, alguien se ha puesto en medio.</p>
+<div class="par" role="group" id="palabras-botones"><button type="button" class="seg" id="coinciden" data-t="coinciden">Coinciden</button><button type="button" class="seg" id="no-coinciden" data-t="noCoinciden">No coinciden</button></div>
+</div>
+<div class="sala-cuerpo">
+<div class="escena-video" id="escena-video">
+<video id="video-suyo" class="video-suyo" playsinline autoplay></video>
+<video id="video-mio" class="video-mio" playsinline autoplay muted></video>
+<div class="video-velo" id="video-velo">
+<span class="etiqueta" id="video-etiqueta" data-t="videoEtiqueta">VIDEOLLAMADA</span>
+<p class="video-texto" id="video-texto" data-t="pruebaLimite">Prueba: hasta 3 minutos</p>
+<button type="button" class="cristal grande" id="llamar"><span data-t="videollamada">Empezar videollamada</span></button>
+<div class="par" role="group" id="entrante" hidden><button type="button" class="seg" id="aceptar" data-t="aceptar">Aceptar</button><button type="button" class="seg" id="rechazar" data-t="rechazar">Rechazar</button></div>
+</div>
+<p class="video-capa" id="video-capa" hidden><span class="punto" aria-hidden="true"></span><span data-t="capaActiva">Imagen y sonido con capa poscuántica</span></p>
+<p class="video-tiempo" id="video-tiempo" hidden></p>
+<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-colgar" data-t="colgar">Colgar</button></div>
+</div>
+<div class="chat">
+<span class="etiqueta" data-t="conversacion">CONVERSACIÓN</span>
+<ol class="mensajes" id="mensajes" aria-live="polite"><li class="vacio" data-t="vacio">Lo que escribáis se encripta en cada equipo y desaparece al terminar.</li></ol>
+<p class="escribiendo" id="escribiendo" hidden data-t="escribiendo">Escribiendo…</p>
+<form class="redactor" id="redactor" autocomplete="off">
+<label class="cristal adjuntar" for="archivo"><span data-t="adjuntar">Adjuntar</span></label>
+<input type="file" id="archivo" class="oculto" multiple>
+<textarea id="texto" rows="1" maxlength="20000" data-t-placeholder="escribeAqui" placeholder="Escribe un mensaje"></textarea>
+<button type="submit" class="cristal" id="enviar"><span data-t="enviar">Enviar</span></button>
+</form>
+</div>
 </div>
 </section>
 
-<section class="hoja estrecha" id="hoja-acceso" role="dialog" aria-modal="true" aria-labelledby="h-acceso" hidden>
-<div class="hoja-cab"><h2 id="h-acceso" data-t="accesoTitulo">Acceso privado</h2><button type="button" class="cerrar" data-cerrar data-t="cerrar">Cerrar</button></div>
-<p class="intro" data-t="accesoTexto">Elixire no se vende en una tienda. Se ofrece de forma privada a personas, despachos, clínicas y empresas que necesitan el máximo nivel de protección para lo que hablan y envían.</p>
-<div class="recuadro hielo"><span class="etiqueta hielo" data-t="pruebasTitulo">PERIODO DE PRUEBAS</span><p data-t="pruebasTexto">Durante las pruebas, el acceso está abierto: crea un código y compártelo.</p></div>
-</section>
+<div class="aviso" id="aviso" hidden role="alertdialog" aria-modal="true" aria-labelledby="aviso-titulo">
+<div class="aviso-caja">
+<span class="etiqueta" id="aviso-etiqueta"></span>
+<h2 id="aviso-titulo"></h2>
+<p id="aviso-texto"></p>
+<div class="aviso-botones"><a class="cristal" id="aviso-enlace" href="https://github.com/guardianagroup/house1718" target="_blank" rel="noopener noreferrer" hidden><span data-t="verRepositorio">Ver el código</span></a><button type="button" class="cristal" id="aviso-ok"><span data-t="entendido">Entendido</span></button></div>
+</div>
+</div>
 
-<script src="js/idioma.js?v=20261119-1"></script>
-<script type="module" src="js/sala3d.js?v=20261119-3"></script>
-<script src="js/puerta.js?v=20261119-3"></script>
+<script src="js/idioma.js?v=20261119-10" integrity="sha384-zFhQ/QobbuSRhbgYYGVEhGPy++VaDubfGRZjANCaw1gIyycOIHPtBtdEGW9QAu00"></script>
+<script src="js/pq-cnsa.js?v=20261119-10" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-10" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-10" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-10" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/motor.js?v=20261119-10" integrity="sha384-FnKWVQc36/n8qjnmvx6UeHrunN+wTalIGYItSqAgJihSwPgYA8HTjdAKx4AmZyyF"></script>
+<script type="module" src="js/sala3d.js?v=20261119-10" integrity="sha384-QkpF/V26/Hx4YHH3P8CUaV3HjjdPoq2HZe384x8vEW6N0ePqhHCdand79M8ojpET"></script>
+<script src="js/puerta.js?v=20261119-10" integrity="sha384-Nul8SiyfZnreXrzDeVF2bLVyyaQQixz0KGHHx1Rag6Tl+SdsteM4ai13+DUxTFJs"></script>
+<script src="js/sala.js?v=20261119-10" integrity="sha384-gWEuwf0EI/1VJFQXYUJtTaKyfER8/U9iPPJs9ah+4X0i2MrUWv0U4Wo+Whz0Fu4/"></script>
 </body>
 </html>

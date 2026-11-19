@@ -1,0 +1,466 @@
+// GUARDIANA · Comunicaciones · criptografía de la página (26 Oct 2026). Web Crypto del navegador para todo lo clásico;
+// ML-KEM-768 (FIPS 203) con @noble/post-quantum 0.7.1, vendida en pq-mlkem.js y servida desde este mismo sitio.
+//
+// - Identidad: un par ECDSA P-256 (firma) y un par ECDH P-256 (acuerdo), creados aquí y guardados en IndexedDB
+//   como claves no exportables. Su huella (SHA-256 de las dos públicas) es el «número de seguridad».
+// - Invitación: 32 bytes aleatorios que viajan solo tras «#» en el enlace (el navegador no los manda a ningún
+//   servidor). De ellos salen la sala del relé (SHA-256, el relé la ve) y la clave de presentación (HKDF, el relé no).
+// - Sesión: con la otra persona presente, cada lado manda su presentación firmada (identidad + efímera) sellada con la
+//   clave de presentación; el secreto de sesión mezcla tres acuerdos ECDH (efímera–efímera, identidad–efímera y
+//   efímera–identidad) con HKDF-SHA256. De ahí salen dos cadenas (una por sentido) que avanzan con cada mensaje
+//   (HMAC-SHA256): una clave distinta por mensaje, y la anterior se olvida. Cada sesión nueva renueva todo.
+// - Híbrido poscuántico (v3, 27 Oct 2026): quien inicia añade a su presentación una clave ML-KEM-768 nueva; quien
+//   responde encapsula a esa clave y devuelve el texto cifrado en su respuesta. Las dos presentaciones llevan además
+//   una segunda firma ECDSA que cubre esos campos. El secreto ML-KEM entra en el HKDF junto a los tres ECDH (etiqueta
+//   «sesión v3»): para leer una sesión hay que romper a la vez el ECDH P-256 y ML-KEM-768. Con una versión anterior
+//   (sin esos campos) la sesión es la v2 de siempre y queda marcada como no poscuántica (pq: false).
+// - Mensajes y trozos de archivo: AES-256-GCM, nonce de 12 bytes (número de mensaje), datos asociados = cabecera.
+'use strict';
+(function (raiz) {
+  const te = new TextEncoder(), td = new TextDecoder();
+  const sub = crypto.subtle;
+  const u8 = (x) => (x instanceof Uint8Array ? x : new Uint8Array(x));
+  const cat = (...xs) => { const n = xs.reduce((a, b) => a + b.length, 0); const o = new Uint8Array(n); let i = 0; for (const x of xs) { o.set(x, i); i += x.length; } return o; };
+  // por trozos de 32 KB: con fotos y notas de voz enteras (buzón cifrado), «...bytes» desbordaba la pila
+  const b64u = (b) => { const x = u8(b); let s = ''; for (let i = 0; i < x.length; i += 32768) s += String.fromCharCode.apply(null, x.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const deB64u = (s) => { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); };
+  const hex = (b) => [...u8(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  const deHex = (s) => Uint8Array.from(String(s).match(/../g) || [], (h) => parseInt(h, 16));
+  const azar = (n) => crypto.getRandomValues(new Uint8Array(n));
+  const sha256 = async (b) => new Uint8Array(await sub.digest('SHA-256', u8(b)));
+  const nonce = (n) => { const o = new Uint8Array(12); new DataView(o.buffer).setUint32(8, n >>> 0); new DataView(o.buffer).setUint32(4, Math.floor(n / 4294967296) >>> 0); return o; };
+
+  async function hkdf(ikm, sal, info, n) {
+    const k = await sub.importKey('raw', u8(ikm), 'HKDF', false, ['deriveBits']);
+    return new Uint8Array(await sub.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: u8(sal || new Uint8Array(32)), info: te.encode(info) }, k, (n || 32) * 8));
+  }
+  async function hmac(clave, datos) {
+    const k = await sub.importKey('raw', u8(clave), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return new Uint8Array(await sub.sign('HMAC', k, u8(datos)));
+  }
+  const aes = (bytes) => sub.importKey('raw', u8(bytes), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  async function sella(clave, n, datos, ad) {
+    const k = clave instanceof CryptoKey ? clave : await aes(clave);
+    return new Uint8Array(await sub.encrypt({ name: 'AES-GCM', iv: nonce(n), additionalData: ad ? u8(ad) : undefined }, k, u8(datos)));
+  }
+  async function abre(clave, n, datos, ad) {
+    const k = clave instanceof CryptoKey ? clave : await aes(clave);
+    return new Uint8Array(await sub.decrypt({ name: 'AES-GCM', iv: nonce(n), additionalData: ad ? u8(ad) : undefined }, k, u8(datos)));
+  }
+
+  // ---- identidad ----
+  async function creaIdentidad() {
+    const firma = await sub.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
+    const acuerdo = await sub.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+    return { firma, acuerdo, firmaPub: new Uint8Array(await sub.exportKey('raw', firma.publicKey)), acuerdoPub: new Uint8Array(await sub.exportKey('raw', acuerdo.publicKey)) };
+  }
+  const huella = async (firmaPub, acuerdoPub) => sha256(cat(u8(firmaPub), u8(acuerdoPub)));
+  // Número de seguridad de una conversación: 60 cifras de las dos huellas ordenadas (igual en los dos lados)
+  async function numeroSeguridad(huellaA, huellaB) {
+    const a = hex(huellaA), b = hex(huellaB);
+    const [x, y] = a < b ? [a, b] : [b, a];
+    const h = await sha256(te.encode('ELIXIRE número de seguridad\n' + x + '\n' + y));
+    let s = '';
+    for (let i = 0; i < 12; i++) { const v = (h[i * 2] << 8 | h[i * 2 + 1]) % 100000; s += String(v).padStart(5, '0') + (i % 4 === 3 ? '\n' : ' '); }
+    return s.trim();
+  }
+  async function firma(id, datos) { return new Uint8Array(await sub.sign({ name: 'ECDSA', hash: 'SHA-256' }, id.firma.privateKey, u8(datos))); }
+  async function verifica(pub, sig, datos) {
+    try { const k = await sub.importKey('raw', u8(pub), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']); return await sub.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, u8(sig), u8(datos)); } catch (_) { return false; }
+  }
+
+  // ---- invitación ----
+  async function deSemilla(semilla) {
+    const sala = hex(await sha256(cat(te.encode('ELIXIRE sala\n'), u8(semilla))));
+    const presentacion = await hkdf(semilla, null, 'ELIXIRE presentación', 32);
+    // ronda 48: el secreto de la invitación también entra en cada sesión (PSK): sin el enlace nadie se pone en medio
+    const psk = await hkdf(semilla, null, 'ELIXIRE psk de sesión', 32);
+    return { sala, presentacion: await aes(presentacion), psk };
+  }
+  const nuevaSemilla = () => azar(32);
+
+  // ---- código de invitación (9 cifras): clave derivada con PBKDF2-SHA256 (300.000 vueltas) y sal aleatoria ----
+  async function claveDeCodigo(codigo, sal) {
+    const k = await sub.importKey('raw', te.encode('ELIXIRE código ' + codigo), 'PBKDF2', false, ['deriveBits']);
+    return aes(new Uint8Array(await sub.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: u8(sal), iterations: 300000 }, k, 256)));
+  }
+  // 9 cifras totalmente aleatorias (crypto.getRandomValues), sin sesgo: solo se usan bytes < 250 (25 por cifra)
+  const nuevoCodigo = () => { let s = ''; while (s.length < 9) { for (const x of azar(16)) { if (x < 250 && s.length < 9) s += String(x % 10); } } return s; };
+
+  // ---- código Ultra (6 nov 2026; el dueño eligió compartir Ultra también con un código, largo y que el relé no recibe) ----
+  // 16 símbolos del alfabeto Crockford base32 (80 bits), con crypto.getRandomValues: «byte & 31» no tiene sesgo (256 = 8 · 32).
+  // Nunca empieza por 9 cifras: ese se descarta y se saca otro (1 de cada ~35 000), para que la casilla no lo tome por un código
+  // de la Blindada y mande esos 9 símbolos al relé (revisión independiente, M1). Se muestra en 4 grupos (K7QM-2XRP-9DTA-H4WN).
+  // El código no sale del navegador. Del código normalizado sale M = PBKDF2-SHA256(código, sal fija «GUARDIANA código Ultra v1»,
+  // 300 000 vueltas, 32 bytes), lenta a propósito: cada intento de adivinar el código pasa por esas vueltas (revisión, S1). De M,
+  // con HKDF-SHA256:
+  //   - el buzón del relé: 8 bytes (sin sal, info «GUARDIANA Ultra · buzón») como número big-endian módulo 10^9, con ceros
+  //     delante. Es lo único del código que llega al relé, con el mismo formato que el código de 9 cifras de la Blindada;
+  //   - la clave del sobre: 32 bytes (sal = 16 bytes al azar que viajan con el sobre, info «GUARDIANA Ultra · sobre») → AES-256-GCM.
+  // Sobre = b64u(iv de 12 bytes ‖ AES-GCM(semilla de 32 bytes)), con datos asociados «GUARDIANA Ultra sobre\n» + buzón.
+  // Diseño y lo que ve el relé: herramientas/pruebas-comunicaciones/ULTRA-CODIGO.md.
+  const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  function nuevoCodigoU() { for (;;) { const b = azar(16); let s = ''; for (const x of b) s += CROCKFORD[x & 31]; b.fill(0); if (!/^\d{9}/.test(s)) return s; } }
+  // Al leerlo: NFKC (teclados de ancho completo: Ｋ７ → K7), mayúsculas; fuera espacios, guiones y puntos; O → 0, I y L → 1. Con otra
+  // cosa que 16 símbolos del alfabeto, null.
+  function normalizaCodigoU(texto) {
+    const s = String(texto == null ? '' : texto).normalize('NFKC').toUpperCase().replace(/[\s\-\u2010-\u2015\u2212.\u00B7]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+    return /^[0-9A-HJKMNP-TV-Z]{16}$/.test(s) ? s : null;
+  }
+  const codigoUBonito = (s) => String(s || '').replace(/(.{4})(?=.)/g, '$1-');
+  // M, el secreto del que sale todo: PBKDF2-SHA256 con la misma primitiva que el Número GUARDIANA y el código de la Blindada (pbkdf2, más abajo)
+  const maestroCodigoU = (codigo) => pbkdf2(codigo, 'ELIXIRE código Ultra v1', 300000, 256);
+  async function buzonDeM(m) {
+    const b = await hkdf(m, null, 'ELIXIRE Ultra · buzón', 8);
+    let n = 0; for (const x of b) n = (n * 256 + x) % 1000000000; // exacto: nunca pasa de 2^53
+    b.fill(0);
+    return String(n).padStart(9, '0');
+  }
+  async function claveDeM(m, sal) { const k = await hkdf(m, sal, 'ELIXIRE Ultra · sobre', 32); try { return await aes(k); } finally { k.fill(0); } }
+  // { buzon } y, con la sal del sobre, también { clave } (AES-256-GCM, no exportable). «codigo», ya normalizado.
+  async function derivaCodigoU(codigo, sal) {
+    const m = await maestroCodigoU(codigo);
+    try { const r = { buzon: await buzonDeM(m) }; if (sal) r.clave = await claveDeM(m, sal); return r; } finally { m.fill(0); }
+  }
+  const adSobreU = (buzon) => te.encode('ELIXIRE Ultra sobre\n' + buzon);
+  // quien invita: { buzon, sobre, sal } para el relé (formato de «invita»: 9 cifras, sobre de 80 caracteres y sal de 22)
+  async function cierraSobreU(codigo, semilla) {
+    const sal = azar(16), iv = azar(12);
+    const { buzon, clave } = await derivaCodigoU(codigo, sal);
+    const ct = new Uint8Array(await sub.encrypt({ name: 'AES-GCM', iv, additionalData: adSobreU(buzon) }, clave, u8(semilla)));
+    return { buzon, sobre: b64u(cat(iv, ct)), sal: b64u(sal) };
+  }
+  const leeSobreU = (sobre, sal) => { const b = deB64u(sobre), s = deB64u(sal); return b.length === 12 + 32 + 16 && s.length === 16 ? { b, s } : null; };
+  async function abreConClaveU(clave, buzon, b) {
+    const semilla = new Uint8Array(await sub.decrypt({ name: 'AES-GCM', iv: b.subarray(0, 12), additionalData: adSobreU(buzon) }, clave, b.subarray(12)));
+    return semilla.length === 32 ? semilla : null;
+  }
+  // la semilla de 32 bytes, o null si el sobre no abre con este código (sin decir por qué)
+  async function abreSobreU(codigo, buzon, sobre, sal) {
+    try { const x = leeSobreU(sobre, sal); if (!x) return null; const { clave } = await derivaCodigoU(codigo, x.s); return await abreConClaveU(clave, buzon, x.b); } catch (_) { return null; }
+  }
+  // quien entra, con un solo PBKDF2: el buzón (lo que se pide al relé) y, con el sobre que dé el relé, la semilla; «olvida» borra M
+  async function preparaCodigoU(codigo) {
+    const m = await maestroCodigoU(codigo), buzon = await buzonDeM(m);
+    return {
+      buzon,
+      async abre(sobre, sal) { try { const x = leeSobreU(sobre, sal); if (!x) return null; return await abreConClaveU(await claveDeM(m, x.s), buzon, x.b); } catch (_) { return null; } },
+      olvida() { m.fill(0); },
+    };
+  }
+
+  // ---- sesión ----
+  async function efimera() {
+    const k = await sub.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+    return { k, pub: new Uint8Array(await sub.exportKey('raw', k.publicKey)) };
+  }
+  async function dh(priv, pubRaw) {
+    const pub = await sub.importKey('raw', u8(pubRaw), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    return new Uint8Array(await sub.deriveBits({ name: 'ECDH', public: pub }, priv, 256));
+  }
+  // Secreto de sesión (ronda 48, v2). A = quien inicia (huella menor), B = quien responde. Los dos calculan en el mismo
+  // orden DH(ef_A, ef_B) ‖ DH(id_A, ef_B) ‖ DH(ef_A, id_B) ‖ psk (secreto de la invitación), sal = sala, e info = la
+  // transcripción (versión, huellas y efímeras de A y de B). Salen 96 bytes: cadena A→B, cadena B→A y el hash de sesión
+  // (32 bytes, va entero en los datos asociados de cada mensaje; 8 en la cabecera de red).
+  // v3 (híbrida, con pq = { ss, ek, ct }): la misma mezcla con el secreto ML-KEM-768 entre los ECDH y el psk, y la info
+  // con su etiqueta y las huellas SHA-256 de la clave ML-KEM de A y del texto cifrado de B.
+  async function sesion(id, ef, suyo, sala, inicio, psk, miHuella, suHuella, pq) {
+    const efef = await dh(ef.k.privateKey, suyo.ef);
+    const idA_efB = inicio ? await dh(id.acuerdo.privateKey, suyo.ef) : await dh(ef.k.privateKey, suyo.acuerdoPub);
+    const efA_idB = inicio ? await dh(ef.k.privateKey, suyo.acuerdoPub) : await dh(id.acuerdo.privateKey, suyo.ef);
+    const ikm = pq ? cat(efef, idA_efB, efA_idB, u8(pq.ss), u8(psk || new Uint8Array(32))) : cat(efef, idA_efB, efA_idB, u8(psk || new Uint8Array(32)));
+    const hA = inicio ? u8(miHuella) : u8(suHuella), hB = inicio ? u8(suHuella) : u8(miHuella);
+    const efA = inicio ? ef.pub : u8(suyo.ef), efB = inicio ? u8(suyo.ef) : ef.pub;
+    const info = pq
+      ? 'ELIXIRE sesión v3 ECDH-P256+ML-KEM-768\n' + hex(hA) + '\n' + hex(efA) + '\n' + hex(hB) + '\n' + hex(efB) + '\n' + hex(await sha256(pq.ek)) + '\n' + hex(await sha256(pq.ct))
+      : 'ELIXIRE sesión v2\n' + hex(hA) + '\n' + hex(efA) + '\n' + hex(hB) + '\n' + hex(efB);
+    // 128 bytes: los 96 de siempre (HKDF da los mismos primeros bytes pida 96 o 128) y 32 más, el secreto de las llamadas
+    // (la capa post-cuántica del audio y el vídeo, llamada.js; 30 Oct 2026)
+    const r = await hkdf(ikm, deHex(sala), info, 128);
+    ikm.fill(0); efef.fill(0); idA_efB.fill(0); efA_idB.fill(0);
+    const ab = new Uint8Array(r.subarray(0, 32)), ba = new Uint8Array(r.subarray(32, 64)), hash = new Uint8Array(r.subarray(64, 96)), medios = new Uint8Array(r.subarray(96, 128));
+    r.fill(0);
+    return { envio: inicio ? ab : ba, recibo: inicio ? ba : ab, hash, medios, pq: !!pq };
+  }
+
+  // ---- ML-KEM-768 (FIPS 203), en híbrido con el ECDH ----
+  // pq-mlkem.js deja window.GuardianaMLKEM768; si no ha cargado, todo sigue como v2 (solo ECDH) y la sesión no es pq.
+  const KEM_EK = 1184, KEM_DK = 2400, KEM_CT = 1088;
+  const kem = () => { const k = raiz.GuardianaMLKEM768; return k && typeof k.keygen === 'function' && typeof k.encapsulate === 'function' && typeof k.decapsulate === 'function' ? k : null; };
+  const hayPQ = () => !!kem();
+  // un par nuevo por presentación de quien inicia: { ek (pública, 1184 bytes), dk (privada, 2400 bytes) }
+  function kemPar() { const k = kem(); if (!k) return null; const { publicKey, secretKey } = k.keygen(); return { ek: new Uint8Array(publicKey), dk: new Uint8Array(secretKey) }; }
+  // quien responde: encapsula a la clave de quien inicia (la librería comprueba longitud y módulo, FIPS 203 §7.2)
+  function kemEncapsula(ek) { const k = kem(); if (!k || u8(ek).length !== KEM_EK) throw new Error('ML-KEM no disponible'); const { cipherText, sharedSecret } = k.encapsulate(u8(ek)); return { ct: new Uint8Array(cipherText), ss: new Uint8Array(sharedSecret) }; }
+  // quien inicia: abre el texto cifrado con su clave privada de esa presentación (rechazo implícito si no es válido)
+  function kemAbre(ct, dk) { const k = kem(); if (!k || u8(ct).length !== KEM_CT || u8(dk).length !== KEM_DK) throw new Error('ML-KEM no disponible'); return new Uint8Array(k.decapsulate(u8(ct), u8(dk))); }
+
+  // ---- lo que firma cada presentación ----
+  // v2: exactamente los bytes de siempre (los que comprueban las versiones anteriores). v3: otra etiqueta y, además, la
+  // clave ML-KEM de quien inicia o, en la respuesta, la huella de la clave a la que contesta y su texto cifrado.
+  // Una presentación nueva lleva las dos firmas: la v2 («sig») para quien aún no sabe de ML-KEM y la v3 («sig3»).
+  function datosInicia(sala, firmaPub, acuerdoPub, ef, epoca, ek) {
+    return ek ? cat(te.encode('ELIXIRE v3 INICIA\n' + sala + '\n'), u8(firmaPub), u8(acuerdoPub), u8(ef), u8(epoca), u8(ek))
+      : cat(te.encode('ELIXIRE v2 INICIA\n' + sala + '\n'), u8(firmaPub), u8(acuerdoPub), u8(ef), u8(epoca));
+  }
+  async function datosResponde(sala, firmaPub, acuerdoPub, ef, epoca, respEpoca, suHuella, suEf, pq) {
+    const base = [u8(firmaPub), u8(acuerdoPub), u8(ef), u8(epoca), u8(respEpoca), u8(suHuella), u8(suEf)];
+    return pq ? cat(te.encode('ELIXIRE v3 RESPONDE\n' + sala + '\n'), ...base, await sha256(pq.ek), u8(pq.ct))
+      : cat(te.encode('ELIXIRE v2 RESPONDE\n' + sala + '\n'), ...base);
+  }
+  // Una cadena: avanza con cada mensaje; guarda hasta 256 claves saltadas (mensajes que llegan desordenados).
+  // Los pasos van uno detrás de otro (cola de promesas): dos mensajes sellados a la vez nunca comparten clave.
+  function cadena(ck) {
+    let n = 0, clave = u8(ck), turno = Promise.resolve(); const saltadas = new Map();
+    const paso = async () => { const mk = await hmac(clave, [1]); clave = await hmac(clave, [2]); return mk; };
+    const enTurno = (f) => { const p = turno.then(f); turno = p.catch(() => {}); return p; };
+    return {
+      get n() { return n; },
+      siguiente() { return enTurno(async () => { const mk = await paso(); return { n: n++, clave: mk }; }); },
+      para(m) {
+        return enTurno(async () => {
+          if (saltadas.has(m)) { const k = saltadas.get(m); saltadas.delete(m); return k; }
+          if (m < n) throw new Error('mensaje repetido');
+          if (m - n > 256) throw new Error('demasiados mensajes saltados');
+          while (n < m) { saltadas.set(n++, await paso()); }
+          n++; return paso();
+        });
+      },
+    };
+  }
+
+  // ======================================================================================================================
+  // SESIÓN BLINDADA (27 Oct 2026, dueño: «la blindada debe ser de la máxima»; «tecnología de grado militar»).
+  // Los algoritmos y tamaños de Ultra (ML-KEM-1024, ML-DSA-87, P-384, AES-256 y SHA-384), en híbrido con criptografía clásica:
+  //   identidad: ECDSA P-384 + ECDH P-384 (Web Crypto, no exportables) + ML-DSA-87 (FIPS 204; su clave privada se guarda
+  //   encriptada con la clave local no exportable); huella SHA-384 de las tres públicas.
+  //   sesión: tres ECDH P-384 + ML-KEM-1024 (FIPS 203) + el secreto de la invitación, con HKDF-SHA-384.
+  //   presentaciones: dos firmas obligatorias (ECDSA P-384 y ML-DSA-87); sin ML-KEM no hay sesión.
+  //   mensajes: AES-256-GCM con una clave por mensaje (cadenas HMAC-SHA-384).
+  // Nada de esto es una certificación: son los algoritmos que la suite especifica, en el navegador.
+  // ======================================================================================================================
+  const sha384 = async (b) => new Uint8Array(await sub.digest('SHA-384', u8(b)));
+  async function hkdf384(ikm, sal, info, n) {
+    const k = await sub.importKey('raw', u8(ikm), 'HKDF', false, ['deriveBits']);
+    return new Uint8Array(await sub.deriveBits({ name: 'HKDF', hash: 'SHA-384', salt: u8(sal || new Uint8Array(48)), info: te.encode(info) }, k, n * 8));
+  }
+  async function hmac384(clave, datos) {
+    const k = await sub.importKey('raw', u8(clave), { name: 'HMAC', hash: 'SHA-384' }, false, ['sign']);
+    return new Uint8Array(await sub.sign('HMAC', k, u8(datos)));
+  }
+  const kem1024 = () => { const k = raiz.GuardianaMLKEM1024; return k && typeof k.keygen === 'function' ? k : null; };
+  const dsa87 = () => { const k = raiz.GuardianaMLDSA87; return k && typeof k.sign === 'function' ? k : null; };
+  const B_EK = 1568, B_DK = 3168, B_CT = 1568, B_DSA_PUB = 2592, B_DSA_FIRMA = 4627, B_EC = 97;
+  const B_CTX = te.encode('ELIXIRE blindada v1'); // contexto de las firmas ML-DSA (FIPS 204 §5.2): separa sus usos
+  const hayBlindada = () => !!(kem1024() && dsa87() && raiz.isSecureContext !== false);
+
+  // Identidad blindada del equipo. La clave privada ML-DSA-87 sale de aquí solo encriptada con «reposo» (AES-256-GCM,
+  // no exportable); en memoria vive mientras la página está abierta.
+  async function creaIdentidadB(reposo) {
+    const firma = await sub.generateKey({ name: 'ECDSA', namedCurve: 'P-384' }, false, ['sign', 'verify']);
+    const acuerdo = await sub.generateKey({ name: 'ECDH', namedCurve: 'P-384' }, false, ['deriveBits']);
+    const d = dsa87(); if (!d) throw new Error('ML-DSA-87 no disponible');
+    const { publicKey, secretKey } = d.keygen();
+    const iv = azar(12), dsaSecSellada = new Uint8Array(await sub.encrypt({ name: 'AES-GCM', iv, additionalData: te.encode('ELIXIRE ML-DSA-87') }, reposo, secretKey));
+    const id = { firma, acuerdo, firmaPub: new Uint8Array(await sub.exportKey('raw', firma.publicKey)), acuerdoPub: new Uint8Array(await sub.exportKey('raw', acuerdo.publicKey)), dsaPub: new Uint8Array(publicKey), dsaIv: iv, dsaSecSellada, creado: Date.now() };
+    const out = { guardar: id, dsaSec: new Uint8Array(secretKey) };
+    secretKey.fill(0); // el array original de keygen, también con ceros (queda solo la copia, que app.js borra al momento)
+    return out;
+  }
+  async function abreDsaB(idB, reposo) {
+    return new Uint8Array(await sub.decrypt({ name: 'AES-GCM', iv: u8(idB.dsaIv), additionalData: te.encode('ELIXIRE ML-DSA-87') }, reposo, u8(idB.dsaSecSellada)));
+  }
+  const huellaB = async (firmaPub, acuerdoPub, dsaPub) => sha384(cat(te.encode('ELIXIRE huella blindada v1\n'), u8(firmaPub), u8(acuerdoPub), u8(dsaPub)));
+  async function numeroSeguridadB(huellaA, huellaB2) {
+    const a = hex(huellaA), b = hex(huellaB2);
+    const [x, y] = a < b ? [a, b] : [b, a];
+    const h = await sha384(te.encode('ELIXIRE número de seguridad blindada v1\n' + x + '\n' + y));
+    let s = '';
+    for (let i = 0; i < 12; i++) { const v = (h[i * 2] << 8 | h[i * 2 + 1]) % 100000; s += String(v).padStart(5, '0') + (i % 4 === 3 ? '\n' : ' '); }
+    return s.trim();
+  }
+  async function firmaB(idB, datos) { return new Uint8Array(await sub.sign({ name: 'ECDSA', hash: 'SHA-384' }, idB.firma.privateKey, u8(datos))); }
+  async function verificaB(pub, sig, datos) {
+    try { const k = await sub.importKey('raw', u8(pub), { name: 'ECDSA', namedCurve: 'P-384' }, false, ['verify']); return await sub.verify({ name: 'ECDSA', hash: 'SHA-384' }, k, u8(sig), u8(datos)); } catch (_) { return false; }
+  }
+  function firmaPQ(dsaSec, datos, ctx) { const d = dsa87(); if (!d) throw new Error('ML-DSA-87 no disponible'); return new Uint8Array(d.sign(u8(datos), u8(dsaSec), ctx || B_CTX)); }
+  function verificaPQ(dsaPub, sig, datos, ctx) { const d = dsa87(); if (!d || u8(dsaPub).length !== B_DSA_PUB || u8(sig).length !== B_DSA_FIRMA) return false; return !!d.verify(u8(sig), u8(datos), u8(dsaPub), ctx || B_CTX); }
+  async function deSemillaB(semilla) {
+    const sala = hex(await sha256(cat(te.encode('ELIXIRE sala blindada v1\n'), u8(semilla))));
+    const presentacion = await hkdf384(semilla, null, 'ELIXIRE presentación blindada v1', 32);
+    const psk = await hkdf384(semilla, null, 'ELIXIRE psk blindada v1', 48);
+    return { sala, presentacion: await aes(presentacion), psk };
+  }
+  async function efimeraB() {
+    const k = await sub.generateKey({ name: 'ECDH', namedCurve: 'P-384' }, false, ['deriveBits']);
+    return { k, pub: new Uint8Array(await sub.exportKey('raw', k.publicKey)) };
+  }
+  async function dhB(priv, pubRaw) {
+    const pub = await sub.importKey('raw', u8(pubRaw), { name: 'ECDH', namedCurve: 'P-384' }, false, []);
+    return new Uint8Array(await sub.deriveBits({ name: 'ECDH', public: pub }, priv, 384));
+  }
+  function kemParB() { const k = kem1024(); if (!k) throw new Error('ML-KEM-1024 no disponible'); const { publicKey, secretKey } = k.keygen(); return { ek: new Uint8Array(publicKey), dk: new Uint8Array(secretKey) }; }
+  function kemEncapsulaB(ek) { const k = kem1024(); if (!k || u8(ek).length !== B_EK) throw new Error('ML-KEM-1024 no disponible'); const { cipherText, sharedSecret } = k.encapsulate(u8(ek)); return { ct: new Uint8Array(cipherText), ss: new Uint8Array(sharedSecret) }; }
+  function kemAbreB(ct, dk) { const k = kem1024(); if (!k || u8(ct).length !== B_CT || u8(dk).length !== B_DK) throw new Error('ML-KEM-1024 no disponible'); return new Uint8Array(k.decapsulate(u8(ct), u8(dk))); }
+  // Lo que firman las presentaciones de Ultra (las dos firmas sobre los mismos bytes): quien inicia, su identidad, su efímera, su
+  // época, la huella de su clave ML-KEM y el compromiso de las palabras (48 bytes; vacío en las que solo piden que el otro se
+  // presente); quien responde, además, la época, la huella y la efímera de quien inicia, el texto encriptado ML-KEM entero y su
+  // número para las palabras (32 bytes). El compromiso y el número van firmados desde la v5 (segunda revisión independiente,
+  // 5 nov 2026, B: antes solo los cubría el sobre AES-GCM de la invitación).
+  async function datosIniciaB(sala, firmaPub, acuerdoPub, dsaPub, ef, epoca, ek, cw) {
+    return cat(te.encode('ELIXIRE v5 ULTRA INICIA\n' + sala + '\n'), u8(firmaPub), u8(acuerdoPub), await sha384(dsaPub), u8(ef), u8(epoca), await sha384(ek), u8(cw || new Uint8Array(0)));
+  }
+  async function datosRespondeB(sala, firmaPub, acuerdoPub, dsaPub, ef, epoca, respEpoca, suHuella, suEf, ek, ct, nr) {
+    return cat(te.encode('ELIXIRE v5 ULTRA RESPONDE\n' + sala + '\n'), u8(firmaPub), u8(acuerdoPub), await sha384(dsaPub), u8(ef), u8(epoca), u8(respEpoca), u8(suHuella), u8(suEf), await sha384(ek), u8(ct), u8(nr || new Uint8Array(0)));
+  }
+  // Secreto de la sesión blindada: DH(efA,efB) ‖ DH(idA,efB) ‖ DH(efA,idB) ‖ ss ML-KEM-1024 ‖ psk, sal = sala, info = la
+  // transcripción (huellas SHA-384, efímeras, huellas de ek y ct). Salen 128 bytes: cadena A→B (48), cadena B→A (48) y el
+  // hash de sesión (32, en los datos asociados de cada mensaje).
+  async function sesionB(idB, ef, suyo, sala, inicio, psk, miHuella, suHuella, pq) {
+    if (!pq || !pq.ss) throw new Error('sin ML-KEM-1024 no hay sesión blindada');
+    const efef = await dhB(ef.k.privateKey, suyo.ef);
+    const idA_efB = inicio ? await dhB(idB.acuerdo.privateKey, suyo.ef) : await dhB(ef.k.privateKey, suyo.acuerdoPub);
+    const efA_idB = inicio ? await dhB(ef.k.privateKey, suyo.acuerdoPub) : await dhB(idB.acuerdo.privateKey, suyo.ef);
+    const ikm = cat(efef, idA_efB, efA_idB, u8(pq.ss), u8(psk));
+    const hA = inicio ? u8(miHuella) : u8(suHuella), hB = inicio ? u8(suHuella) : u8(miHuella);
+    const efA = inicio ? ef.pub : u8(suyo.ef), efB = inicio ? u8(suyo.ef) : ef.pub;
+    const info = 'ELIXIRE sesión v4 blindada P-384+ML-KEM-1024 SHA-384\n' + hex(hA) + '\n' + hex(efA) + '\n' + hex(hB) + '\n' + hex(efB) + '\n' + hex(await sha384(pq.ek)) + '\n' + hex(await sha384(pq.ct));
+    // 176 bytes: los 128 de siempre y 48 más, el secreto de las llamadas (como en «sesion»)
+    const r = await hkdf384(ikm, deHex(sala), info, 176);
+    ikm.fill(0); efef.fill(0); idA_efB.fill(0); efA_idB.fill(0);
+    const ab = new Uint8Array(r.subarray(0, 48)), ba = new Uint8Array(r.subarray(48, 96)), hash = new Uint8Array(r.subarray(96, 128)), medios = new Uint8Array(r.subarray(128, 176));
+    r.fill(0);
+    return { envio: inicio ? ab : ba, recibo: inicio ? ba : ab, hash, medios, pq: true, blindada: true };
+  }
+  // Cadena blindada: como «cadena», con HMAC-SHA-384; la clave de mensaje son los 32 primeros bytes (AES-256).
+  function cadenaB(ck) {
+    let n = 0, clave = u8(ck), turno = Promise.resolve(); const saltadas = new Map();
+    const paso = async () => { const mk = await hmac384(clave, [1]); const sig = await hmac384(clave, [2]); clave.fill(0); clave = sig; const k = new Uint8Array(mk.subarray(0, 32)); mk.fill(0); return k; };
+    const enTurno = (f) => { const p = turno.then(f); turno = p.catch(() => {}); return p; };
+    return {
+      get n() { return n; },
+      siguiente() { return enTurno(async () => { const mk = await paso(); return { n: n++, clave: mk }; }); },
+      para(m) {
+        return enTurno(async () => {
+          if (saltadas.has(m)) { const k = saltadas.get(m); saltadas.delete(m); return k; }
+          if (m < n) throw new Error('mensaje repetido');
+          if (m - n > 256) throw new Error('demasiados mensajes saltados');
+          while (n < m) { saltadas.set(n++, await paso()); }
+          n++; return paso();
+        });
+      },
+      borra() { clave.fill(0); for (const k of saltadas.values()) k.fill(0); saltadas.clear(); },
+    };
+  }
+  // Relleno de la blindada: el texto de cada mensaje sale a un múltiplo de 1 KB (espacios al final; JSON los ignora),
+  // así el relé no distingue un «ok» de un párrafo.
+  const RELLENO = 1024;
+  function rellena(bytes) { const n = Math.ceil((bytes.length + 1) / RELLENO) * RELLENO; const o = new Uint8Array(n).fill(0x20); o.set(bytes, 0); return o; }
+  // Palabras de verificación (Ultra; agencia, ronda 93, al estilo de ZRTP): 4 palabras de la lista de 2048 (palabras.js), 11 bits
+  // cada una, sacadas de los 6 primeros bytes de un hash (se usan 44 de los 48 bits). De unos bytes salen siempre las mismas 4 palabras.
+  function palabrasDe(b) {
+    const L = raiz.GuardianaPalabras; b = u8(b);
+    if (!Array.isArray(L) || L.length !== 2048 || b.length < 6) return null;
+    const v = b[0] * 2 ** 40 + b[1] * 2 ** 32 + b[2] * 2 ** 24 + b[3] * 2 ** 16 + b[4] * 2 ** 8 + b[5];
+    return [37, 26, 15, 4].map((d) => L[Math.floor(v / 2 ** d) & 2047]);
+  }
+  // Las de una conversación Ultra, con compromiso previo (revisión independiente, 3 nov 2026: con solo las dos huellas, quien está en
+  // medio podía probar identidades hasta que las 4 palabras de los dos lados coincidieran, unos 2^22 intentos por lado). Como en la
+  // llamada y en ZRTP: quien inicia manda primero el compromiso, SHA-384(etiqueta ‖ su huella ‖ 32 bytes al azar); quien responde manda
+  // sus 32 bytes al azar ya sabiendo solo el compromiso; quien inicia revela los suyos y quien responde comprueba el compromiso. Las
+  // palabras salen de las dos huellas y de los dos números, en el orden de los papeles: quien esté en medio ya no puede elegirlas después de ver las del otro.
+  // Un solo compromiso y un solo número por conversación, como el Commit único de ZRTP (segunda revisión, B: con uno nuevo en cada
+  // época, quien estaba en medio podía elegir entre varios): uno distinto antes o después es alarma (app.js).
+  async function compromisoPalabras(huellaI, nI) { return sha384(cat(te.encode('ELIXIRE compromiso de las palabras v1\n'), u8(huellaI), u8(nI))); }
+  async function palabrasB(huellaI, huellaR, nI, nR) { return palabrasDe(await sha384(cat(te.encode('ELIXIRE palabras de verificación v2\n'), u8(huellaI), u8(huellaR), u8(nI), u8(nR)))); }
+
+  // ---------- Número GUARDIANA (29 Oct 2026; dueño, 20:56–21:55; agencia, ronda 73) ----------
+  // 12 cifras: 11 al azar y una de control Damm, que detecta cualquier cifra cambiada y cualquier par de cifras vecinas
+  // intercambiado. El número no sale del teléfono: al relé va su huella (idn, PBKDF2 de 300.000 vueltas) y, para hablar con
+  // alguien, una «cita» que sale de los dos números (sin los dos no se puede calcular) con un sobre cerrado con otra clave
+  // que también sale de los dos. Ver zero-motor/numeros.js.
+  const DAMM = [[0, 3, 1, 7, 5, 9, 8, 6, 4, 2], [7, 0, 9, 2, 1, 5, 4, 8, 6, 3], [4, 2, 0, 6, 8, 7, 1, 3, 5, 9], [1, 7, 5, 0, 9, 8, 3, 4, 2, 6], [6, 1, 2, 3, 0, 4, 5, 9, 7, 8], [3, 6, 7, 4, 2, 0, 9, 5, 8, 1], [5, 8, 6, 9, 7, 2, 0, 1, 3, 4], [8, 9, 4, 5, 3, 6, 2, 0, 1, 7], [9, 4, 3, 8, 6, 1, 7, 2, 0, 5], [2, 5, 8, 1, 4, 3, 6, 7, 9, 0]];
+  const damm = (s) => { let i = 0; for (const ch of String(s)) i = DAMM[i][ch.charCodeAt(0) - 48]; return i; };
+  const numeroValido = (s) => /^\d{12}$/.test(String(s)) && damm(s) === 0;
+  const conControl = (once) => String(once) + String(damm(once));
+  const nuevoNumero = () => { let s = ''; while (s.length < 11) { for (const x of azar(16)) { if (x < 250 && s.length < 11) s += String(x % 10); } } return conControl(s); };
+  // en grupos de tres con guiones, puestos solos mientras se escribe (dueño, 30 Oct 2026, 00:15: «quiero guiones automáticos»)
+  const numeroBonito = (s) => String(s || '').replace(/([\d·]{3})(?=[\d·])/g, '$1-');
+  async function pbkdf2(texto, sal, vueltas, bits) {
+    const k = await sub.importKey('raw', te.encode(texto), 'PBKDF2', false, ['deriveBits']);
+    return new Uint8Array(await sub.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te.encode(sal), iterations: vueltas }, k, bits));
+  }
+  const idnDe = async (n) => hex(await pbkdf2(String(n), 'ELIXIRE número v1', 300000, 256));
+  // la cita de dos números (la misma desde los dos lados): T, que ve el relé, y la clave del sobre, que no ve
+  async function citaDe(a, b) {
+    a = String(a); b = String(b);
+    const p = await pbkdf2(a < b ? a + ':' + b : b + ':' + a, 'ELIXIRE cita v1', 100000, 512);
+    const T = hex(await sha256(cat(te.encode('ELIXIRE cita T v1\n'), p)));
+    const k = await hkdf(p, null, 'ELIXIRE cita clave v1', 32); p.fill(0);
+    const clave = await aes(k); k.fill(0);
+    return { T, clave };
+  }
+  const buzonDe = async (idn) => hex(await sha256(te.encode('ELIXIRE buzón v1\n' + idn)));
+  const ADC = (T) => te.encode('ELIXIRE cita v1\n' + T);
+  async function cierraSobre(clave, T, obj) { const iv = azar(12); const ct = new Uint8Array(await sub.encrypt({ name: 'AES-GCM', iv, additionalData: ADC(T) }, clave, te.encode(JSON.stringify(obj)))); return b64u(cat(iv, ct)); }
+  async function abreSobre(clave, T, s) { try { const b = deB64u(s); if (b.length < 29) return null; return JSON.parse(td.decode(await sub.decrypt({ name: 'AES-GCM', iv: b.subarray(0, 12), additionalData: ADC(T) }, clave, b.subarray(12)))); } catch (_) { return null; } }
+  // lo que firma cada uno en su sobre: la cita, su número, sus dos claves, su valor al azar y la hora
+  const datosCita = (T, n, f, a, r, t) => te.encode('ELIXIRE cita firma v1\n' + T + '\n' + n + '\n' + f + '\n' + a + '\n' + r + '\n' + t);
+  // lo que firma la app al presentar su número en una conexión (el reto lo pone el relé)
+  const datosYo = (reto, idn, f, a) => te.encode('ELIXIRE yo v1\n' + reto + '\n' + idn + '\n' + f + '\n' + a);
+  // La semilla de la conversación entre dos números (agencia, ronda 73: «ECDH estático solo para proteger un intercambio firmado
+  // de valores aleatorios nuevos; vinculen la derivación a ambas identidades»): el acuerdo entre las dos identidades (solo lo
+  // pueden calcular ellas) con los dos valores al azar de los sobres y las dos huellas. Cada emparejamiento, una semilla distinta.
+  async function semillaNumeros(yo, suAcuerdoPub, miIdn, suIdn, miR, suR) {
+    const s = await dh(yo.acuerdo.privateKey, suAcuerdoPub);
+    const [i1, i2, r1, r2] = miIdn < suIdn ? [miIdn, suIdn, u8(miR), u8(suR)] : [suIdn, miIdn, u8(suR), u8(miR)];
+    const sal = await sha256(cat(te.encode('ELIXIRE semilla número v1\n'), r1, r2));
+    const semilla = await hkdf(s, sal, 'ELIXIRE semilla número v1\n' + i1 + '\n' + i2, 32);
+    s.fill(0); return semilla;
+  }
+  const N = { damm, numeroValido, conControl, nuevoNumero, numeroBonito, idnDe, citaDe, buzonDe, cierraSobre, abreSobre, datosCita, datosYo, semillaNumeros };
+
+  const B = { sha384, hkdf384, hmac384, hayBlindada, creaIdentidad: creaIdentidadB, abreDsa: abreDsaB, huella: huellaB, numeroSeguridad: numeroSeguridadB, compromisoPalabras, firma: firmaB, verifica: verificaB, firmaPQ, verificaPQ, deSemilla: deSemillaB, efimera: efimeraB, kemPar: kemParB, kemEncapsula: kemEncapsulaB, kemAbre: kemAbreB, datosInicia: datosIniciaB, datosResponde: datosRespondeB, sesion: sesionB, cadena: cadenaB, rellena, RELLENO, palabrasDe, palabras: palabrasB, EK: B_EK, DK: B_DK, CT: B_CT, DSA_PUB: B_DSA_PUB, DSA_FIRMA: B_DSA_FIRMA, EC: B_EC, CTX: B_CTX };
+
+  // ---- Buzón cifrado (30 Oct 2026; dueño, 00:05: elige el «buzón cifrado», como WhatsApp, Signal o Threema) ----
+  // Para quien no está conectado, el mensaje se deja en el relé dentro de un sobre que solo su teléfono abre. Acuerdo híbrido:
+  // ECDH P-256 entre una clave efímera de quien envía (una por sobre) y la identidad de acuerdo de quien recibe, más ML-KEM-768
+  // (FIPS 203) a la «llave de buzón» que quien recibe entregó en la última sesión; HKDF-SHA256 de los dos secretos (con la sala,
+  // los dos identificadores y la llave en «info») → AES-256-GCM. Firmado (ECDSA P-256) con la identidad de quien envía, sobre la
+  // sala, los dos identificadores y el sobre entero: el relé no puede leerlo ni cambiarlo sin que se note.
+  // Formato: [1 versión][8 id de la llave][65 clave efímera][1088 cifrado ML-KEM][12 iv][AES-GCM…][64 firma]
+  const BZ_CAB = 1 + 8 + 65 + 1088 + 12;
+  const bzInfo = (sala, de, para, kid) => 'ELIXIRE buzón v1\n' + sala + '\n' + de + '\n' + para + '\n' + kid;
+  async function buzonCierra(yo, o, datos) {
+    const eph = await sub.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+    const ephPub = new Uint8Array(await sub.exportKey('raw', eph.publicKey));
+    const su = await sub.importKey('raw', u8(o.acuerdoPub), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const ss1 = new Uint8Array(await sub.deriveBits({ name: 'ECDH', public: su }, eph.privateKey, 256));
+    const { ct, ss: ss2 } = kemEncapsula(o.ek);
+    const info = bzInfo(o.sala, o.de, o.para, o.kid);
+    const clave = await hkdf(cat(ss1, ss2), await sha256(cat(ephPub, ct)), info, 32); ss1.fill(0); ss2.fill(0);
+    const iv = azar(12), k = await aes(clave); clave.fill(0);
+    const cab = cat(new Uint8Array([1]), deHex(o.kid), ephPub, ct, iv);
+    const cifrado = new Uint8Array(await sub.encrypt({ name: 'AES-GCM', iv, additionalData: cat(te.encode(info), cab) }, k, u8(datos)));
+    const cuerpo = cat(cab, cifrado);
+    return cat(cuerpo, await firma(yo, cat(te.encode(info), cuerpo)));
+  }
+  // dkDe(kid): la clave privada de esa llave de buzón (o null). Lanza si la firma o el cifrado no cuadran.
+  async function buzonAbre(yo, o, sobre) {
+    sobre = u8(sobre); if (sobre.length < BZ_CAB + 16 + 64 || sobre[0] !== 1) throw new Error('sobre');
+    const cuerpo = sobre.subarray(0, sobre.length - 64), sig = sobre.subarray(sobre.length - 64);
+    const kid = hex(cuerpo.subarray(1, 9)), info = bzInfo(o.sala, o.de, o.para, kid);
+    if (!(await verifica(o.firmaPub, sig, cat(te.encode(info), cuerpo)))) throw new Error('firma');
+    const dk = o.dkDe(kid); if (!dk) throw new Error('llave');
+    const ephPub = cuerpo.subarray(9, 74), ct = cuerpo.subarray(74, 74 + KEM_CT), iv = cuerpo.subarray(74 + KEM_CT, BZ_CAB);
+    const ep = await sub.importKey('raw', ephPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const ss1 = new Uint8Array(await sub.deriveBits({ name: 'ECDH', public: ep }, yo.acuerdo.privateKey, 256));
+    const ss2 = kemAbre(ct, dk);
+    const clave = await hkdf(cat(ss1, ss2), await sha256(cat(ephPub, ct)), info, 32); ss1.fill(0); ss2.fill(0);
+    const k = await aes(clave); clave.fill(0);
+    return new Uint8Array(await sub.decrypt({ name: 'AES-GCM', iv, additionalData: cat(te.encode(info), cuerpo.subarray(0, BZ_CAB)) }, k, cuerpo.subarray(BZ_CAB)));
+  }
+  const BZ = { cierra: buzonCierra, abre: buzonAbre, llave: () => { const p = kemPar(); return p ? { kid: hex(azar(8)), ek: p.ek, dk: p.dk, t: Date.now() } : null; } };
+
+  raiz.GuardianaCripto = { te, td, u8, cat, b64u, deB64u, hex, deHex, azar, sha256, hkdf, hmac, aes, sella, abre, nonce, creaIdentidad, huella, numeroSeguridad, firma, verifica, deSemilla, nuevaSemilla, efimera, sesion, cadena, claveDeCodigo, nuevoCodigo, nuevoCodigoU, normalizaCodigoU, codigoUBonito, derivaCodigoU, cierraSobreU, abreSobreU, preparaCodigoU, CROCKFORD, hayPQ, kemPar, kemEncapsula, kemAbre, datosInicia, datosResponde, KEM_EK, KEM_DK, KEM_CT, B, N, BZ };
+})(typeof window !== 'undefined' ? window : globalThis);

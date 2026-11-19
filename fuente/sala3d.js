@@ -247,12 +247,12 @@ function arranca() {
 
   const mira = { x: 0, y: 0, tx: 0, ty: 0 };
   if (!quieto) addEventListener('pointermove', (e) => { mira.tx = e.clientX / innerWidth - 0.5; mira.ty = e.clientY / innerHeight - 0.5; });
-  const reloj = new THREE.Clock(); let vivo = true;
+  const reloj = new THREE.Clock(); let vivo = true, pausado = false;
   document.addEventListener('visibilitychange', () => { vivo = document.visibilityState === 'visible'; if (vivo) reloj.getDelta(); });
 
   function cuadro() {
     requestAnimationFrame(cuadro);
-    if (!vivo) return;
+    if (!vivo || pausado) return;
     const dt = Math.min(reloj.getDelta(), DT_MAX); ahora += dt;
     for (let i = tramos.length - 1; i >= 0; i--) { const x = tramos[i]; if (ahora < x.t0) continue; const p = Math.min(1, (ahora - x.t0) / x.dur); x.set(x.e(p)); if (p >= 1) { tramos.splice(i, 1); x.res(); } }
     // monolito: flota y gira muy poco; al abrir, el sello destella, se parte en dos y las mitades se apartan girando como dos hojas
@@ -296,9 +296,12 @@ function arranca() {
   const ponMarca = () => { marca.material.map = texMarca(); marca.material.opacity = 1; marca.material.needsUpdate = true; };
   (document.fonts && document.fonts.load ? document.fonts.load('500 54px Unbounded').catch(() => {}) : Promise.resolve()).then(ponMarca);
   cuadro();
-  return { abre, cierra, abierta: () => abierta };
+  // la sala de la conversación tapa el 3D: mientras tanto, quieto (sin gastar la tarjeta gráfica durante la videollamada)
+  const pausa = (si) => { pausado = !!si; if (!pausado) reloj.getDelta(); };
+  return { abre, cierra, pausa, abierta: () => abierta };
 }
 
 let api = null;
-try { api = arranca(); } catch (e) { console.warn('3D no disponible', e); api = null; }
+// «?sin3d»: la portada sin la sala en 3D (equipos lentos y pruebas automáticas); se ve el monolito en CSS
+try { api = new URLSearchParams(location.search).has('sin3d') ? null : arranca(); } catch (e) { console.warn('3D no disponible', e); api = null; }
 if (api) { document.documentElement.classList.add('con-3d'); window.Sala3D = api; document.dispatchEvent(new CustomEvent('elixire-3d')); }
