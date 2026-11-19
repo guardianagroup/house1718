@@ -20,19 +20,6 @@
   const ponBajada = () => raiz.style.setProperty('--bajada', Math.min(1, scrollY / (innerHeight * 0.75)).toFixed(3));
   addEventListener('scroll', ponBajada, { passive: true }); ponBajada();
 
-  // ---- las cifras del fraude, de una en una, encima del botón ----
-  const CIFRAS = [['c1v', 'c1t', 'c1f'], ['c2v', 'c2t', 'c2f'], ['c3v', 'c3t', 'c3f'], ['c4v', 'c4t', 'c4f']];
-  const cifra = $('#cifra'); let ci = 0;
-  function pintaCifra() {
-    const [v, t, f] = CIFRAS[ci], partes = [['.valor', v], ['.texto', t], ['.fuente', f]];
-    for (const [sel, k] of partes) { const e = cifra.querySelector(sel); e.dataset.t = k; e.textContent = tr(k); }
-  }
-  if (!quieto) setInterval(() => {
-    if (document.hidden || abierta || scrollY > innerHeight * 0.5) return;
-    cifra.classList.add('cambia');
-    setTimeout(() => { ci = (ci + 1) % CIFRAS.length; pintaCifra(); cifra.classList.remove('cambia'); }, 700);
-  }, 6500);
-
   // ---- abrir y cerrar el monolito ----
   let abierta = null, ocupado = false;
   const paneles = () => [...document.querySelectorAll('.panel')];
@@ -184,5 +171,4 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta && abierta !== 'sala') cierra(); });
   // con una conversación abierta, el navegador pregunta antes de salir (al salir, se borra)
   addEventListener('beforeunload', (e) => { if (M && M.activa) { e.preventDefault(); e.returnValue = ''; } });
-  document.addEventListener('elixire-idioma', () => pintaCifra());
 })();
