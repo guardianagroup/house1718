@@ -9,7 +9,7 @@
 (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
   const LUZ = '.seccion h2, .seccion .intro';
-  const APARECE = '.seccion > .etiqueta, .libro > li, .seccion .cadena, .riesgos > p, .seccion .recuadro, .pasos > li, .seccion .tabla, .tecnica > article, .nota-final, .pie-tabla, .seccion > .cristal';
+  const APARECE = '.seccion > .etiqueta, .libro > li, .seccion .cadena, .riesgos > p, .seccion .recuadro, .pasos > li, .seccion .tabla, .tecnica > article, .nota-final, .pie-tabla, .seccion > .cristal, .ficha > div, .cifras-grandes > li';
 
   // ---- la entrada: un fundido corto (en las listas, uno detrás de otro) ----
   const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); } }, { rootMargin: '0px 0px -7% 0px' });

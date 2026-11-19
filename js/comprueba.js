@@ -393,11 +393,39 @@
     return { tipo, confianza, senales, presencia, parpadeos, movNatural, habla, labios: habla ? corr >= 0.2 : null, relieve: rel, pulso: pul, fuente: x.fuente };
   }
 
+  // ---- el resultado: la probabilidad de que sea una persona real (dueño, 18:01: «el resultado en probabilidad de ser humano, en
+  // tanto por ciento… y ya está») ----
+  // Cada señal suma o resta en la escala de las razones de probabilidad (log-odds), según lo que pesa como prueba: una cámara
+  // virtual, una imagen congelada o unos labios que no van con la voz pesan mucho en contra; la cámara de un móvil, el parpadeo, el
+  // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
+  const PESOS = {
+    camara: { si: 0.9, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.8, nd: -0.2 }, movimiento: { si: 0.6, nd: -0.3 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 },
+  };
+  function probabilidad(r) {
+    let L = 0.5;
+    for (const x of r.senales || []) { const w = PESOS[x.k]; if (w && w[x.estado] != null) L += w[x.estado]; }
+    if (r.tipo === 'fija') L = Math.min(L, -3);
+    return Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-L)))));
+  }
+  function pintaProbabilidad(r) {
+    const pct = $('#comprobacion-pct'), anillo = $('#comprobacion-anillo'), et = $('#comprobacion-etiqueta'), caja = $('#comprobacion-prob');
+    const sinDato = r.tipo === 'sinCara' || r.tipo === 'sinVideo' || r.tipo === 'error';
+    const k = sinDato ? 'comprobacion_' + r.tipo : 'probHumano'; et.dataset.t = k; et.textContent = tr(k);
+    caja.className = 'probabilidad';
+    if (sinDato) { pct.textContent = '—'; anillo.style.setProperty('--valor', '0'); caja.classList.add('nada'); return; }
+    const p = probabilidad(r); caja.classList.add(p >= 80 ? 'alta' : p >= 50 ? 'media' : 'baja');
+    const t0 = performance.now(), dur = 1100;
+    const paso = (t) => { const u = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - u, 3), v = Math.round(p * e); pct.textContent = v + ' %'; anillo.style.setProperty('--valor', String(v)); if (u < 1 && !resultadoCaja.hidden) requestAnimationFrame(paso); else { pct.textContent = p + ' %'; anillo.style.setProperty('--valor', String(p)); } };
+    requestAnimationFrame(paso);
+    r.probabilidad = p;
+  }
+
   // ---- el resultado ----
   const resultadoCaja = $('#comprobacion-resultado');
   function resultado(r) {
     previo = r; capa.classList.add('con-resultado');
-    resultadoCaja.className = 'comprobacion-resultado ' + r.tipo;
+    resultadoCaja.className = 'comprobacion-resultado solo-prob ' + r.tipo; pintaProbabilidad(r);
     $('#comprobacion-estado').hidden = true; resultadoCaja.hidden = false; resultadoCaja.scrollTop = 0;
     $('#comprobacion-titulo').textContent = tr('comprobacion_' + r.tipo);
     let texto = tr('comprobacion_' + r.tipo + 'Texto');
@@ -597,7 +625,7 @@
   // la llamada termina: fuera
   if (M) M.on('llamada', (e) => { if (e.estado !== 'hablando' && e.estado !== 'reconectando' && !capa.hidden) termina(); });
   window.ElixireComprueba = {
-    comprueba, cierra: termina, analiza, delaunay, afin, relieve, pulso, ritmo, pos, bandaVoz,
+    comprueba, cierra: termina, analiza, probabilidad, delaunay, afin, relieve, pulso, ritmo, pos, bandaVoz,
     _dibuja: (pts) => { capa.hidden = false; resultadoCaja.hidden = true; $('#comprobacion-estado').hidden = false; $('#comprobacion-estado-texto').textContent = tr('comprobacionAnalizando'); ponChips(); chip('cara', 'si'); chip('parpadeo', 'si'); chip('camara', 'si'); const r = ajustaLienzo(); triangulos = null; zonasPantalla = null; dibuja(r, pts, 0.64, 1200); },
     _resultado: (r) => { capa.hidden = false; resultado(r); },
   };
