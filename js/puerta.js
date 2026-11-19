@@ -100,8 +100,13 @@
   // ---- crear un código ----
   let reloj = null;
   function paraReloj() { clearInterval(reloj); reloj = null; }
+  // En el móvil (dueño, 14:35–14:39): «Invitar a una llamada» manda el enlace y espera; cuando la otra persona lo abre y toca
+  // «Entrar a la llamada», la videollamada arranca sola en los dos lados, sin códigos. Las cuatro palabras salen sobre el vídeo.
+  const enMovil = () => matchMedia('(max-width: 760px)').matches;
+  let invitoLlamada = false;
   $('#crear').addEventListener('click', async () => {
     if (!M) return;
+    invitoLlamada = enMovil(); window.Elixire.contestaSola = invitoLlamada; window.Elixire.llamaAlEntrar = false;
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
     $('#copiar').disabled = false; ponWhatsApp(null);
     $('#estado-crear').dataset.t = 'creando'; $('#estado-crear').textContent = tr('creando');
@@ -111,7 +116,7 @@
     if (!r.ok) { if (r.por !== 'fin') { ponError('elige', r.por); muestra('elige'); } return; }
     e.dataset.codigo = r.codigo; e.textContent = r.codigo.replace(/(.{4})(?=.)/g, '$1 ');
     ponWhatsApp(r.codigo);
-    ponEstado('esperando');
+    ponEstado(invitoLlamada ? 'esperandoLlamada' : 'esperando');
     paraReloj();
     reloj = setInterval(() => { if (abierta !== 'crear') return paraReloj(); if (Date.now() > r.caduca && !(M.conectada)) { paraReloj(); ponEstado('caducado'); } }, 1000);
   });
@@ -123,10 +128,18 @@
     const a = $('#whatsapp');
     if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; return; }
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
-    const enlace = location.origin + location.pathname + '#c=' + codigo + '&l=' + lengua;
-    const texto = tr('mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
-    a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo;
+    const enlace = location.origin + location.pathname + '#c=' + codigo + '&l=' + lengua + (invitoLlamada ? '&ll=1' : '');
+    const texto = tr(invitoLlamada ? 'mensajeLlamada' : 'mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
+    a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo; a.dataset.texto = texto;
   }
+  // En el móvil se usa el menú «Compartir» del teléfono (se elige WhatsApp ahí): al enviar, el propio teléfono devuelve a esta página,
+  // que se queda esperando (dueño, 14:39). Si el navegador no lo trae, el enlace directo a WhatsApp.
+  $('#whatsapp').addEventListener('click', (e) => {
+    const a = e.currentTarget;
+    if (!a.dataset.texto || !navigator.share || !matchMedia('(pointer: coarse)').matches) return;
+    e.preventDefault();
+    navigator.share({ text: a.dataset.texto }).catch((x) => { if (!x || x.name !== 'AbortError') { try { window.open(a.href, '_blank', 'noopener'); } catch (_) {} } });
+  });
   document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); });
   $('#copiar').addEventListener('click', async () => {
     const c = $('#codigo').dataset.codigo; if (!c) return;
@@ -135,10 +148,10 @@
   });
 
   // ---- la invitación de WhatsApp: se abre «Tengo un código» con el código ya puesto; basta con tocar «Entrar» ----
-  let codigoEnlace = null;
+  let codigoEnlace = null, enlaceLlamada = false;
   {
-    const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?$/.exec(location.hash || '');
-    if (m) { codigoEnlace = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {} }
+    const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?(&ll=1)?$/.exec(location.hash || '');
+    if (m) { codigoEnlace = m[1]; enlaceLlamada = !!m[2]; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {} }
   }
   async function abreConCodigo() {
     if (ocupado || abierta || !codigoEnlace) return; ocupado = true;
@@ -147,6 +160,7 @@
       if (M) M.prepara();
       $('#consola').classList.add('fuera');
       if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
+      if (enlaceLlamada) { $('#error-invitado').textContent = ''; $('#entrar-llamada').disabled = false; muestra('invitado', $('#entrar-llamada')); return; }
       campo.value = codigoEnlace.replace(/(.{4})(?=.)/g, '$1 '); codigoEnlace = null;
       ponError('tengo', ''); botonEntrar(false); muestra('tengo', $('#entrar'));
     } finally { ocupado = false; }
@@ -194,6 +208,19 @@
     M.on('continua', () => { paraReloj(); ocultaPaneles(); abierta = 'sala'; });
   }
 
+  // la invitación a una llamada: un solo toque (el navegador lo exige para encender la cámara) y la llamada arranca sola
+  $('#entrar-llamada').addEventListener('click', async () => {
+    if (!M || !codigoEnlace) return;
+    pantallaCompleta();
+    const b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
+    const r = await M.entra(codigoEnlace);
+    if (abierta !== 'invitado') return;
+    if (!r.ok) { b.disabled = false; e.textContent = tr(ERRORES[r.por] || 'eSinRele'); return; }
+    codigoEnlace = null; window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
+    setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada) { b.disabled = false; e.textContent = tr('eSinRele'); } }, 30000);
+  });
+  if (M) M.on('ocupada', () => { if (abierta === 'invitado') { $('#entrar-llamada').disabled = false; $('#error-invitado').textContent = tr('eNoVale'); } });
+
   // ---- tengo un código ----
   const normaliza = (t) => String(t || '').normalize('NFKC').toUpperCase().replace(/[\s\-‐-―−.·]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
   const campo = $('#campo-codigo');
@@ -238,6 +265,7 @@
   if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
 
+  for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault());
   // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)
   if (window.visualViewport) {
     const vv = window.visualViewport;

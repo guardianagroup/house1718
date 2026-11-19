@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Elixire · Comprobar, no confiar</title>
 <meta name="description" content="Chat, archivos y videollamada encriptados de extremo a extremo con criptografía poscuántica híbrida. Identidad comprobada por clave. Sin cuenta ni número de teléfono.">
 <meta name="color-scheme" content="dark">
@@ -11,8 +11,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-18" integrity="sha384-Kfz3qaW/tAPoBjC9yuWOmRVXXpiGcivTaseDIW7dnfO+5mF14QtEffJjSvimjCd8">
-<script src="js/idioma-inicio.js?v=20261119-18" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-20" integrity="sha384-4cFn6j1aX+nrBvv1s2qSGmXLcBUnh2EMzB4aJzkGWFSZSUVgAfGqvyTTYjtNTDyk">
+<script src="js/idioma-inicio.js?v=20261119-20" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -54,7 +54,7 @@
 <p class="codigo-grande" id="codigo">···· ···· ···· ····</p>
 <p class="texto-panel" data-t="daselo">Envíaselo a la otra persona. Caduca en 10 minutos y sirve una sola vez.</p>
 <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
-<a class="cristal ancho" id="whatsapp" target="_blank" rel="noopener noreferrer" aria-disabled="true"><span data-t="whatsapp">Enviar por WhatsApp</span></a>
+<a class="cristal ancho" id="whatsapp" target="_blank" rel="noopener noreferrer" aria-disabled="true"><span class="t-pc" data-t="whatsapp">Enviar por WhatsApp</span><span class="t-movil" data-t="enviarInvitacion">Enviar la invitación</span></a>
 <div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
 </section>
 
@@ -65,6 +65,14 @@
 <p class="palabras" id="movil-aqui-palabras" hidden></p>
 <p class="error" id="error-movil" role="alert"></p>
 <button type="button" class="cristal ancho" id="movil-continuar"><span data-t="movilContinuar">Continuar aquí</span></button>
+<button type="button" class="cristal pequeno" data-cerrar-camara data-t="volver">Volver</button>
+</section>
+
+<section class="panel" id="panel-invitado" hidden aria-labelledby="t-invitado">
+<span class="etiqueta" id="t-invitado" data-t="teInvitan">TE INVITAN A UNA VIDEOLLAMADA</span>
+<p class="texto-panel" data-t="teInvitanTexto">Privada y encriptada de extremo a extremo. Al entrar se encenderán tu cámara y tu micrófono.</p>
+<p class="error" id="error-invitado" role="alert"></p>
+<button type="button" class="cristal ancho" id="entrar-llamada"><span data-t="entrarLlamada">Entrar a la llamada</span></button>
 <button type="button" class="cristal pequeno" data-cerrar-camara data-t="volver">Volver</button>
 </section>
 
@@ -245,15 +253,15 @@
 </div>
 </div>
 
-<script src="js/idioma.js?v=20261119-18" integrity="sha384-7lY66UxonA0JRQrjkkJt7o8lsPXoYUCC10GFy7rZEvi1tV51t1L4FZMubXe7S7WM"></script>
-<script src="js/pq-cnsa.js?v=20261119-18" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-18" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-18" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-18" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261119-18" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-18" integrity="sha384-x207VBsd+JpbN6y4INf57xo/Z4o80Ixk2olhlzbY3+5TcMQRuBKDONtTlw5OmXvq"></script>
-<script type="module" src="js/sala3d.js?v=20261119-18" integrity="sha384-qaQSfxesww0wjFUHwVH7ksgTwkDeaN650c+vjTB5+D8Ge0f1jTdxnRegKeU8QPil"></script>
-<script src="js/puerta.js?v=20261119-18" integrity="sha384-ayMppXz0QvSHah+QyvMsvCZ9fmkLN56pP8Q7flEQ2lvswjcWopJeV7a6ionFPt3s"></script>
-<script src="js/sala.js?v=20261119-18" integrity="sha384-aNOxJ6Z9D0klLjTnzL7wLahHXGfLCB6dtpkBwaLJv3/P7XNrFqTK24E1fRu1VILQ"></script>
+<script src="js/idioma.js?v=20261119-20" integrity="sha384-0DdfUu2bIPnhHhfa4tgWHw8V8HKErl3MFvRCAKfwa8QOj2rjRLr6vZU2tyxOLeHk"></script>
+<script src="js/pq-cnsa.js?v=20261119-20" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-20" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-20" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-20" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-20" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-20" integrity="sha384-x207VBsd+JpbN6y4INf57xo/Z4o80Ixk2olhlzbY3+5TcMQRuBKDONtTlw5OmXvq"></script>
+<script type="module" src="js/sala3d.js?v=20261119-20" integrity="sha384-44T3WK6Bdh/zG83DoCaKyIcOEZMPKkYTq4KGEy+WNPED26Psi+QIAOubEa2XVOJc"></script>
+<script src="js/puerta.js?v=20261119-20" integrity="sha384-97tJQ4/Oricg0Z42ToEGIH6rZIuXV8tr/aI+1tei87HAyKLwPuajpSwsr/lreIzz"></script>
+<script src="js/sala.js?v=20261119-20" integrity="sha384-9z/VdNyUDD2wf8MO6QmnsI3yC3d/L1A9DHY0DWb9N98nsAJTp3FJ9HSHb+D/tJ5n"></script>
 </body>
 </html>

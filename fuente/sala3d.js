@@ -1,4 +1,4 @@
-// Elixire · la sala y el monolito (19 nov 2026).
+// Elixire · la sala y la roca (19 nov 2026).
 // Dueño: «prefiero un monolito tipo roca, pero negro obsidiana de ese brillante ultra realista» (12:46); «necesito más realidad en el
 // monolito» (13:00); «que la habitación sea un poco más ancha… mucha más calidad en el decorado… que se note el acero pulido, los
 // detalles, todo. La lámpara de arriba… a máxima calidad» (13:02); «se ve muy larga… quiero que se vea ancha» (13:15).
@@ -10,7 +10,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -30,7 +29,7 @@ function arranca() {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: false, powerPreference: 'high-performance' }); } catch (_) { return null; }
   if (!renderer.getContext()) return null;
-  const PR = Math.min(devicePixelRatio || 1, ligero ? 1.25 : 1.5); // con MSAA, más resolución apenas se nota y cuesta mucho
+  const PR = Math.min(devicePixelRatio || 1, ligero ? 1.75 : 2); // (dueño, 14:38: «veo pixelación… arriba y abajo»)
   renderer.setPixelRatio(PR);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -56,7 +55,7 @@ function arranca() {
   const PX = 2.4, PY = 1.5; // paneles del encofrado
   const Y_LINEA = 1.5; // la junta de luz, a la altura de los ojos (coincide con la junta entre paneles)
   const ZOC = 0.1; // zócalo de acero
-  const ANCHO = 1.28, ALTO = 2.8, PROF = 0.6, Y0 = 2.06, Z0 = -2.0; // la roca
+  const ANCHO = 1.36, ALTO = 2.6, PROF = 1.0, Y0 = 2.1, Z0 = -2.0; // la roca
   const RD = 1.2; // el disco de acero pulido enrasado en el suelo, bajo la roca
   const LX = 5.6, LZ = 1.5, LH = 0.42, LZC = -3.0; // la luminaria: ancho, fondo, profundidad del cajón y su centro
 
@@ -133,7 +132,7 @@ function arranca() {
   }
   function luzTecho(x, z) {
     const qx = Math.abs(x) - LX / 2, qz = Math.abs(z - LZC) - LZ / 2, d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
-    return (0.05 + 0.75 * Math.exp(-d / 0.38) + 0.5 * Math.exp(-Math.max(z - FONDO - 0.22, 0) / 0.32)) * rincon(AN / 2 - Math.abs(x)) * rincon(z - FONDO) * rincon(FRENTE - z);
+    return (0.05 + 0.1 * Math.exp(-d / 1.2) + 0.5 * Math.exp(-Math.max(z - FONDO - 0.22, 0) / 0.32)) * rincon(AN / 2 - Math.abs(x)) * rincon(z - FONDO) * rincon(FRENTE - z);
   }
   const matHormigon = (luz, tono) => new THREE.MeshStandardMaterial({ map: hormigon, bumpMap: hormigon, bumpScale: 1.4, color: tono || 0xffffff, roughness: 0.8, metalness: 0, lightMap: luz, lightMapIntensity: 0.95 });
   // un paramento de (x1, z1) a (x2, z2), mirando hacia dentro; la textura va en metros y una junta cae en la esquina del fondo
@@ -153,8 +152,6 @@ function arranca() {
   // el techo, con el hueco de la luminaria
   {
     const s = new THREE.Shape(); s.moveTo(-AN / 2, FONDO); s.lineTo(AN / 2, FONDO); s.lineTo(AN / 2, FRENTE); s.lineTo(-AN / 2, FRENTE); s.lineTo(-AN / 2, FONDO);
-    const h = new THREE.Path(); h.moveTo(-LX / 2, LZC - LZ / 2); h.lineTo(-LX / 2, LZC + LZ / 2); h.lineTo(LX / 2, LZC + LZ / 2); h.lineTo(LX / 2, LZC - LZ / 2); h.lineTo(-LX / 2, LZC - LZ / 2);
-    s.holes.push(h);
     const geo = new THREE.ShapeGeometry(s), p = geo.attributes.position, uv = new Float32Array(p.count * 2), uv1 = new Float32Array(p.count * 2);
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getY(i); uv[i * 2] = (x + AN / 2) / (2 * PX); uv[i * 2 + 1] = (z - FONDO) / (2 * PX); uv1[i * 2] = (x + AN / 2) / AN; uv1[i * 2 + 1] = (z - FONDO) / LARGO; }
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2));
@@ -164,7 +161,7 @@ function arranca() {
 
   // ---------------- el suelo: piedra negra pulida ----------------
   // un espejo oscurecido y, encima, la piedra satinada con sus losas de 2,4 m (refleja como piedra pulida, no como un espejo)
-  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0x7d838b, multisample: ligero ? 0 : 4 });
+  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0x7d838b, multisample: 4 });
   espejo.rotation.x = -Math.PI / 2; espejo.position.set(0, 0, ZM); escena.add(espejo);
   function texLosas() {
     const N = ligero ? 512 : 1024, k = N / 4.8, [c, g] = lienzo2d(N, N);
@@ -185,7 +182,6 @@ function arranca() {
 
   // ---------------- acero ----------------
   const matAcero = new THREE.MeshPhysicalMaterial({ color: 0xcdd2d8, metalness: 1, roughness: 0.07 });
-  const matLama = new THREE.MeshStandardMaterial({ color: 0x16181b, metalness: 1, roughness: 0.42 });
   // zócalo de acero pulido
   const zocalo = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, ZOC, d), matAcero); m.position.set(x, ZOC / 2, z); m.receiveShadow = true; escena.add(m); };
   const E = 0.014;
@@ -215,103 +211,108 @@ function arranca() {
   tira(AN, 0, FONDO + 0.03, 0, 0); tira(AN, 0, FRENTE - 0.03, 0, 0); tira(LARGO, -AN / 2 + 0.03, ZM, 0, ZM); tira(LARGO, AN / 2 - 0.03, ZM, 0, ZM);
   escena.add(new THREE.HemisphereLight(0x3a4452, 0x050607, 0.08));
 
-  // ---------------- la luminaria del techo ----------------
-  // Un cajón empotrado de acero pulido: arriba, un difusor de tela tensada iluminado por detrás; dentro, lamas finas de acero
-  // grafito que ordenan la luz; abajo, un marco de acero pulido enrasado con el techo. Ilumina la roca desde arriba y algo por detrás.
-  const lum = new THREE.Group(); lum.position.set(0, AL, LZC); escena.add(lum);
-  function texDifusor() {
-    const [c, g] = lienzo2d(512, 160);
-    const r = g.createRadialGradient(256, 80, 10, 256, 80, 300); r.addColorStop(0, '#ffffff'); r.addColorStop(1, '#c9ced4'); g.fillStyle = r; g.fillRect(0, 0, 512, 160);
-    g.globalAlpha = 0.05; for (let x = 0; x < 512; x += 3) { g.fillStyle = x % 6 ? '#000' : '#fff'; g.fillRect(x, 0, 1, 160); } g.globalAlpha = 1;
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  }
-  const matDifusor = new THREE.MeshBasicMaterial({ map: texDifusor(), color: new THREE.Color(0xeef5fc).multiplyScalar(1.9), toneMapped: false });
-  { const m = new THREE.Mesh(new THREE.PlaneGeometry(LX, LZ), matDifusor); m.rotation.x = Math.PI / 2; m.position.y = LH; lum.add(m); }
-  // las paredes del cajón: acero pulido que repite el difusor (más claro arriba, junto a la luz)
-  function texCajon() {
-    const [c, g] = lienzo2d(8, 256); const v = g.createLinearGradient(0, 0, 0, 256);
-    v.addColorStop(0, '#ffffff'); v.addColorStop(0.35, '#9aa2ab'); v.addColorStop(0.8, '#2a2f35'); v.addColorStop(1, '#0d0f12'); g.fillStyle = v; g.fillRect(0, 0, 8, 256);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  }
-  const matCajon = new THREE.MeshStandardMaterial({ color: 0xc9ced4, metalness: 1, roughness: 0.1, emissive: 0xdfe9f4, emissiveMap: texCajon(), emissiveIntensity: 1.25 });
-  for (const [w, x, z, ry] of [[LX, 0, -LZ / 2, 0], [LX, 0, LZ / 2, Math.PI], [LZ, -LX / 2, 0, Math.PI / 2], [LZ, LX / 2, 0, -Math.PI / 2]]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, LH), matCajon); m.position.set(x, LH / 2, z); m.rotation.y = ry; lum.add(m);
-  }
-  {
-    const NL = Math.round(LX / 0.16), lamas = new THREE.InstancedMesh(new THREE.BoxGeometry(0.005, 0.12, LZ - 0.004), matLama, NL - 1), M = new THREE.Matrix4();
-    for (let i = 1; i < NL; i++) { M.makeTranslation(-LX / 2 + (i * LX) / NL, 0.09, 0); lamas.setMatrixAt(i - 1, M); }
-    lum.add(lamas);
-    const marco = (w, d, x, z) => { const m = new THREE.Mesh(new RoundedBoxGeometry(w, 0.016, d, 2, 0.006), matAcero); m.position.set(x, -0.005, z); lum.add(m); };
-    marco(LX + 0.12, 0.06, 0, -LZ / 2 - 0.03); marco(LX + 0.12, 0.06, 0, LZ / 2 + 0.03); marco(0.06, LZ, -LX / 2 - 0.03, 0); marco(0.06, LZ, LX / 2 + 0.03, 0);
-  }
-  const areaLum = new THREE.RectAreaLight(0xeaf2fb, 3.4, LX, LZ); areaLum.position.set(0, AL - 0.012, LZC); areaLum.lookAt(0, 0, LZC); escena.add(areaLum);
-  // la luz que da la sombra de la roca sobre la peana y el suelo, desde la luminaria
-  const cenital = new THREE.SpotLight(0xeaf2fb, 44, 0, 0.42, 0.85, 2); cenital.position.set(0, AL + 0.2, LZC + 0.45); cenital.target.position.set(0, 0, Z0 + 0.2);
+  // ---------------- la luz sobre la roca ----------------
+  // (Dueño, 14:40: «quita la lámpara».) Sin luminaria a la vista: la luz cae del techo, como en una sala de museo, y da la sombra
+  // de la roca en el suelo; otra, más suave, le saca el relieve por delante.
+  const cenital = new THREE.SpotLight(0xeaf2fb, 70, 0, 0.5, 0.9, 2); cenital.position.set(0.5, AL - 0.05, Z0 + 0.9); cenital.target.position.set(0, 0.4, Z0);
   cenital.castShadow = true; cenital.shadow.mapSize.set(ligero ? 1024 : 2048, ligero ? 1024 : 2048); cenital.shadow.radius = 6; cenital.shadow.bias = -0.0004; cenital.shadow.normalBias = 0.02;
   cenital.shadow.camera.near = 0.5; cenital.shadow.camera.far = 9; escena.add(cenital, cenital.target);
+  const frontal = new THREE.SpotLight(0xdfeaf6, 40, 0, 0.5, 1, 2); frontal.position.set(-2.6, 3.4, 2.6); frontal.target.position.set(0, Y0, Z0); escena.add(frontal, frontal.target);
+  const contra = new THREE.SpotLight(0xcfe0f2, 40, 0, 0.6, 1, 2); contra.position.set(2.4, 3.9, -4.2); contra.target.position.set(0, Y0 + 0.3, Z0); escena.add(contra, contra.target);
+  const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, AL - 0.012, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum);
 
   // ---------------- bajo la roca: un disco de acero pulido enrasado en el suelo, con un anillo de luz ----------------
   {
     const disco = new THREE.Mesh(new THREE.CylinderGeometry(RD, RD, 0.012, 128), matAcero); disco.position.set(0, 0.006, Z0); disco.receiveShadow = true; escena.add(disco);
     const anillo = new THREE.Mesh(new THREE.RingGeometry(RD + 0.012, RD + 0.026, 160), matLinea); anillo.rotation.x = -Math.PI / 2; anillo.position.set(0, 0.004, Z0); escena.add(anillo);
   }
-  // ---------------- la roca de obsidiana ----------------
-  // Una losa de piedra tallada a golpes: caras planas que se cortan en aristas vivas, cada una con las ondas finas de la fractura
-  // concoidea; negro vítreo con capa de brillo. Al abrirse, se parte en dos por una fisura de luz.
-  // el pulido no es igual en toda la piedra: zonas algo más mates entre otras de espejo (canal verde: rugosidad)
-  function texPulido(n) {
-    const [c, g] = lienzo2d(n, n); g.fillStyle = 'rgb(0,46,0)'; g.fillRect(0, 0, n, n);
-    g.filter = `blur(${Math.round(n / 28)}px)`;
-    for (let k = 0; k < 26; k++) { g.fillStyle = `rgba(0,${70 + Math.round(az() * 60)},0,${0.25 + az() * 0.4})`; const r = n * (0.04 + az() * 0.16); g.beginPath(); g.ellipse(az() * n, az() * n, r * 1.6, r, az() * 3.14, 0, 6.283); g.fill(); }
-    g.filter = 'none';
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  // ---------------- la roca ----------------
+  // Dueño, 14:40 («así quiero», con una imagen de referencia): una roca natural, oscura y mate, con sus planos de fractura y su grano,
+  // flotando en la sala. Y 14:25: «que se abra en 4 partes, arriba y abajo también». Es una roca propia, hecha aquí: una esfera
+  // (octaedro subdividido, cuyas aristas caen en los planos del corte) deformada con ruido (bultos), lascas planas (fracturas) y
+  // rugosidad fina. Cada cuarto lleva sus dos caras de corte, de piedra negra pulida: rugosa por fuera, pulida por dentro.
+  const perm = new Uint8Array(512);
+  { const q = Array.from({ length: 256 }, (_, k) => k); for (let k = 255; k > 0; k--) { const m = Math.floor(az() * (k + 1)); const t = q[k]; q[k] = q[m]; q[m] = t; } for (let k = 0; k < 512; k++) perm[k] = q[k & 255]; }
+  const suav = (t) => t * t * t * (t * (t * 6 - 15) + 10), mez = (a, b, t) => a + (b - a) * t;
+  const grad = (h, x, y, z) => { const u = h < 8 ? x : y, v = h < 4 ? y : h === 12 || h === 14 ? x : z; return (h & 1 ? -u : u) + (h & 2 ? -v : v); };
+  function ruido(x, y, z) {
+    const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255; x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+    const u = suav(x), v = suav(y), w = suav(z), A = perm[X] + Y, AA = perm[A] + Z, AB = perm[A + 1] + Z, B = perm[X + 1] + Y, BA = perm[B] + Z, BB = perm[B + 1] + Z;
+    return mez(mez(mez(grad(perm[AA] & 15, x, y, z), grad(perm[BA] & 15, x - 1, y, z), u), mez(grad(perm[AB] & 15, x, y - 1, z), grad(perm[BB] & 15, x - 1, y - 1, z), u), v),
+      mez(mez(grad(perm[AA + 1] & 15, x, y, z - 1), grad(perm[BA + 1] & 15, x - 1, y, z - 1), u), mez(grad(perm[AB + 1] & 15, x, y - 1, z - 1), grad(perm[BB + 1] & 15, x - 1, y - 1, z - 1), u), v), w);
   }
-  // los puntos de una caja con la silueta algo irregular, tallados por planos (cada plano, una lasca): su envolvente convexa da
-  // caras planas de verdad, con aristas rectas y vivas
-  function puntosRoca() {
-    const planos = [];
-    const plano = (n, corte) => { n.normalize(); const apoyo = (Math.abs(n.x) * ANCHO) / 2 + (Math.abs(n.y) * ALTO) / 2 + (Math.abs(n.z) * PROF) / 2; planos.push({ n, d: apoyo * (1 - corte) }); };
-    for (const z of [1, -1]) for (let k = 0; k < 8; k++) plano(new THREE.Vector3((az() * 2 - 1) * 0.85, (az() * 2 - 1) * 0.55, z), 0.05 + az() * 0.2);
-    for (const x of [1, -1]) for (let k = 0; k < 6; k++) plano(new THREE.Vector3(x, (az() * 2 - 1) * 0.6, (az() * 2 - 1) * 0.95), 0.06 + az() * 0.18);
-    for (let k = 0; k < 6; k++) plano(new THREE.Vector3((az() * 2 - 1) * 1.5, 1, (az() * 2 - 1) * 1.5), 0.04 + az() * 0.14);
-    for (let k = 0; k < 3; k++) plano(new THREE.Vector3((az() * 2 - 1) * 1.1, -1, (az() * 2 - 1) * 1.1), 0.02 + az() * 0.07);
-    for (let k = 0; k < 18; k++) plano(new THREE.Vector3(az() * 2 - 1, (az() * 2 - 1) * 0.85, az() * 2 - 1), 0.1 + az() * 0.22);
-    const pts = [], N = 18;
-    const pon = (x, y, z) => {
-      const v = new THREE.Vector3(x, y, z), u = y / ALTO + 0.5;
-      v.x *= 1 - 0.1 * u; v.z *= 1 - 0.07 * u; // algo más estrecha arriba
-      for (let vuelta = 0; vuelta < 3; vuelta++) for (const P of planos) { const e = v.dot(P.n) - P.d; if (e > 0) v.addScaledVector(P.n, -e); }
-      pts.push(v);
-    };
-    for (let i = 0; i <= N; i++) for (let j = 0; j <= N * 2; j++) {
-      const a = i / N - 0.5, b = j / (N * 2) - 0.5;
-      pon(a * ANCHO, b * ALTO, PROF / 2); pon(a * ANCHO, b * ALTO, -PROF / 2); pon(ANCHO / 2, b * ALTO, a * PROF); pon(-ANCHO / 2, b * ALTO, a * PROF);
+  const fbm = (x, y, z, n) => { let s = 0, a = 1, f = 1, t = 0; for (let k = 0; k < n; k++) { s += a * ruido(x * f, y * f, z * f); t += a; a *= 0.5; f *= 2.03; } return s / t; };
+  const lascas = [];
+  for (let k = 0; k < 34; k++) lascas.push({ n: new THREE.Vector3(az() * 2 - 1, (az() * 2 - 1) * 0.9, az() * 2 - 1).normalize(), d: 0.7 + az() * 0.3 });
+  function radio(x, y, z) {
+    const pw = 3.2; // entre esfera y bloque
+    let r = Math.pow(Math.pow(Math.abs(x), pw) + Math.pow(Math.abs(y), pw) + Math.pow(Math.abs(z), pw), -1 / pw) * (0.84 + 0.3 * fbm(x * 1.15 + 7.1, y * 1.15 - 3.3, z * 1.15 + 1.7, 3));
+    for (const c of lascas) { const k = x * c.n.x + y * c.n.y + z * c.n.z; if (k > 1e-3) { const t = c.d / k; if (t < r) r = t; } }
+    return r + 0.05 * fbm(x * 4.6 + 2.2, y * 4.6, z * 4.6 - 5.5, 4) + 0.016 * (1 - Math.abs(ruido(x * 13, y * 13, z * 13))) - 0.008;
+  }
+  const RX = ANCHO / 2, RY = ALTO / 2, RZ = PROF / 2;
+  const punto = (x, y, z, o) => { const l = Math.hypot(x, y, z) || 1; x /= l; y /= l; z /= l; const r = radio(x, y, z), f = 1 + 0.2 * y * r; return o.set(x * r * RX * f, y * r * RY, z * r * RZ * f); }; // algo más ancha arriba
+  function texGrano() {
+    const n = 512, [c, g] = lienzo2d(n, n), im = g.createImageData(n, n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const a = (x / n) * 6.283, b = (y / n) * 6.283, X = Math.cos(a) * 2.6, Y = Math.sin(a) * 2.6, Z = Math.cos(b) * 2.6, W = Math.sin(b) * 2.6; // se repite sin costura
+      const v = 128 + 70 * fbm(X + W * 0.7, Y + Z * 0.7, Z - W * 0.5 + X * 0.3, 5) + (az() - 0.5) * 46, k = (y * n + x) * 4;
+      im.data[k] = im.data[k + 1] = im.data[k + 2] = Math.max(0, Math.min(255, v)); im.data[k + 3] = 255;
     }
-    for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const a = i / N - 0.5, b = j / N - 0.5; pon(a * ANCHO, ALTO / 2, b * PROF); pon(a * ANCHO, -ALTO / 2, b * PROF); }
-    return pts;
+    g.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = ANISO; return t;
   }
-  const conUV = (g) => { const p = g.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { uv[i * 2] = p.getX(i) * 0.55 + p.getZ(i) * 0.8; uv[i * 2 + 1] = p.getY(i) * 0.55; } g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); return g; };
-  const PUNTOS = puntosRoca();
-  // Dueño, 14:25: «la piedra quiero que se abra en 4 partes, arriba y abajo también». Cada cuarto es la envolvente de los puntos de
-  // su lado, con los demás llevados a los planos del corte (x = 0 e y = 0): las caras del corte quedan planas.
-  const cuartoDe = (sx, sy) => conUV(new ConvexGeometry(PUNTOS.map((q) => new THREE.Vector3(sx > 0 ? Math.max(q.x, 0) : Math.min(q.x, 0), sy > 0 ? Math.max(q.y, 0) : Math.min(q.y, 0), q.z))));
-  const matObsidiana = new THREE.MeshPhysicalMaterial({
-    color: 0x040405, metalness: 0, roughness: 0.24, roughnessMap: texPulido(256), ior: 1.49, specularIntensity: 1,
-    clearcoat: 1, clearcoatRoughness: 0.012,
-  });
-  const geoRoca = conUV(new ConvexGeometry(PUNTOS));
+  const matRoca = new THREE.MeshStandardMaterial({ color: 0x484a4e, roughness: 0.93, metalness: 0, vertexColors: true, bumpMap: texGrano(), bumpScale: 2.4 });
+  const matCorte = new THREE.MeshPhysicalMaterial({ color: 0x050506, roughness: 0.1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03 });
   const mono = new THREE.Group(); mono.position.set(0, Y0, Z0); escena.add(mono);
+  const baseRoca = new THREE.OctahedronGeometry(1, ligero ? 30 : 44).attributes.position; // sin índices: tres vértices por triángulo
   const cuartos = [];
-  for (const sy of [-1, 1]) for (const sx of [-1, 1]) { const m = new THREE.Mesh(cuartoDe(sx, sy), matObsidiana); m.castShadow = true; m.receiveShadow = true; m.userData = { sx, sy }; mono.add(m); cuartos.push(m); }
-  // la fisura de luz por donde se parte, en cruz: sigue la cara de delante de la piedra
+  {
+    const P = new THREE.Vector3(), P1 = new THREE.Vector3(), P2 = new THREE.Vector3(), D = new THREE.Vector3(), T1 = new THREE.Vector3(), T2 = new THREE.Vector3(), Nn = new THREE.Vector3(), EJE = new THREE.Vector3(0, 1, 0), EJE2 = new THREE.Vector3(1, 0, 0);
+    const E = 0.014;
+    for (const sy of [-1, 1]) for (const sx of [-1, 1]) {
+      const pos = [], nor = [], col = [], uv = [], cpos = [], cnor = [];
+      for (let i = 0; i < baseRoca.count; i += 3) {
+        if ((baseRoca.getX(i) + baseRoca.getX(i + 1) + baseRoca.getX(i + 2)) * sx <= 0 || (baseRoca.getY(i) + baseRoca.getY(i + 1) + baseRoca.getY(i + 2)) * sy <= 0) continue;
+        const tri = [];
+        for (let k = 0; k < 3; k++) {
+          D.set(baseRoca.getX(i + k), baseRoca.getY(i + k), baseRoca.getZ(i + k)).normalize();
+          punto(D.x, D.y, D.z, P);
+          T1.crossVectors(D, Math.abs(D.y) > 0.9 ? EJE2 : EJE).normalize(); T2.crossVectors(D, T1);
+          punto(D.x + T1.x * E, D.y + T1.y * E, D.z + T1.z * E, P1); punto(D.x + T2.x * E, D.y + T2.y * E, D.z + T2.z * E, P2);
+          Nn.crossVectors(P1.sub(P), P2.sub(P)).normalize(); if (Nn.dot(P) < 0) Nn.negate();
+          pos.push(P.x, P.y, P.z); nor.push(Nn.x, Nn.y, Nn.z);
+          const t = Math.max(0.5, Math.min(1.25, 0.86 + 0.3 * fbm(D.x * 3.1 + 4, D.y * 3.1, D.z * 3.1 - 2, 3) + 0.25 * ruido(D.x * 9, D.y * 9, D.z * 9)));
+          col.push(t, t, t * 1.02);
+          uv.push((Math.atan2(D.x, D.z) / 6.283) * 5, D.y * 2.4);
+          tri.push({ x: D.x, y: D.y, p: P.clone() });
+        }
+        // las caras del corte: cada arista que cae en un plano del corte, con el centro
+        for (let k = 0; k < 3; k++) {
+          const a = tri[k], b = tri[(k + 1) % 3];
+          for (const [eje, nx, ny] of [['x', -sx, 0], ['y', 0, -sy]]) {
+            if (a[eje] !== 0 || b[eje] !== 0) continue;
+            Nn.crossVectors(a.p, b.p); const alReves = Nn.x * nx + Nn.y * ny < 0, u = alReves ? b.p : a.p, v = alReves ? a.p : b.p;
+            cpos.push(0, 0, 0, u.x, u.y, u.z, v.x, v.y, v.z); for (let q = 0; q < 3; q++) cnor.push(nx, ny, 0);
+          }
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      const gc = new THREE.BufferGeometry(); gc.setAttribute('position', new THREE.Float32BufferAttribute(cpos, 3)); gc.setAttribute('normal', new THREE.Float32BufferAttribute(cnor, 3));
+      const grupo = new THREE.Group(), piel = new THREE.Mesh(g, matRoca), corte = new THREE.Mesh(gc, matCorte);
+      piel.castShadow = true; piel.receiveShadow = true; grupo.add(piel, corte); grupo.userData = { sx, sy }; mono.add(grupo); cuartos.push(grupo);
+    }
+  }
+  // la fisura de luz por donde se parte, en cruz: sigue la piel de la roca por delante (la horizontal solo se enciende al abrirse)
   const matSello = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(1.6), toneMapped: false, transparent: true });
-  const fisura = (vertical) => {
-    const rc = new THREE.Raycaster(), pts = [], o = new THREE.Vector3(), d = new THREE.Vector3(0, 0, -1), aux = new THREE.Mesh(geoRoca), L = (vertical ? ALTO : ANCHO) / 2 - 0.05;
-    for (let u = -L; u <= L; u += 0.025) { o.set(vertical ? 0 : u, vertical ? u : 0, 2); rc.set(o, d); const h = rc.intersectObject(aux)[0]; if (h) pts.push(new THREE.Vector3(o.x, o.y, h.point.z + 0.0035)); }
-    if (pts.length < 2) pts.push(new THREE.Vector3(vertical ? 0 : -0.4, vertical ? -1 : 0, PROF / 2), new THREE.Vector3(vertical ? 0 : 0.4, vertical ? 1 : 0, PROF / 2));
-    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(8, pts.length * 2), 0.0024, 6, false), matSello); mono.add(m); return m;
+  const matSelloH = matSello.clone(); matSelloH.opacity = 0;
+  const fisura = (vertical, mat) => {
+    const pts = [], lim = vertical ? 1.42 : 1.3;
+    for (let a = -lim; a <= lim + 1e-6; a += lim / 60) { const q = new THREE.Vector3(); punto(vertical ? 0 : Math.sin(a), vertical ? Math.sin(a) : 0, Math.cos(a), q); q.multiplyScalar(1.004); q.z += 0.003; pts.push(q); }
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.0026, 6, false), mat); mono.add(m); return m;
   };
-  const sello = fisura(true), selloH = fisura(false);
+  const sello = fisura(true, matSello), selloH = fisura(false, matSelloH);
   const marca = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })); marca.visible = false; mono.add(marca);
   // dentro: una hoja de luz y su halo
   const matNucleo = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(3), toneMapped: false, transparent: true, opacity: 0 });
@@ -322,37 +323,16 @@ function arranca() {
   const luzNucleo = new THREE.RectAreaLight(0xcfe3f6, 0, 0.1, ALTO - 0.3); luzNucleo.position.set(0, 0, 0.05); mono.add(luzNucleo);
   const luzNucleo2 = new THREE.PointLight(0xbfdcf5, 0, 14, 2); luzNucleo2.position.set(0, 0, 0.7); mono.add(luzNucleo2);
 
-  // ---------------- lo que reflejan el acero y la obsidiana: la propia sala ----------------
-  // Vistas en cubo de la sala desde donde está la roca (sin la roca), con las luces más intensas solo para esas vistas: como en una
-  // foto, la piedra negra y el acero pulido reflejan sobre todo las luces. Para la obsidiana, además, como en un estudio de fotografía
-  // de joyería: delante de la roca (detrás de quien mira), un panel negro con tiras finas de luz, y dos tiras altas a los lados. Cada
-  // cara de la talla, con su inclinación, recoge las tiras en un sitio distinto: las caras quedan negras y las aristas se leen.
+  // ---------------- lo que reflejan el acero y las caras pulidas de la roca: la propia sala ----------------
+  // Una vista en cubo de la sala desde donde está la roca (sin ella), con las luces más intensas solo para esa vista: como en una
+  // foto, el acero pulido refleja sobre todo las luces.
   {
-    const brillan = [matLinea, matDifusor, matRanura]; for (const m of brillan) m.color.multiplyScalar(3);
-    const e0 = matCajon.emissiveIntensity; matCajon.emissiveIntensity = e0 * 3;
-    for (const m of cuartos) m.visible = false; sello.visible = selloH.visible = false; espejo.visible = false;
-    const desde = { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: ligero ? 256 : 512 };
-    const entornoSala = pmrem.fromScene(escena, 0, 0.05, 40, desde).texture;
-    const estudio = new THREE.Group();
-    {
-      const [c, g] = lienzo2d(1024, 512); g.fillStyle = '#000'; g.fillRect(0, 0, 1024, 512);
-      const franja = (x, w, a) => { const h = g.createLinearGradient(x - w, 0, x + w, 0); h.addColorStop(0, 'rgba(255,255,255,0)'); h.addColorStop(0.5, `rgba(255,255,255,${a})`); h.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = h; g.fillRect(x - w, 30, w * 2, 452); };
-      franja(150, 9, 1); franja(498, 5, 1); franja(560, 14, 0.85); franja(880, 7, 1);
-      const v = g.createLinearGradient(0, 40, 0, 72); v.addColorStop(0, 'rgba(255,255,255,0)'); v.addColorStop(0.5, 'rgba(255,255,255,.9)'); v.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = v; g.fillRect(60, 40, 904, 32);
-      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-      const panel = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 3.6), new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1, 1, 1).multiplyScalar(9), toneMapped: false, fog: false }));
-      panel.position.set(0, 2.4, FRENTE - 0.4); panel.rotation.y = Math.PI; estudio.add(panel);
-      for (const lado of [-1, 1]) {
-        const tiraL = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 3.2), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe9f2fb).multiplyScalar(7), toneMapped: false, fog: false, side: THREE.DoubleSide }));
-        tiraL.position.set(lado * 3.2, 2.2, Z0 + 2.4); tiraL.lookAt(0, 2.2, Z0); estudio.add(tiraL);
-      }
-    }
-    escena.add(estudio);
-    const entornoRoca = pmrem.fromScene(escena, 0, 0.05, 40, desde).texture;
-    escena.remove(estudio);
-    for (const m of cuartos) m.visible = true; sello.visible = selloH.visible = true; espejo.visible = true;
-    for (const m of brillan) m.color.multiplyScalar(1 / 3); matCajon.emissiveIntensity = e0;
-    for (const [m, e, k] of [[matAcero, entornoSala, 1], [matLama, entornoSala, 0.2], [matCajon, entornoSala, 0.9], [matObsidiana, entornoRoca, 1]]) { m.envMap = e; m.envMapIntensity = k; m.needsUpdate = true; }
+    const brillan = [matLinea, matRanura]; for (const m of brillan) m.color.multiplyScalar(3);
+    for (const m of cuartos) m.visible = false; sello.visible = false; espejo.visible = false;
+    const entorno = pmrem.fromScene(escena, 0, 0.05, 40, { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: ligero ? 256 : 512 }).texture;
+    for (const m of cuartos) m.visible = true; sello.visible = true; espejo.visible = true;
+    for (const m of brillan) m.color.multiplyScalar(1 / 3);
+    for (const [m, k] of [[matAcero, 1], [matCorte, 1.2]]) { m.envMap = entorno; m.envMapIntensity = k; m.needsUpdate = true; }
   }
 
   // ---------------- el campo magnético entre las dos mitades ----------------
@@ -391,7 +371,7 @@ function arranca() {
   // ---------------- composición ----------------
   // con antialiasing de verdad (MSAA en el búfer de la composición), un poco de resplandor en las luces y un grano finísimo que evita
   // los escalones en los degradados oscuros
-  const comp = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: ligero ? 2 : 4 }));
+  const comp = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
   comp.addPass(new RenderPass(escena, camara));
   comp.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.55, 0.92));
   comp.addPass(new OutputPass());
@@ -407,7 +387,7 @@ function arranca() {
   function ajusta() {
     const w = lienzo.clientWidth || innerWidth, h = lienzo.clientHeight || innerHeight;
     renderer.setSize(w, h, false); comp.setSize(w, h);
-    espejo.getRenderTarget().setSize(Math.round(w * PR * 0.6), Math.round(h * PR * 0.6));
+    const ESP = ligero ? 0.7 : 0.85; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
     camara.fov = camara.aspect < 0.8 ? 64 : camara.aspect < 1.2 ? 54 : camara.aspect > 2.1 ? 38 : 44;
@@ -485,7 +465,7 @@ function arranca() {
     }
     const pulso = quieto ? 0.85 : 0.7 + Math.sin(ahora * 1.3) * 0.22;
     matSello.opacity = Math.max(0, 1 - estado.abre * 2.5) * Math.min(1, pulso + estado.sello);
-    sello.scale.x = 1 + estado.sello * 2.5; selloH.scale.y = 1 + estado.sello * 2.5;
+    matSelloH.opacity = Math.max(0, 1 - estado.abre * 2.5) * estado.sello;
     matNucleo.opacity = estado.luz; nucleo.scale.x = 1 + estado.luz * 1.5;
     matHalo.opacity = 0.55 * estado.luz;
     luzNucleo.intensity = 30 * estado.luz; luzNucleo2.intensity = 18 * estado.luz;

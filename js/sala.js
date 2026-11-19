@@ -16,7 +16,7 @@
   function abre() {
     if (abierta) return; abierta = true;
     lista.textContent = ''; const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v);
-    $('#sala-palabras').hidden = true; $('#sala-palabras').classList.remove('hecho'); $('#palabras-botones').hidden = false;
+    $('#sala-palabras').hidden = true; $('#sala-palabras').classList.remove('hecho'); $('#palabras-botones').hidden = false; sala.classList.remove('por-comprobar');
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasAyuda'; a.textContent = tr('palabrasAyuda');
     ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false; rotuloLlamar('videollamada');
     pintaPalabras(M.palabras);
@@ -102,11 +102,11 @@
     if (!w) return;
     const p = $('#palabras'); p.textContent = '';
     for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
-    $('#sala-palabras').hidden = false;
+    $('#sala-palabras').hidden = false; sala.classList.add('por-comprobar');
   }
   M.on('palabras', (w) => { if (abierta && !continuada) pintaPalabras(w); });
   $('#coinciden').addEventListener('click', () => {
-    M.comprobadas(); $('#sala-palabras').classList.add('hecho'); $('#palabras-botones').hidden = true;
+    M.comprobadas(); $('#sala-palabras').classList.add('hecho'); $('#palabras-botones').hidden = true; sala.classList.remove('por-comprobar');
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasHechas'; a.textContent = tr('palabrasHechas');
   });
   $('#no-coinciden').addEventListener('click', () => M.termina('no-coinciden'));
@@ -160,7 +160,11 @@
       if (k && abierta) sistema(k);
     }
   }
-  M.on('llamada', (e) => { if (abierta) pintaLlamada(e); });
+  M.on('llamada', (e) => {
+    if (abierta) pintaLlamada(e);
+    const E = window.Elixire || {};
+    if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
+  });
   M.on('llamada-aviso', (por) => { if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
   // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
   const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
@@ -182,7 +186,12 @@
   $('#b-camara').addEventListener('click', (e) => M.camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
 
   // ---------- el estado de la conversación ----------
-  M.on('conectado', () => { continuada = false; abre(); sistema('mConectado'); });
+  M.on('conectado', () => {
+    continuada = false; abre(); sistema('mConectado');
+    // invitación a una llamada: quien entra con el enlace llama sin más; quien invitó contesta sola (ver puerta.js)
+    const E = window.Elixire || {};
+    if (E.llamaAlEntrar) { E.llamaAlEntrar = false; setTimeout(() => { if (abierta) M.llamar(); }, 700); }
+  });
 
   // ---------- pasar la conversación al móvil con un QR (motor.js: pasaMovil) ----------
   const dm = $('#movil');
@@ -208,7 +217,7 @@
   M.on('continua', (e) => {
     continuada = true;
     if (!abierta) abre();
-    $('#sala-palabras').hidden = true; ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
+    $('#sala-palabras').hidden = true; sala.classList.remove('por-comprobar'); ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
     sistema(e && e.movil ? 'continuaAqui' : 'continuaSuMovil');
   });
   M.on('claves', (c) => { if (abierta && c.renovada) sistema('clavesRenovadas'); });

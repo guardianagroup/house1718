@@ -429,4 +429,10 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   /* en el móvil no se «crea un código»: se invita a una llamada (dueño, 14:35) */
   .t-pc{display:none}
   .t-movil{display:inline}
+  /* en el móvil la página ni se amplía ni se mueve de lado (dueño, 14:37) */
+  html{overflow-x:clip;touch-action:pan-y;overscroll-behavior-x:none}
+  body{overflow-x:clip}
+  /* con el vídeo en grande, las cuatro palabras salen encima hasta que se comprueban */
+  .sala.video-grande.por-comprobar .sala-palabras{position:fixed;left:0;right:0;top:0;z-index:45;padding-top:calc(env(safe-area-inset-top) + 12px);background:rgba(5,7,10,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--hilo-2)}
+  .sala.video-grande.por-comprobar .video-mio,.sala.video-grande.por-comprobar .video-capa{top:calc(env(safe-area-inset-top) + 204px)}
 }
