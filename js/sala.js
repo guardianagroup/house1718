@@ -18,7 +18,7 @@
     lista.textContent = ''; const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v);
     $('#sala-palabras').hidden = true; $('#sala-palabras').classList.remove('hecho'); $('#palabras-botones').hidden = false;
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasAyuda'; a.textContent = tr('palabrasAyuda');
-    ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
+    ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false; rotuloLlamar('videollamada');
     pintaPalabras(M.palabras);
     sala.hidden = false; document.body.classList.add('en-sala');
     setTimeout(() => { if (abierta && window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(true); }, 900);
@@ -114,6 +114,8 @@
 
   // ---------- la videollamada ----------
   let tiempo = null;
+  const mmss = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'); };
+  function rotuloLlamar(k) { const s = $('#llamar span'); s.dataset.t = k; s.textContent = tr(k); }
   function pintaLlamada(e) {
     const velo = $('#video-velo'), boton = $('#llamar'), ent = $('#entrante'), txt = $('#video-texto'), ctl = $('#controles');
     const vs = $('#video-suyo'), vm = $('#video-mio');
@@ -122,27 +124,31 @@
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
     if (e.remoto && vs.srcObject !== e.remoto) vs.srcObject = e.remoto;
-    const activa = ['preparando', 'llamando', 'conectando', 'hablando'].includes(e.estado);
-    sala.classList.toggle('en-llamada', e.estado === 'hablando');
+    const hablando = e.estado === 'hablando' || e.estado === 'reconectando';
+    const activa = hablando || ['preparando', 'llamando', 'conectando'].includes(e.estado);
+    sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
+    $('#video-reconecta').hidden = e.estado !== 'reconectando';
     ent.hidden = e.estado !== 'entrante';
     boton.hidden = e.estado !== 'libre' && e.estado !== 'fin';
     ctl.hidden = !activa;
-    velo.hidden = e.estado === 'hablando';
+    velo.hidden = hablando;
     $('#video-capa').hidden = !(e.estado === 'hablando' && e.capa);
     if (e.estado === 'libre') pon('pruebaLimite');
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
     else if (e.estado === 'entrante') pon('llEntrante');
     else if (e.estado === 'conectando') pon('llConectando');
-    else if (e.estado === 'hablando') {
-      const pinta = () => { const q = Math.max(0, Math.ceil((e.limite - (Date.now() - e.t0)) / 1000)); const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'))); };
+    else if (hablando) {
+      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
       pinta(); tiempo = setInterval(pinta, 250);
       $('#b-micro').setAttribute('aria-pressed', String(e.mic)); $('#b-camara').setAttribute('aria-pressed', String(e.cam));
     } else if (e.estado === 'fin') {
       vs.srcObject = null; vm.srcObject = null;
-      if (e.prueba) { pon('pruebaFin'); boton.disabled = true; }
-      else pon('pruebaLimite');
-      const k = { prueba: 'llFinPrueba', rechazada: 'llRechazada', rechaza: 'llRechazada', suyo: 'llColgo', ocupado: 'llOcupado', 'sin-respuesta': 'llSinRespuesta', fallo: 'llFallo', 'sin-turn': 'llSinTurn', 'sin-permiso': 'llSinPermiso', 'sin-capa': 'llSinCapaSuya', 'se-fue': 'seFue', mio: 'llTerminada' }[e.motivo];
+      // se cortó (o falló) y queda tiempo de prueba: «Volver a llamar»
+      const cortada = e.motivo === 'caida' || e.motivo === 'fallo';
+      if (e.prueba) { pon('pruebaFin'); boton.disabled = true; rotuloLlamar('videollamada'); }
+      else { if (e.resto && e.resto < M.PRUEBA_MS) { txt.dataset.t = 'pruebaQueda'; txt.textContent = tr('pruebaQueda').replace('{t}', mmss(e.resto)); } else pon('pruebaLimite'); rotuloLlamar(cortada ? 'volverLlamar' : 'videollamada'); }
+      const k = { prueba: 'llFinPrueba', rechazada: 'llRechazada', rechaza: 'llRechazada', suyo: 'llColgo', ocupado: 'llOcupado', 'sin-respuesta': 'llSinRespuesta', fallo: 'llFallo', caida: 'llCaida', 'sin-turn': 'llSinTurn', 'sin-permiso': 'llSinPermiso', 'sin-capa': 'llSinCapaSuya', 'se-fue': 'seFue', mio: 'llTerminada' }[e.motivo];
       if (k && abierta) sistema(k);
     }
   }

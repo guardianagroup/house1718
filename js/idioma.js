@@ -5,6 +5,7 @@
 (() => {
   const ES_MAS = {
     mensajeWa: 'Te invito a una conversación privada en Elixire, encriptada de extremo a extremo.\n\nToca para entrar:\n{enlace}\n\nTu código: {codigo}\nCaduca en 10 minutos y sirve una sola vez.',
+    volverLlamar: 'Volver a llamar', llCaida: 'La llamada se ha cortado. Puedes volver a llamar.', pruebaQueda: 'Quedan {t} de prueba',
     copiado: 'Copiado', faltan: 'Faltan símbolos: el código tiene 16.', creando: 'Creando el código…', caducado: 'El código ha caducado. Vuelve y crea otro.',
     alguienEntra: 'Alguien ha escrito el código: conectando…', llegaOtra: 'La otra persona ha entrado. Acordando las claves…', conectando: 'Conectando…',
     eNoVale: 'Ese código no existe, ya se usó o ha caducado.', eSinRele: 'Sin conexión con el servidor. Inténtalo de nuevo.',
@@ -48,6 +49,7 @@
     c4v: '$2.95 bn', c4t: 'lost to impersonation scams in the US in 2024', c4f: 'FTC · 2025',
     eligeTitulo: 'FREE TRIAL', eligeTexto: 'One person creates the code and gives it to the other. Includes a video call of up to 3 minutes.',
     crear: 'Create a code', tengo: 'I have a code', volver: 'Back', cancelar: 'Cancel', entrar: 'Enter',
+    reconectando: 'Reconnecting the call…', volverLlamar: 'Call again', llCaida: 'The call was cut off. You can call again.', pruebaQueda: '{t} of trial left',
     tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
     mensajeWa: 'I am inviting you to a private conversation on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nYour code: {codigo}\nIt expires in 10 minutes and works only once.',
     esperando: 'Waiting for the other person', copiar: 'Copy the code', copiado: 'Copied',

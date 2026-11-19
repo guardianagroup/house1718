@@ -33,7 +33,7 @@
   function rele() {
     if (R) return R;
     R = window.GuardianaRele.crea({});
-    R.on('abierto', () => emite('red', true));
+    R.on('abierto', () => { emite('red', true); if (L && L.t0 && L.pc && L.pc.connectionState !== 'connected') recupera('fallo'); });
     R.on('cerrado', () => emite('red', false));
     R.on('sala', alSala); R.on('llega', alLlega); R.on('sale', alSale);
     R.on('trama', alTrama);
@@ -457,7 +457,10 @@
     }
     return obrero;
   }
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: PRUEBA_MS, mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
+  // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
+  // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
+  const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -503,11 +506,75 @@
     pc.addEventListener('connectionstatechange', () => {
       if (!L || L.pc !== pc) return;
       const st = pc.connectionState;
-      if (st === 'connected' && L.estado !== 'hablando') { L.estado = 'hablando'; L.t0 = Date.now(); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), PRUEBA_MS); emite('llamada', estadoLlamada()); }
-      else if (st === 'failed') colgar('fallo');
+      if (st === 'connected') {
+        finRecupera(L);
+        if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); }
+        if (L.estado !== 'hablando') { L.estado = 'hablando'; emite('llamada', estadoLlamada()); }
+      } else if (st === 'failed' || st === 'disconnected') {
+        if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') colgar('fallo');
+      }
     });
     return pc;
   }
+  // Una llamada cortada no se cuelga (como en GUARDIANA): al cambiar de wifi a datos, o en un corte corto, se negocia otra vez la
+  // ruta (ICE) sin tocar la imagen ni el sonido ni sus claves. Quien llamó hace la oferta nueva; quien contestó se la pide. Se
+  // repite cada pocos segundos, porque en un cambio de red también se cae la conexión con el relé y lo enviado se pierde. Si en un
+  // minuto no vuelve, la llamada termina y se puede volver a llamar.
+  const RECUPERA_MS = 60000, REINTENTO_MS = 4000;
+  function finRecupera(x) { if (!x) return; clearTimeout(x.recFin); clearTimeout(x.recT0); clearInterval(x.recT); x.recFin = x.recT0 = x.recT = null; }
+  function recupera(por) {
+    const x = L; if (!x || !x.pc || !x.t0) return;
+    if (x.estado !== 'reconectando') { x.estado = 'reconectando'; emite('llamada', estadoLlamada()); }
+    if (!x.recFin) x.recFin = setTimeout(() => { if (L === x && x.pc.connectionState !== 'connected') colgar('caida'); }, RECUPERA_MS);
+    if (x.recT || x.recT0) return;
+    const intento = () => {
+      if (L !== x || x.pc.connectionState === 'connected') return;
+      if (x.rol === 'llama') reoferta(x); else if (S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: x.id });
+    };
+    x.recT0 = setTimeout(() => { x.recT0 = null; intento(); x.recT = setInterval(intento, REINTENTO_MS); }, por === 'fallo' ? 0 : 2500);
+  }
+  async function reoferta(x) {
+    if (x.reofertando || !x.pc) return; x.reofertando = true;
+    try {
+      const pc = x.pc;
+      try { if (R && R.ice && R.ice.length) pc.setConfiguration({ iceServers: R.ice, iceTransportPolicy: 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }); } catch (_) {}
+      if (pc.signalingState === 'have-local-offer') { try { await pc.setLocalDescription({ type: 'rollback' }); } catch (_) {} }
+      await pc.setLocalDescription(await pc.createOffer({ iceRestart: true }));
+      await reunido(pc); if (L !== x) return;
+      if (S) enviaControl(S, { tipo: 'llamada', que: 'reoferta', id: x.id, sdp: pc.localDescription.sdp });
+    } catch (e) { console.warn('reoferta', e); } finally { x.reofertando = false; }
+  }
+  // la pantalla no se apaga durante la videollamada; al volver a la pestaña se pide otra vez
+  let vela = null;
+  async function velaPantalla(si) {
+    try {
+      if (si) { if (!vela && navigator.wakeLock && document.visibilityState === 'visible') { vela = await navigator.wakeLock.request('screen'); vela.addEventListener('release', () => { vela = null; }); } }
+      else if (vela) { const v = vela; vela = null; await v.release(); }
+    } catch (_) {}
+  }
+  // al volver a la pestaña (el móvil la deja en segundo plano y otra app puede quedarse la cámara o el micrófono): lo que se cortó
+  // se pide otra vez y se pone en la misma llamada, con su misma capa; y si la ruta se cayó, se recupera
+  let recuperando = false;
+  async function recuperaMedios() {
+    const x = L; if (recuperando || !x || !x.t0 || !x.pc || !x.local || document.visibilityState !== 'visible') return;
+    velaPantalla(true);
+    if (x.local.getTracks().some((t) => t.readyState === 'ended')) {
+      recuperando = true;
+      try {
+        const st = await medios();
+        if (L !== x) st.getTracks().forEach((t) => t.stop());
+        else {
+          for (const sn of x.pc.getSenders()) { const k = sn.track && sn.track.kind, nt = k && st.getTracks().find((t) => t.kind === k); if (nt) await sn.replaceTrack(nt); }
+          x.local.getTracks().forEach((t) => t.stop()); x.local = st; micro(x.mic !== false); camara(x.cam !== false);
+        }
+      } catch (e) { console.warn('medios', e); }
+      recuperando = false;
+    }
+    if (L === x && (x.pc.connectionState === 'disconnected' || x.pc.connectionState === 'failed')) recupera('fallo');
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(recuperaMedios, 400); });
+  addEventListener('pageshow', () => setTimeout(recuperaMedios, 400));
+  addEventListener('online', () => { if (L && L.t0 && L.pc && L.pc.connectionState !== 'connected') recupera('fallo'); });
   const reunido = (pc) => new Promise((res) => {
     if (pc.iceGatheringState === 'complete') return res();
     const f = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', f); res(); } };
@@ -522,7 +589,8 @@
   }
   async function llamar() {
     const s = S, por = puedeLlamar(); if (por) { emite('llamada-aviso', por); return false; }
-    if (L || s.llamadaHecha) { if (s.llamadaHecha) emite('llamada-aviso', 'prueba-usada'); return false; }
+    if (L) return false;
+    if (restante(s) < 5000) { emite('llamada-aviso', 'prueba-usada'); return false; }
     L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid };
     emite('llamada', estadoLlamada());
     try {
@@ -562,7 +630,7 @@
   async function llamadaRecibe(s, j) {
     const que = String(j.que || ''), id = String(j.id || '');
     if (que === 'oferta') {
-      if (L || s.llamadaHecha) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
+      if (L || restante(s) < 5000) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
       if (!PQM) { enviaControl(s, { tipo: 'llamada', que: 'sin-capa', id }); emite('llamada-aviso', 'sin-capa'); return; }
       if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;
       L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid) };
@@ -575,6 +643,20 @@
       try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); codecs(L.pc); ponCapa(L.pc); } catch (e) { console.warn(e); colgar('fallo'); }
       return;
     }
+    // la ruta de una llamada cortada: quien contestó la pide, quien llamó la ofrece
+    if (que === 'reinicia') { if (L.rol === 'llama' && L.t0) reoferta(L); return; }
+    if (que === 'reoferta') {
+      if (L.rol !== 'contesta' || !L.pc || !L.t0 || typeof j.sdp !== 'string' || j.sdp.length > 200000) return;
+      const x = L, pc = x.pc;
+      try {
+        await pc.setRemoteDescription({ type: 'offer', sdp: j.sdp });
+        await pc.setLocalDescription(await pc.createAnswer());
+        await reunido(pc);
+        if (L === x) enviaControl(s, { tipo: 'llamada', que: 'rerespuesta', id: x.id, sdp: pc.localDescription.sdp });
+      } catch (e) { console.warn('reoferta', e); }
+      return;
+    }
+    if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
   }
@@ -582,13 +664,13 @@
     if (!L) return;
     const x = L; L = null;
     if (!suyo && S) enviaControl(S, { tipo: 'llamada', que: 'colgar', id: x.id });
-    clearTimeout(x.limite); clearTimeout(x.espera);
+    clearTimeout(x.limite); clearTimeout(x.espera); finRecupera(x); velaPantalla(false);
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (x.local) x.local.getTracks().forEach((t) => t.stop()); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
-    // la prueba: una videollamada por conversación, de hasta 3 minutos
-    if (S && x.t0) S.llamadaHecha = true;
-    emite('llamada', { estado: 'fin', motivo: motivo || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: !!(S && S.llamadaHecha) });
+    // la prueba: hasta 3 minutos hablados por conversación
+    if (S && x.t0) S.usado = (S.usado || 0) + (Date.now() - x.t0);
+    emite('llamada', { estado: 'fin', motivo: motivo || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
   }
   // Prueba de vida (agencia, ronda 96, f): un reto al azar que la otra persona tiene que hacer en directo, en cámara. Va por la sesión
   // encriptada, así que lo pide el equipo verificado con las cuatro palabras. Ayuda a detectar un vídeo grabado o una suplantación
@@ -640,5 +722,7 @@
     PRUEBA_MS, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
+  if (LOCAL) window.ElixireMotor._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
+  if (LOCAL) window.ElixireMotor._usa = (ms) => { if (S) S.usado = ms; };
   if (LOCAL) window.ElixireMotor._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
 })();
