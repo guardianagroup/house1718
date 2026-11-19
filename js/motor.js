@@ -19,7 +19,11 @@
   const TIC_MS = (LOCAL && +q.get('latido')) || 500;
   // claves nuevas cada minuto (agencia, ronda 96, e: «trinquete poscuántico continuo», las dos voces; antes, cada 5 minutos)
   const RENUEVA_MS = (LOCAL && +q.get('renueva') * 1000) || 60 * 1000;
-  const PRUEBA_MS = (LOCAL && +q.get('prueba') * 1000) || 3 * 60 * 1000;
+  // Sin límite de tiempo por ahora (dueño, 16:11: «quita el límite de 3 minutos, por favor; ya te diré yo cuándo lo volvemos a
+  // poner»). Para volver a ponerlo: SIN_LIMITE = false.
+  const SIN_LIMITE = true;
+  const PRUEBA_MS = (LOCAL && +q.get('prueba') * 1000) || (SIN_LIMITE ? 24 * 3600 * 1000 : 3 * 60 * 1000);
+  const sinLimite = SIN_LIMITE && !(LOCAL && +q.get('prueba'));
   const PLAZO_PALABRAS_MS = 15000;
   const CODIGO_MS = 10 * 60 * 1000;
 
@@ -917,7 +921,7 @@
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
-    PRUEBA_MS, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
+    PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
   if (LOCAL) window.ElixireMotor._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };

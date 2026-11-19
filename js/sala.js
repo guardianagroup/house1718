@@ -200,13 +200,14 @@
     ctl.hidden = !activa;
     velo.hidden = hablando;
     $('#video-capa').hidden = !(e.estado === 'hablando' && e.capa);
-    if (e.estado === 'libre') { if (m) { pon(esperaLlamada ? 'conectandoLlamada' : 'pruebaLimite'); rotuloLlamar('llamar'); } else pon('pruebaLimite'); }
+    if (e.estado === 'libre') { if (m) { if (esperaLlamada) pon('conectandoLlamada'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); rotuloLlamar('llamar'); } else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); }
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
     else if (e.estado === 'entrante') pon('llEntrante');
     else if (e.estado === 'conectando') pon('llConectando');
     else if (hablando) {
-      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
+      // sin límite (dueño, 16:11), el tiempo que lleva la llamada; con límite, el que queda de prueba
+      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; if (M.sinLimite) { t.append(document.createTextNode(mmss(Date.now() - e.t0))); return; } const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
       pinta(); tiempo = setInterval(pinta, 250);
       $('#b-micro').setAttribute('aria-pressed', String(e.mic)); $('#b-camara').setAttribute('aria-pressed', String(e.cam));
     } else if (e.estado === 'fin') {
@@ -214,6 +215,7 @@
       // se cortó (o falló) y queda tiempo de prueba: «Volver a llamar»
       const cortada = e.motivo === 'caida' || e.motivo === 'fallo';
       if (e.prueba) { pon('pruebaFin'); boton.disabled = true; rotuloLlamar('videollamada'); }
+      else if (M.sinLimite) { txt.textContent = ''; rotuloLlamar(cortada ? 'volverLlamar' : 'videollamada'); }
       else { if (e.resto && e.resto < M.PRUEBA_MS) { txt.dataset.t = 'pruebaQueda'; txt.textContent = tr('pruebaQueda').replace('{t}', mmss(e.resto)); } else pon('pruebaLimite'); rotuloLlamar(cortada ? 'volverLlamar' : 'videollamada'); }
       const k = { prueba: 'llFinPrueba', rechazada: 'llRechazada', rechaza: 'llRechazada', suyo: 'llColgo', ocupado: 'llOcupado', 'sin-respuesta': 'llSinRespuesta', fallo: 'llFallo', caida: 'llCaida', 'sin-turn': 'llSinTurn', 'sin-permiso': 'llSinPermiso', 'sin-capa': 'llSinCapaSuya', 'se-fue': 'seFue', mio: 'llTerminada' }[e.motivo];
       if (k && abierta) sistema(k);
