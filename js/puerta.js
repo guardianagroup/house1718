@@ -37,7 +37,7 @@
       else { p.classList.remove('visible'); p.hidden = true; }
     }
     abierta = cual;
-    const foco = focoEn || (cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : $('#copiar'));
+    const foco = focoEn || (cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : cual === 'movil' ? $('#movil-continuar') : $('#copiar'));
     setTimeout(() => foco && foco.focus({ preventScroll: true }), quieto ? 0 : 450);
   }
   function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible'); p.hidden = true; } }
@@ -152,6 +152,48 @@
     } finally { ocupado = false; }
   }
 
+  // ---- pasar la conversación a este móvil: lo que trae el QR del ordenador («#m=», 256 bits que no llegan a ningún servidor) ----
+  let semillaMovil = null;
+  {
+    const m = /^#m=([A-Za-z0-9_-]{43})(?:&l=(?:es|en))?$/.exec(location.hash || '');
+    if (m) {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+      try { let b = m[1].replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; const x = Uint8Array.from(atob(b), (c) => c.charCodeAt(0)); if (x.length === 32) semillaMovil = x; } catch (_) {}
+    }
+  }
+  const textoMovil = (k) => { const e = $('#movil-aqui-texto'); e.dataset.t = k; e.textContent = tr(k); };
+  const errorMovil = (k) => { const e = $('#error-movil'); if (k) e.dataset.t = k; e.textContent = k ? tr(k) : ''; };
+  async function abreMovil() {
+    if (ocupado || abierta || !semillaMovil) return; ocupado = true;
+    try {
+      document.body.classList.add('cerrado');
+      if (M) M.prepara();
+      $('#consola').classList.add('fuera');
+      if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
+      textoMovil('movilAquiTexto'); errorMovil(''); $('#movil-aqui-palabras').hidden = true; $('#movil-continuar').hidden = false; $('#movil-continuar').disabled = false;
+      muestra('movil', $('#movil-continuar'));
+    } finally { ocupado = false; }
+  }
+  $('#movil-continuar').addEventListener('click', async () => {
+    if (!M || !semillaMovil) return;
+    pantallaCompleta();
+    $('#movil-continuar').disabled = true; errorMovil(''); textoMovil('movilConectando');
+    const r = await M.entraMovil(semillaMovil.slice());
+    if (!r.ok) { $('#movil-continuar').disabled = false; textoMovil('movilAquiTexto'); errorMovil(ERRORES[r.por] || 'eSinRele'); return; }
+    semillaMovil.fill(0); semillaMovil = null;
+  });
+  if (M) {
+    M.on('par-palabras', (w) => {
+      if (abierta !== 'movil') return;
+      const p = $('#movil-aqui-palabras'); p.textContent = ''; for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
+      p.hidden = false; $('#movil-continuar').hidden = true; textoMovil('movilCompruebaPc');
+    });
+    M.on('par-ocupada', () => { if (abierta === 'movil') { errorMovil('movilUsado'); textoMovil('movilAquiTexto'); } });
+    M.on('par-fin', () => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; errorMovil('movilCancelado'); textoMovil('movilAquiTexto'); } });
+    M.on('par-hecho', () => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; textoMovil('movilPasando'); } });
+    M.on('continua', () => { paraReloj(); ocultaPaneles(); abierta = 'sala'; });
+  }
+
   // ---- tengo un código ----
   const normaliza = (t) => String(t || '').normalize('NFKC').toUpperCase().replace(/[\s\-‐-―−.·]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
   const campo = $('#campo-codigo');
@@ -193,6 +235,7 @@
     abierta = null; document.body.classList.remove('cerrado');
   }
   window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, ocultaPaneles, abierta: () => abierta });
+  if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
 
   // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)

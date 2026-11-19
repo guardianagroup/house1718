@@ -11,8 +11,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-14" integrity="sha384-mfq71s1rRcgyygQHDbn5fVKUU9ejjc1+43PXKFXaOGq9UQNezKOXz7Z856cCE5Jq">
-<script src="js/idioma-inicio.js?v=20261119-14" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-16" integrity="sha384-OmmN6StyZ7MDIEu4QmIwydv/qV9vZubLZzEDCIuPysQNZH6Q5bxDlNcNO4NhNKcm">
+<script src="js/idioma-inicio.js?v=20261119-16" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -58,6 +58,15 @@
 <div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
 </section>
 
+
+<section class="panel" id="panel-movil" hidden aria-labelledby="t-movil">
+<span class="etiqueta" id="t-movil" data-t="movilAquiTitulo">CONTINUAR EN ESTE MÓVIL</span>
+<p class="texto-panel" id="movil-aqui-texto" data-t="movilAquiTexto">Vas a pasar a este móvil la conversación que tienes abierta en tu ordenador.</p>
+<p class="palabras" id="movil-aqui-palabras" hidden></p>
+<p class="error" id="error-movil" role="alert"></p>
+<button type="button" class="cristal ancho" id="movil-continuar"><span data-t="movilContinuar">Continuar aquí</span></button>
+<button type="button" class="cristal pequeno" data-cerrar-camara data-t="volver">Volver</button>
+</section>
 
 <section class="panel" id="panel-tengo" hidden aria-labelledby="t-tengo">
 <label class="etiqueta" for="campo-codigo" id="t-tengo" data-t="tengoTitulo">TENGO UN CÓDIGO</label>
@@ -172,7 +181,7 @@
 <header class="sala-cab">
 <span class="marca">ELIXIRE</span>
 <p class="sala-estado" id="sala-estado" role="status"><span class="punto" aria-hidden="true"></span><span id="sala-estado-texto" data-t="salaEstado">Encriptado poscuántico</span></p>
-<button type="button" class="cristal" id="terminar"><span data-t="terminar">Terminar</span></button>
+<div class="sala-botones"><button type="button" class="cristal solo-pc" id="b-movil"><span data-t="pasarMovil">Pasar al móvil</span></button><button type="button" class="cristal" id="terminar"><span data-t="terminar">Terminar</span></button></div>
 </header>
 <div class="sala-palabras" id="sala-palabras" hidden>
 <span class="etiqueta" data-t="palabrasEtiqueta">PALABRAS DE VERIFICACIÓN</span>
@@ -194,7 +203,7 @@
 <p class="video-tiempo" id="video-tiempo" hidden></p>
 <p class="video-capa reconecta" id="video-reconecta" hidden role="status"><span class="punto" aria-hidden="true"></span><span data-t="reconectando">Reconectando la llamada…</span></p>
 <p class="video-reto" id="video-reto" hidden role="status"><span class="etiqueta" id="reto-etiqueta"></span><span class="reto-texto" id="reto-texto"></span></p>
-<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg" id="b-colgar" data-t="colgar">Colgar</button></div>
+<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg solo-movil" id="b-chat"><span id="b-chat-texto" data-t="chat">Chat</span></button><button type="button" class="seg" id="b-colgar" data-t="colgar">Colgar</button></div>
 </div>
 <div class="chat">
 <span class="etiqueta" data-t="conversacion">CONVERSACIÓN</span>
@@ -210,6 +219,23 @@
 </div>
 </section>
 
+<div class="aviso" id="movil" hidden role="dialog" aria-modal="true" aria-labelledby="movil-titulo">
+<div class="aviso-caja movil-caja">
+<span class="etiqueta" data-t="movilEtiqueta">PASAR AL MÓVIL</span>
+<h2 id="movil-titulo" data-t="movilTitulo">Continúa en tu móvil</h2>
+<div class="movil-paso" id="movil-paso1">
+<img id="movil-qr" class="movil-qr" alt="" width="216" height="216">
+<p data-t="movilTexto">Apunta con la cámara de tu móvil a este código. Vale una sola vez, caduca en 2 minutos y no pasa por ningún servidor.</p>
+</div>
+<div class="movil-paso" id="movil-paso2" hidden>
+<p data-t="movilCompara">Tu móvil se ha conectado. Comprueba que en su pantalla salen estas mismas palabras:</p>
+<p class="palabras" id="movil-palabras"></p>
+</div>
+<p class="error" id="movil-error" role="alert"></p>
+<div class="aviso-botones"><button type="button" class="cristal" id="movil-si" hidden><span data-t="movilSi">Sí, es mi móvil</span></button><button type="button" class="cristal" id="movil-no"><span id="movil-no-texto" data-t="cancelar">Cancelar</span></button></div>
+</div>
+</div>
+
 <div class="aviso" id="aviso" hidden role="alertdialog" aria-modal="true" aria-labelledby="aviso-titulo">
 <div class="aviso-caja">
 <span class="etiqueta" id="aviso-etiqueta"></span>
@@ -219,14 +245,15 @@
 </div>
 </div>
 
-<script src="js/idioma.js?v=20261119-14" integrity="sha384-H8H2HMACuVvQCKKP1m/m1RmU2ld7Vp+SXQkDSEN2CNJTdPAmOekuP8623pWTiySF"></script>
-<script src="js/pq-cnsa.js?v=20261119-14" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-14" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-14" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-14" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/motor.js?v=20261119-14" integrity="sha384-tOPr0NRV4DDPz57jBKtxkm/qAOjukKwbcfA0meNZzhSVffG7WO8TGRsAXpU0Fgzo"></script>
-<script type="module" src="js/sala3d.js?v=20261119-14" integrity="sha384-8FBy64Vi4cJN5Q+m2Q+WwbDH85tJyniEEpYBBQGfAA/cGbvxkNyMJg85vCx9x7bK"></script>
-<script src="js/puerta.js?v=20261119-14" integrity="sha384-kZEcvvBPJYBwD+gjsOiBHKdkdVFT6aHrcaKag4Vm0mwjPEu4wreG8BN/qf7Pz4zq"></script>
-<script src="js/sala.js?v=20261119-14" integrity="sha384-brwYLQ3ERx8a3Q4y7u1zw7V3gsI5HWOuZbzHZxWVDqc6FwA9ZrpHuXtYVjCrMOB7"></script>
+<script src="js/idioma.js?v=20261119-16" integrity="sha384-IW0fKkHVl0mVyuJ8UchYfc3uMe2pSlambNJkvTkCN7HSxX89omj80HtbKYcHoAGw"></script>
+<script src="js/pq-cnsa.js?v=20261119-16" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-16" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-16" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-16" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-16" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-16" integrity="sha384-x207VBsd+JpbN6y4INf57xo/Z4o80Ixk2olhlzbY3+5TcMQRuBKDONtTlw5OmXvq"></script>
+<script type="module" src="js/sala3d.js?v=20261119-16" integrity="sha384-8FBy64Vi4cJN5Q+m2Q+WwbDH85tJyniEEpYBBQGfAA/cGbvxkNyMJg85vCx9x7bK"></script>
+<script src="js/puerta.js?v=20261119-16" integrity="sha384-ayMppXz0QvSHah+QyvMsvCZ9fmkLN56pP8Q7flEQ2lvswjcWopJeV7a6ionFPt3s"></script>
+<script src="js/sala.js?v=20261119-16" integrity="sha384-aNOxJ6Z9D0klLjTnzL7wLahHXGfLCB6dtpkBwaLJv3/P7XNrFqTK24E1fRu1VILQ"></script>
 </body>
 </html>

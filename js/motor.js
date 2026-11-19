@@ -47,8 +47,13 @@
   function prepara() { rele(); }
 
   // ---------- la conversación (una sola por pestaña) ----------
-  let S = null;
-  async function nuevaSesion(semilla, rol) {
+  // S: la conversación. T: solo en el ordenador, y solo mientras se pasa la conversación al móvil, la sesión con ese móvil.
+  // Los avisos de una sesión de emparejamiento salen con el prefijo «par-» (la pantalla no los confunde con la conversación).
+  let S = null, T = null;
+  const av = (s, t, x) => emite(s.canal ? s.canal + '-' + t : t, x);
+  const deSala = (sala) => (S && S.id === sala ? S : T && T.id === sala ? T : null);
+  async function nuevaSesion(semilla, rol, opc) {
+    opc = opc || {};
     const d = await B.deSemilla(semilla);
     const reposo = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
     const n = await B.creaIdentidad(reposo);
@@ -57,8 +62,9 @@
       miHuella: await B.huella(n.guardar.firmaPub, n.guardar.acuerdoPub, n.guardar.dsaPub),
       yo: C.hex(C.azar(8)), miembros: new Set(), suId: null, huella: null, sesiones: new Map(), sesion: null, efs: new Map(),
       epocasVistas: new Set(), tic: [], partes: new Map(), envios: new Map(), recibos: new Map(), conectado: false, fin: false, creado: Date.now(),
+      canal: opc.canal || '', papel: opc.papel || '', continua: !!opc.continua, usado: opc.usado || 0, reanuda: !!opc.reanuda, llamaYo: !!opc.llamaYo,
     };
-    S = s;
+    if (opc.aparte) T = s; else S = s;
     rele().entra(s.id, s.yo, { b: 1 });
     return s;
   }
@@ -167,7 +173,7 @@
     const huella = await B.huella(firmaPub, acuerdoPub, dsaPub);
     if (C.hex(huella) === C.hex(s.miHuella)) return; // yo mismo
     // la conversación ya es de otra persona: nadie más entra (se rechaza y se avisa)
-    if (s.huella && C.hex(s.huella) !== C.hex(huella)) { R.manda(s.id, de, new Uint8Array([5])); s.intrusos = (s.intrusos || 0) + 1; emite('intruso', s.intrusos); return; }
+    if (s.huella && C.hex(s.huella) !== C.hex(huella)) { R.manda(s.id, de, new Uint8Array([5])); s.intrusos = (s.intrusos || 0) + 1; av(s, 'intruso', s.intrusos); return; }
     const eh = C.hex(epoca); if (s.epocasVistas.has(eh)) return; s.epocasVistas.add(eh); if (s.epocasVistas.size > 64) s.epocasVistas.delete(s.epocasVistas.values().next().value);
     const efMia = resp ? s.efs.get(C.hex(resp)) : null;
     if (resp && (!efMia || !efMia.kem)) return;
@@ -178,7 +184,7 @@
     const nueva = !s.huella;
     if (nueva) { s.firmaPub = firmaPub; s.acuerdoPub = acuerdoPub; s.dsaPub = dsaPub; s.huella = huella; }
     s.suId = de; s.miembros.add(de);
-    if (nueva) { quitaCodigo(s); emite('llega'); }
+    if (nueva) { quitaCodigo(s); av(s, 'llega'); }
     if ((!resp && kemEk && !cw) || (resp && !nr)) { await alarma(s, 'sin-palabras'); return; }
     const otro = (a, x) => C.hex(a) !== C.hex(x);
     if (!resp && kemEk && !soyInicio(s)) { if (!s.cwSuyo) s.cwSuyo = cw; else if (otro(cw, s.cwSuyo)) { await alarma(s, 'palabras'); return; } }
@@ -200,7 +206,7 @@
     s.sesiones.set(sid, ses); s.sesion = ses; clearTimeout(s.reintento);
     for (const k of [...s.sesiones.keys()].slice(0, -3)) { const x = s.sesiones.get(k); try { x.envio.borra(); x.recibo.borra(); x.medios.fill(0); } catch (_) {} s.sesiones.delete(k); }
     s.renovaciones = (s.renovaciones || 0) + (renovada ? 1 : 0);
-    emite('claves', { renovada, n: s.renovaciones });
+    av(s, 'claves', { renovada, n: s.renovaciones });
     enviaControl(s, { tipo: 'ok' });
     if (s.revela && s.palabrasN && !s.revelaOk) enviaControl(s, { tipo: 'palabras', n: s.revela.n });
   }
@@ -226,11 +232,11 @@
     const p = s.palabrasN; const w = await B.palabras(p.hI, p.hR, p.nI, p.nR);
     if (!w || s.fin) return;
     s.palabras = w; clearTimeout(s.plazoPalabras);
-    emite('palabras', w.slice());
+    av(s, 'palabras', w.slice());
   }
   function plazoPalabras(s) {
     if (s.palabras || s.plazoPalabras) return;
-    s.plazoPalabras = setTimeout(() => { if (!s.palabras && !s.fin && S === s) alarma(s, 'sin-palabras'); }, PLAZO_PALABRAS_MS);
+    s.plazoPalabras = setTimeout(() => { if (!s.palabras && !s.fin) alarma(s, 'sin-palabras'); }, PLAZO_PALABRAS_MS);
   }
 
   // ---------- mensajes sellados (cadena por mensaje) y tramas de 1 KB a ritmo fijo ----------
@@ -243,7 +249,7 @@
     return C.cat(cab, ct);
   }
   // fuera del ritmo fijo: el acuerdo de claves, las palabras, las órdenes y la señalización de la llamada
-  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel']);
+  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel', 'par', 'traspaso', 'traspaso-ok']);
   function enviaControl(s, obj) {
     if (!s || s.fin || !s.sesion || !R.abierto || !s.miembros.has(s.suId)) return false;
     if (!APARTE.has(obj.tipo)) { aTic(s, obj); return true; }
@@ -267,9 +273,9 @@
       if (s.tic[0] === obj) s.tic.shift();
     } catch (e) { console.warn('tic', e); } finally { s.ticando = false; }
   }
-  setInterval(() => { if (S) tic(S); }, TIC_MS);
+  setInterval(() => { if (S) tic(S); if (T) tic(T); }, TIC_MS);
   // claves nuevas cada 5 minutos: quien inicia vuelve a presentarse; las anteriores se borran
-  setInterval(() => { const s = S; if (s && !s.fin && s.sesion && s.sesion.confirmada && soyInicio(s) && enLinea(s)) enCola(s, () => presenta(s, null, true)); }, RENUEVA_MS);
+  setInterval(() => { for (const s of [S, T]) if (s && !s.fin && s.sesion && s.sesion.confirmada && soyInicio(s) && enLinea(s)) enCola(s, () => presenta(s, null, true)); }, RENUEVA_MS);
 
   async function recibeMensaje(s, de, b) {
     if (b.length < 13 + 16) return;
@@ -278,11 +284,15 @@
     if (!ses) { R.manda(s.id, de, new Uint8Array([4])); return; }
     let j;
     try { const k = await ses.recibo.para(n); j = JSON.parse(C.td.decode(await C.abre(k, n, b.subarray(13), C.cat(b.subarray(0, 13), ses.hash)))); k.fill(0); }
-    catch (e) { if (!/repetido|saltados/.test(String(e && e.message))) emite('integridad'); return; }
+    catch (e) { if (!/repetido|saltados/.test(String(e && e.message))) av(s, 'integridad'); return; }
     if (s.suId !== de) return;
     if (!ses.confirmada) {
       ses.confirmada = true; plazoPalabras(s);
-      if (!s.conectado) { s.conectado = true; emite('conectado'); }
+      if (!s.conectado) {
+        s.conectado = true; clearTimeout(s.plazoCont);
+        if (s.continua) { s.comprobadas = true; av(s, 'continua', { movil: s.papel === 'movil', reanuda: s.reanuda }); if (s.reanuda && s.llamaYo) setTimeout(() => { if (S === s && !L) llamar(); }, 1500); }
+        else av(s, 'conectado');
+      }
     }
     return trata(s, j);
   }
@@ -303,7 +313,12 @@
   }
   async function trata(s, j) {
     if (!j || typeof j !== 'object') return;
+    // en la sesión de emparejamiento con el móvil no hay conversación: solo el acuerdo, las palabras y el traspaso
+    if (s.canal === 'par' && !['parte', 'latido', 'ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'par'].includes(j.tipo)) return;
     switch (j.tipo) {
+      case 'par': return recibePar(s, j);
+      case 'traspaso': return recibeTraspaso(s, j);
+      case 'traspaso-ok': if (s.trasp) { s.trasp.okSuyo = true; acabaTraspaso(); } return;
       case 'parte': return recibeParte(s, j);
       case 'latido': case 'ok': return;
       case 'texto': {
@@ -331,29 +346,30 @@
 
   // ---------- el relé: quién está en la sala y lo que llega ----------
   function alSala(sala, miembros) {
-    const s = S; if (!s || s.id !== sala) return;
+    const s = deSala(sala); if (!s) return;
     s.miembros = new Set(miembros); s.sesion = null;
     if (miembros.length && (!s.suId || miembros.includes(s.suId))) enCola(s, () => presenta(s, null, true));
   }
   function alLlega(sala, quien) {
-    const s = S; if (!s || s.id !== sala) return;
+    const s = deSala(sala); if (!s) return;
     s.miembros.add(quien);
     if (!s.suId || s.suId === quien) { s.sesion = null; enCola(s, () => presenta(s, null, true)); }
-    if (s.suId === quien) emite('vuelve');
+    if (s.suId === quien) av(s, 'vuelve');
   }
   function alSale(sala, quien) {
-    const s = S; if (!s || s.id !== sala) return;
+    const s = deSala(sala); if (!s) return;
     s.miembros.delete(quien);
-    if (s.suId === quien) { s.sesion = null; emite('se-va'); if (L) colgar('se-fue', true); }
+    if (s.traspasando || s.trasp) return; // se está pasando al móvil: no es que se haya ido
+    if (s.suId === quien) { s.sesion = null; av(s, 'se-va'); if (L && s === S) colgar('se-fue', true); }
   }
   function alTrama(sala, de, b) {
-    const s = S; if (!s || s.id !== sala || !b.length) return;
+    const s = deSala(sala); if (!s || !b.length) return;
     enCola(s, async () => {
       if (b[0] === 1) await recibePresentacion(s, de, b);
       else if (b[0] === 2) await recibeMensaje(s, de, b);
       else if (b[0] === 3) await recibeTrozo(s, de, b);
       else if (b[0] === 4) { if (s.suId === de) await presenta(s, null); }
-      else if (b[0] === 5) { if (!s.huella) emite('ocupada'); }
+      else if (b[0] === 5) { if (!s.huella) av(s, 'ocupada'); }
     });
   }
 
@@ -699,25 +715,112 @@
     if (s.sesion && enLinea(s)) sella(s, { tipo: 'destruir' }).then((b) => { if (b) R.manda(s.id, s.suId, b); }).catch(() => {}).finally(() => finaliza(s, motivo || 'mio'));
     else finaliza(s, motivo || 'mio');
   }
-  function finaliza(s, motivo, por) {
+  function finaliza(s, motivo, por, callado) {
     if (s.fin) return;
     s.fin = true;
-    if (L) colgar('fin', motivo !== 'mio');
-    clearTimeout(s.reintento); clearTimeout(s.plazoPalabras);
+    if (L && s === S) colgar('fin', motivo !== 'mio');
+    clearTimeout(s.reintento); clearTimeout(s.plazoPalabras); clearTimeout(s.plazoCont); clearTimeout(s.caducaT);
     quitaCodigo(s);
     try { R.sale(s.id); } catch (_) {}
     try { for (const x of s.sesiones.values()) { x.envio.borra(); x.recibo.borra(); x.medios.fill(0); } } catch (_) {}
     try { s.psk.fill(0); s.semilla.fill(0); s.dsaSec.fill(0); if (s.nIMio) s.nIMio.fill(0); if (s.nRMio) s.nRMio.fill(0); for (const v of s.efs.values()) if (v && v.kem) v.kem.dk.fill(0); for (const e of s.envios.values()) e.llave.fill(0); } catch (_) {}
     s.sesiones.clear(); s.sesion = null; s.efs.clear(); s.tic = []; s.envios.clear(); s.recibos.clear(); s.idB = null;
     if (S === s) S = null;
-    emite('fin', { motivo, por: por || '' });
+    if (T === s) T = null;
+    if (!callado) av(s, 'fin', { motivo, por: por || '' });
   }
-  addEventListener('pagehide', () => { if (S) termina('cierra'); });
+  addEventListener('pagehide', () => { if (T) finaliza(T, 'cierra', '', true); if (S) termina('cierra'); });
+
+  // ---------- pasar la conversación al móvil con un QR ----------
+  // Dueño, 14:08: «añade la versión de pasar la llamada al móvil, eso sí, por QR. Y si puedes mejorarle la seguridad y encriptarla aún
+  // más, mejor». Más segura que la de GUARDIANA, en tres pasos:
+  //   1. El ordenador enseña un QR con una semilla de 256 bits recién hecha: va de la pantalla a la cámara, por ningún servidor.
+  //      Vale una sola vez y caduca a los 2 minutos.
+  //   2. El móvil y el ordenador hacen con ella un acuerdo completo (ML-KEM-1024 + ECDH P-384, firmas ML-DSA-87 + ECDSA P-384) y los
+  //      dos enseñan las mismas cuatro palabras: quien tiene los dos aparatos delante lo confirma en el ordenador. Si alguien
+  //      fotografió el QR y entró antes, las palabras no salen en el móvil de verdad y no se confirma.
+  //   3. Solo entonces el ordenador hace otra semilla y se la da al móvil (por esa sesión comprobada) y a la otra persona (por la
+  //      conversación, ya comprobada). Con ella, los dos hacen un acuerdo poscuántico nuevo, de equipos nuevos: no hace falta volver
+  //      a comparar palabras, porque esa semilla solo ha viajado por sesiones comprobadas. El ordenador borra todo y sale.
+  const PAR_MS = 2 * 60 * 1000;
+  async function pasaMovil() {
+    const s = S; if (!s || s.canal || !s.conectado || !enLinea(s)) return { ok: false, por: 'sin-sesion' };
+    if (T) finaliza(T, 'nueva', '', true);
+    const semilla = C.nuevaSemilla();
+    const t = await nuevaSesion(semilla, 'crea', { aparte: true, canal: 'par', papel: 'pc' });
+    t.caducaT = setTimeout(() => { if (T === t && !t.trasp) { finaliza(t, 'caduca', '', true); emite('par-fin', { motivo: 'caduca' }); } }, PAR_MS);
+    return { ok: true, enlace: location.origin + location.pathname + '#m=' + C.b64u(semilla), caduca: Date.now() + PAR_MS };
+  }
+  function cancelaMovil() {
+    const t = T; if (!t || t.trasp) return;
+    if (t.sesion && enLinea(t)) sella(t, { tipo: 'destruir' }).then((b) => { if (b) R.manda(t.id, t.suId, b); }).catch(() => {}).finally(() => finaliza(t, 'cancela', '', true));
+    else finaliza(t, 'cancela', '', true);
+  }
+  // en el ordenador: «sí, es mi móvil» (las palabras coinciden en los dos aparatos)
+  function confirmaMovil() {
+    const t = T, s = S; if (!t || t.trasp || !t.conectado || !t.palabras || !s || !enLinea(s) || !enLinea(t)) return false;
+    const k = C.nuevaSemilla(), enLlamada = !!(L && L.t0);
+    const resto = Math.max(0, restante(s) - (enLlamada ? Date.now() - L.t0 : 0));
+    t.trasp = s.trasp = { okMovil: false, okSuyo: false };
+    clearTimeout(t.caducaT);
+    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0 });
+    enviaControl(s, { tipo: 'traspaso', k: C.b64u(k), llamada: enLlamada ? 1 : 0 });
+    k.fill(0);
+    s.trasp.plazo = setTimeout(() => acabaTraspaso(true), 7000);
+    return true;
+  }
+  function acabaTraspaso(yaVale) {
+    const s = S, t = T; if (!s || !s.trasp || s.trasp.hecho) return;
+    if (!yaVale && !(s.trasp.okMovil && s.trasp.okSuyo)) return;
+    const completo = s.trasp.okMovil && s.trasp.okSuyo;
+    s.trasp.hecho = true; clearTimeout(s.trasp.plazo);
+    if (t) finaliza(t, 'traspaso', '', true);
+    finaliza(s, 'traspaso', '', true);
+    emite('traspasada', { completo });
+  }
+  function recibePar(s, j) {
+    if (s.canal !== 'par') return;
+    if (j.que === 'ok' && s.papel === 'pc' && s.trasp) { s.trasp.okMovil = true; if (S && S.trasp) S.trasp.okMovil = true; acabaTraspaso(); return; }
+    if (j.que === 'semilla' && s.papel === 'movil' && !s.traspasando) {
+      let k; try { k = C.deB64u(String(j.k || '')); } catch (_) { return; }
+      if (k.length !== 32) return;
+      s.traspasando = true;
+      enviaControl(s, { tipo: 'par', que: 'ok' });
+      const usado = Math.max(0, PRUEBA_MS - Math.max(0, +j.resto || 0)), reanuda = j.llamada === 1;
+      setTimeout(async () => { finaliza(s, 'traspaso', '', true); emite('par-hecho'); await continuaEn(k, { papel: 'movil', usado, reanuda }); }, 700);
+    }
+  }
+  // la otra persona: su conversación pasa sola a la sesión nueva con el móvil
+  function recibeTraspaso(s, j) {
+    if (s.canal || s.traspasando || s !== S) return;
+    let k; try { k = C.deB64u(String(j.k || '')); } catch (_) { return; }
+    if (k.length !== 32) return;
+    s.traspasando = true;
+    const reanuda = j.llamada === 1 || !!(L && L.t0);
+    enviaControl(s, { tipo: 'traspaso-ok' });
+    emite('traspaso', { fase: 'espera' });
+    setTimeout(async () => { finaliza(s, 'traspaso', '', true); await continuaEn(k, { usado: s.usado || 0, reanuda, llamaYo: true }); }, 700);
+  }
+  async function continuaEn(k, opc) {
+    if (!(await conectado())) { emite('fin', { motivo: 'suyo', por: 'traspaso' }); return; }
+    const s = await nuevaSesion(k, 'entra', Object.assign({ continua: true }, opc));
+    s.plazoCont = setTimeout(() => { if (!s.fin && !s.conectado) finaliza(s, 'suyo', 'traspaso'); }, 90000);
+  }
+  // en el móvil: lo que trae el QR («#m=»): la sesión de emparejamiento con el ordenador
+  async function entraMovil(semilla) {
+    if (!(semilla instanceof Uint8Array) || semilla.length !== 32) return { ok: false, por: 'no-vale' };
+    if (!B.hayBlindada()) return { ok: false, por: 'sin-pq' };
+    if (!(await conectado())) return { ok: false, por: 'sin-rele' };
+    if (S) termina('nueva');
+    await nuevaSesion(semilla, 'entra', { canal: 'par', papel: 'movil' });
+    return { ok: true };
+  }
 
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla,
-    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado); },
+    pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
+    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };

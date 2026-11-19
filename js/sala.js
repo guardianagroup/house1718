@@ -8,7 +8,7 @@
   const M = window.ElixireMotor; if (!M) return;
   const tr = (k) => (window.ElixireIdioma ? window.ElixireIdioma.t(k) : k);
   const sala = $('#sala'), lista = $('#mensajes'), texto = $('#texto');
-  let abierta = false;
+  let abierta = false, continuada = false;
   const hora = (t) => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const tam = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB');
 
@@ -60,7 +60,7 @@
   texto.addEventListener('input', () => { ajusta(); if (texto.value.trim()) M.escribe(); });
   let escribeT = null;
   M.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
-  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); });
+  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); if (sala.classList.contains('video-grande')) $('#b-chat').classList.add('nuevo'); });
   M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
 
   // ---------- archivos ----------
@@ -104,7 +104,7 @@
     for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
     $('#sala-palabras').hidden = false;
   }
-  M.on('palabras', (w) => { if (abierta) pintaPalabras(w); });
+  M.on('palabras', (w) => { if (abierta && !continuada) pintaPalabras(w); });
   $('#coinciden').addEventListener('click', () => {
     M.comprobadas(); $('#sala-palabras').classList.add('hecho'); $('#palabras-botones').hidden = true;
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasHechas'; a.textContent = tr('palabrasHechas');
@@ -114,6 +114,12 @@
 
   // ---------- la videollamada ----------
   let tiempo = null;
+  // En el móvil, la videollamada se ve en grande, a pantalla completa (dueño, 14:29: «en cuanto se pasa al móvil… que se vea en
+  // grande, pantalla completa en el móvil»); «Chat» la encoge para escribir y «Ampliar» la vuelve a poner grande.
+  const movil = matchMedia('(max-width: 760px)');
+  let grande = false, llamadaVista = false;
+  function ponGrande(si) { grande = !!si; sala.classList.toggle('video-grande', grande && sala.classList.contains('en-llamada')); const x = $('#b-chat-texto'); x.dataset.t = grande ? 'chat' : 'ampliar'; x.textContent = tr(x.dataset.t); if (grande) $('#b-chat').classList.remove('nuevo'); }
+  $('#b-chat').addEventListener('click', () => ponGrande(!grande));
   const mmss = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'); };
   function rotuloLlamar(k) { const s = $('#llamar span'); s.dataset.t = k; s.textContent = tr(k); }
   function pintaLlamada(e) {
@@ -128,6 +134,8 @@
     const activa = hablando || ['preparando', 'llamando', 'conectando'].includes(e.estado);
     sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
     $('#video-reconecta').hidden = e.estado !== 'reconectando';
+    if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; }
+    sala.classList.toggle('video-grande', grande && hablando);
     ent.hidden = e.estado !== 'entrante';
     boton.hidden = e.estado !== 'libre' && e.estado !== 'fin';
     ctl.hidden = !activa;
@@ -174,7 +182,35 @@
   $('#b-camara').addEventListener('click', (e) => M.camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
 
   // ---------- el estado de la conversación ----------
-  M.on('conectado', () => { abre(); sistema('mConectado'); });
+  M.on('conectado', () => { continuada = false; abre(); sistema('mConectado'); });
+
+  // ---------- pasar la conversación al móvil con un QR (motor.js: pasaMovil) ----------
+  const dm = $('#movil');
+  function cierraMovil() { dm.hidden = true; $('#movil-qr').removeAttribute('src'); }
+  function pasoMovil(n) { $('#movil-paso1').hidden = n !== 1; $('#movil-paso2').hidden = n !== 2; $('#movil-si').hidden = n !== 2; $('#movil-si').disabled = false; const x = $('#movil-no-texto'); x.dataset.t = n === 2 ? 'movilNo' : 'cancelar'; x.textContent = tr(x.dataset.t); }
+  const errorDm = (k) => { const e = $('#movil-error'); if (k) e.dataset.t = k; e.textContent = k ? tr(k) : ''; };
+  $('#b-movil').addEventListener('click', async () => {
+    const r = await M.pasaMovil(); if (!r.ok || typeof window.qrSvg !== 'function') return;
+    $('#movil-qr').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(window.qrSvg(r.enlace + '&l=' + (window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en')));
+    errorDm(''); pasoMovil(1); dm.hidden = false; setTimeout(() => $('#movil-no').focus(), 50);
+  });
+  $('#movil-no').addEventListener('click', () => { M.cancelaMovil(); cierraMovil(); });
+  $('#movil-si').addEventListener('click', () => { if (M.confirmaMovil()) { $('#movil-si').disabled = true; errorDm(''); const e = $('#movil-error'); e.dataset.t = 'movilPasando'; e.textContent = tr('movilPasando'); } });
+  M.on('par-palabras', (w) => {
+    if (dm.hidden) return;
+    const p = $('#movil-palabras'); p.textContent = ''; for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
+    pasoMovil(2);
+  });
+  M.on('par-fin', (f) => { if (!dm.hidden) { pasoMovil(1); $('#movil-qr').removeAttribute('src'); errorDm(f && f.motivo === 'caduca' ? 'movilCaducado' : 'movilCancelado'); } });
+  M.on('traspasada', () => { cierraMovil(); cierra(); aviso('movilHechoEtiqueta', 'movilHechoTitulo', 'movilHechoTexto', false); });
+  // la otra persona pasa al móvil: esta sala sigue abierta y continúa con su móvil, con claves nuevas
+  M.on('traspaso', () => { if (abierta) { ponEstado('traspasoEspera', false); sistema('traspasoEspera'); } });
+  M.on('continua', (e) => {
+    continuada = true;
+    if (!abierta) abre();
+    $('#sala-palabras').hidden = true; ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
+    sistema(e && e.movil ? 'continuaAqui' : 'continuaSuMovil');
+  });
   M.on('claves', (c) => { if (abierta && c.renovada) sistema('clavesRenovadas'); });
   M.on('se-va', () => { if (abierta) { ponEstado('seFue', true); sistema('seFue'); } });
   M.on('vuelve', () => { if (abierta) { ponEstado('salaEstado', false); sistema('vuelve'); } });
@@ -183,7 +219,7 @@
   M.on('red', (si) => { if (abierta) ponEstado(si ? 'salaEstado' : 'sinRed', !si); });
   $('#terminar').addEventListener('click', () => M.termina('mio'));
   M.on('fin', (f) => {
-    const enSala = abierta; cierra();
+    const enSala = abierta; cierraMovil(); cierra();
     const textos = {
       mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false],
       alarma: ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true], 'alarma-suya': ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true],
