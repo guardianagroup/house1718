@@ -576,3 +576,8 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .sala .tarjeta .quita{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;border-radius:50%;background:none;color:#9FB0C2;font:300 22px/1 var(--ui);cursor:pointer}
 }
 @media (max-width:760px){ .sala .controles,.sala #entrante,.sala .video-velo{overflow:visible!important} }
+
+/* ---------- con la roca abierta (esperando la llamada, entrando, en la sala), la página no se mueve (dueño, 16:26: «si le doy arriba
+   abajo se puede mover por la web; quiero que se quede fijo ahí») ---------- */
+body.cerrado{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none}
+html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
