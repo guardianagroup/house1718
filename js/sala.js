@@ -28,7 +28,7 @@
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
-    lista.textContent = ''; texto.value = ''; avisos.textContent = ''; menuEnviar.hidden = true;
+    lista.textContent = ''; texto.value = ''; avisos.textContent = ''; menuEnviar.hidden = true; visor.hidden = true; $('#visor-img').removeAttribute('src'); archivosVivos.clear(); for (const u of previas.values()) URL.revokeObjectURL(u); previas.clear();
     const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
     for (const k of ['left', 'top', 'right', 'bottom']) vm.style.removeProperty(k);
     if (window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(false);
@@ -52,7 +52,7 @@
   function pintaMensaje(m) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg ' + m.dir; li.dataset.id = m.id;
-    li.append(contenido(m.texto)); tarjeta(m.id, contenido(m.texto), m.dir, 20000);
+    li.append(contenido(m.texto)); toastMensaje(m);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
   }
@@ -75,51 +75,103 @@
   M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
 
   // ---------- archivos ----------
-  // ---------- en la llamada del móvil: lo que se envía y llega, en tarjetas arriba (el chat no se ve) ----------
-  // Dueño, 15:54: «y podamos adjuntar fotos, ubicación, etc.», como en GUARDIANA: «Enviar» junto a «Colgar» abre foto, ubicación o
-  // archivo; lo que llega sale arriba en una tarjeta (la foto, con su imagen) y se puede guardar.
-  const avisos = $('#avisos-llamada');
-  function tarjeta(id, nodo, dir, ms) {
+  // ---------- en la llamada del móvil: avisos breves arriba y la foto a pantalla completa ----------
+  // Dueño, 15:54: «y podamos adjuntar fotos, ubicación, etc.», como en GUARDIANA; 16:43: «la forma de aparecer en pantalla… me parece
+  // algo rara; a ver si puedes profesionalizar eso». Cada envío y cada llegada, en un aviso compacto arriba (icono o miniatura, qué es
+  // y su botón), que se va solo; la foto recibida se abre a pantalla completa con «Guardar». Las fotos salen ya reducidas (2048 px,
+  // JPEG): con la llamada en marcha, una foto del móvil de 8 MB tardaba en llegar; reducida, son segundos.
+  const avisos = $('#avisos-llamada'), previas = new Map();
+  const NS = 'http://www.w3.org/2000/svg';
+  const ICONOS = { pin: ['M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z', 'M12 7.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z'], doc: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5'], foto: ['M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z', 'M12 8.6a3.4 3.4 0 1 0 0 6.8a3.4 3.4 0 1 0 0-6.8z'], ok: ['M5 12.5l4.2 4.2L19 7'], msj: ['M4 5h16v10H8l-4 4z'], candado: ['M5.5 11h13v9.5h-13z', 'M8 11V7.5a4 4 0 0 1 8 0V11'] };
+  const icono = (k) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('aria-hidden', 'true'); for (const d of ICONOS[k] || ICONOS.doc) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); v.append(p); } return v; };
+  const esFoto = (m) => /^image\/(png|jpe?g|gif|webp|heic|heif|avif)$/i.test(m || '');
+  function toast(id, o) {
     if (!movil.matches || !abierta) return null;
-    let li = id ? avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]') : null;
-    if (!li) { li = document.createElement('li'); if (id) li.dataset.id = id; avisos.append(li); }
-    li.className = 'tarjeta ' + (dir || 'sistema'); li.textContent = '';
-    const x = document.createElement('button'); x.type = 'button'; x.className = 'quita'; x.setAttribute('aria-label', '×'); x.textContent = '×'; x.addEventListener('click', () => li.remove());
-    li.append(nodo, x);
-    while (avisos.children.length > 3) avisos.firstElementChild.remove();
-    clearTimeout(li._t); if (ms) li._t = setTimeout(() => li.remove(), ms);
+    let li = avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]');
+    if (!li) { li = document.createElement('li'); li.dataset.id = id; avisos.append(li); }
+    li.className = 'toast' + (o.ok ? ' hecho' : ''); li.textContent = '';
+    const ico = document.createElement('span'); ico.className = 't-ico';
+    if (o.img) { const i = document.createElement('img'); i.src = o.img; i.alt = ''; ico.append(i); } else ico.append(icono(o.ok ? 'ok' : o.icono));
+    const tx = document.createElement('span'); tx.className = 't-txt';
+    const b = document.createElement('b'); b.textContent = o.titulo || ''; tx.append(b);
+    if (o.sub) { const sm = document.createElement('small'); sm.textContent = o.sub; tx.append(sm); }
+    if (o.progreso != null) { const ba = document.createElement('i'); ba.className = 't-barra'; const r = document.createElement('i'); r.style.width = Math.round(o.progreso * 100) + '%'; ba.append(r); tx.append(ba); }
+    li.append(ico, tx);
+    if (o.accion) {
+      const a = document.createElement(o.accion.href ? 'a' : 'button'); a.className = 't-accion'; a.textContent = o.accion.texto;
+      if (o.accion.href) { a.href = o.accion.href; if (o.accion.descarga) a.download = o.accion.descarga; else { a.target = '_blank'; a.rel = 'noopener noreferrer'; } }
+      else { a.type = 'button'; a.addEventListener('click', (e) => { e.stopPropagation(); o.accion.fn(); }); }
+      li.append(a);
+    }
+    li.onclick = (e) => { if (!e.target.closest('.t-accion')) { if (o.accion && o.accion.fn) o.accion.fn(); else li.remove(); } };
+    while (avisos.children.length > 2) avisos.firstElementChild.remove();
+    clearTimeout(li._t); if (o.ms) li._t = setTimeout(() => { li.classList.add('se-va'); setTimeout(() => li.remove(), 300); }, o.ms);
     return li;
   }
-  function textoTarjeta(k) { const s = document.createElement('span'); s.dataset.t = k; s.textContent = tr(k); return s; }
+  const quitaToast = (id) => { const li = avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]'); if (li) li.remove(); };
+  // la foto recibida, a pantalla completa
+  const visor = $('#visor-foto');
+  function abreVisor(url, nombre) { $('#visor-img').src = url; const g = $('#visor-guardar'); g.href = url; g.download = nombre || 'foto.jpg'; visor.hidden = false; }
+  $('#visor-cerrar').addEventListener('click', () => { visor.hidden = true; $('#visor-img').removeAttribute('src'); });
+  async function comprimeFoto(f) {
+    if (!/^image\/(jpe?g|png|webp|heic|heif)$/i.test(f.type || '') || f.size < 700 * 1024 || typeof createImageBitmap !== 'function') return f;
+    try {
+      let bmp; try { bmp = await createImageBitmap(f, { imageOrientation: 'from-image' }); } catch (_) { bmp = await createImageBitmap(f); }
+      const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
+      const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.86));
+      if (!blob || blob.size >= f.size) return f;
+      return new File([blob], String(f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+    } catch (_) { return f; }
+  }
   const menuEnviar = $('#menu-enviar');
   $('#b-enviar').addEventListener('click', () => { menuEnviar.hidden = !menuEnviar.hidden; $('#b-enviar').setAttribute('aria-expanded', String(!menuEnviar.hidden)); });
   document.addEventListener('pointerdown', (e) => { if (!menuEnviar.hidden && !menuEnviar.contains(e.target) && !e.target.closest('#b-enviar')) { menuEnviar.hidden = true; $('#b-enviar').setAttribute('aria-expanded', 'false'); } }, true);
   $('#enviar-foto').addEventListener('click', () => { menuEnviar.hidden = true; $('#foto-llamada').click(); });
   $('#enviar-archivo').addEventListener('click', () => { menuEnviar.hidden = true; $('#archivo').click(); });
-  $('#foto-llamada').addEventListener('change', (e) => { enviaArchivos([...e.target.files]); e.target.value = ''; });
+  $('#foto-llamada').addEventListener('change', async (e) => {
+    const fs = [...e.target.files]; e.target.value = '';
+    for (const f of fs) { const g = await comprimeFoto(f); enviaArchivos([g], URL.createObjectURL(g)); }
+  });
   $('#enviar-ubicacion').addEventListener('click', () => {
     menuEnviar.hidden = true;
-    if (!navigator.geolocation) { tarjeta('ubi', textoTarjeta('sinUbicacion'), 'sistema', 6000); return; }
-    tarjeta('ubi', textoTarjeta('buscandoUbicacion'), 'sistema', 20000);
+    if (!navigator.geolocation) { toast('ubi', { icono: 'pin', titulo: tr('sinUbicacion'), ms: 5000 }); return; }
+    toast('ubi', { icono: 'pin', titulo: tr('buscandoUbicacion'), ms: 20000 });
     navigator.geolocation.getCurrentPosition((p) => {
-      const q = avisos.querySelector('li[data-id="ubi"]'); if (q) q.remove();
+      quitaToast('ubi');
       const m = M.envia('\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6));
       if (m) pintaMensaje(m);
-    }, () => tarjeta('ubi', textoTarjeta('sinUbicacion'), 'sistema', 6000), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    }, () => toast('ubi', { icono: 'pin', titulo: tr('sinUbicacion'), ms: 5000 }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
-  function tarjetaArchivo(a, estado) {
-    const f = document.createDocumentFragment();
-    const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
-    const t = document.createElement('span'); t.className = 'tam'; t.textContent = estado ? tr(estado) : tam(a.tam);
-    f.append(n, t);
-    if (a.url) {
-      if (/^image\/(png|jpe?g|gif|webp|heic|heif|avif)$/i.test(a.mime || '')) { const i = document.createElement('img'); i.src = a.url; i.alt = ''; f.prepend(i); }
-      const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre; d.append(textoTarjeta('guardar')); f.append(d);
-    } else { const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i')); f.append(b); }
-    return tarjeta('a-' + a.id, f, a.dir || 'suya', a.url ? 90000 : 0);
+  // los mensajes (la ubicación, o lo que escriba alguien desde el ordenador)
+  function toastMensaje(m) {
+    const u = UBICACION.exec(m.texto || '');
+    if (u) {
+      if (m.dir === 'mia') toast('m-' + m.id, { ok: true, titulo: tr('ubicacionEnviada'), ms: 2600 });
+      else toast('m-' + m.id, { icono: 'pin', titulo: tr('ubicacionRecibida'), accion: { texto: tr('abrirMapa'), href: 'https://www.google.com/maps?q=' + u[2] + ',' + u[3] }, ms: 25000 });
+      return;
+    }
+    if (m.dir !== 'mia') toast('m-' + m.id, { icono: 'msj', titulo: tr('mensajeNuevo'), sub: String(m.texto || '').slice(0, 140), ms: 12000 });
   }
+  // los archivos: enviando (con su avance) → enviado; recibiendo → la foto con «Ver», el archivo con «Guardar»
+  function toastArchivo(a, fase, hecho) {
+    const foto = esFoto(a.mime) || previas.has(a.id), id = 'a-' + a.id;
+    if (a.dir === 'mia') {
+      if (fase === 'hecho') { toast(id, { img: previas.get(a.id), ok: !previas.has(a.id), titulo: tr(foto ? 'fotoEnviada' : 'archivoEnviadoT'), sub: a.nombre && !foto ? a.nombre : '', ms: 2600 }); const u = previas.get(a.id); if (u) setTimeout(() => URL.revokeObjectURL(u), 4000); previas.delete(a.id); return; }
+      toast(id, { img: previas.get(a.id), icono: foto ? 'foto' : 'doc', titulo: tr(foto ? 'enviandoFoto' : 'enviandoArchivo'), sub: foto ? '' : a.nombre, progreso: hecho || 0 });
+      return;
+    }
+    if (fase === 'listo') {
+      if (esFoto(a.mime)) toast(id, { img: a.url, titulo: tr('fotoRecibida'), sub: tr('tocaParaVer'), accion: { texto: tr('verFoto'), fn: () => abreVisor(a.url, a.nombre) }, ms: 30000 });
+      else toast(id, { icono: 'doc', titulo: tr('archivoRecibido'), sub: a.nombre + ' · ' + tam(a.tam), accion: { texto: tr('guardar'), href: a.url, descarga: a.nombre }, ms: 40000 });
+      return;
+    }
+    toast(id, { icono: esFoto(a.mime) ? 'foto' : 'doc', titulo: tr(esFoto(a.mime) ? 'recibiendoFoto' : 'recibiendoArchivo'), sub: esFoto(a.mime) ? '' : a.nombre, progreso: hecho || 0 });
+  }
+  const archivosVivos = new Map(); // id → { dir, nombre, tam, mime }
   function filaArchivo(a) {
-    tarjetaArchivo(a);
+    archivosVivos.set(a.id, a); toastArchivo(a, 'empieza', 0);
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg archivo ' + a.dir; li.dataset.id = a.id;
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
@@ -129,11 +181,12 @@
     return li;
   }
   const fila = (id) => lista.querySelector('li.archivo[data-id="' + CSS.escape(id) + '"]');
-  function enviaArchivos(files) {
+  function enviaArchivos(files, previa) {
     for (const f of files) {
       const r = M.enviaArchivo(f);
-      if (!r.ok) { sistema(r.por === 'grande' ? 'archivoGrande' : 'archivoNo', '(' + f.name + ')'); continue; }
-      filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam });
+      if (!r.ok) { sistema(r.por === 'grande' ? 'archivoGrande' : 'archivoNo', '(' + f.name + ')'); if (previa) URL.revokeObjectURL(previa); continue; }
+      if (previa) previas.set(r.id, previa);
+      filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam, mime: f.type });
     }
   }
   $('#archivo').addEventListener('change', (e) => { enviaArchivos([...e.target.files]); e.target.value = ''; });
@@ -141,10 +194,10 @@
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) enviaArchivos([...e.dataTransfer.files]); });
   M.on('archivo', (a) => filaArchivo(a));
-  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const c = avisos.querySelector('li[data-id="a-' + CSS.escape(p.id) + '"] .barra i'); if (c) c.style.width = Math.round(p.hecho * 100) + '%'; });
-  M.on('archivo-enviado', (p) => { const c = avisos.querySelector('li[data-id="a-' + CSS.escape(p.id) + '"]'); if (c) { const t = c.querySelector('.tam'); if (t) { t.dataset.t = 'archivoEnviado'; t.textContent = tr('archivoEnviado'); } const b = c.querySelector('.barra'); if (b) b.remove(); clearTimeout(c._t); c._t = setTimeout(() => c.remove(), 5000); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
+  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); });
+  M.on('archivo-enviado', (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
   M.on('archivo-listo', (a) => {
-    tarjetaArchivo(Object.assign({ dir: 'suya' }, a));
+    { const v = archivosVivos.get(a.id) || {}; toastArchivo(Object.assign({ dir: 'suya' }, v, a), 'listo'); archivosVivos.delete(a.id); }
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;
@@ -199,6 +252,24 @@
     vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta);
   }
   $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
+  // Arriba, cómo va la llamada (dueño, 16:44): «Encriptado poscuántico de extremo a extremo» solo cuando la capa ya está descifrando
+  // lo que llega (antes, «Comprobando…»); si no hay capa, «Encriptado estándar» y lo que se ha negociado de verdad (DTLS y SRTP, de
+  // las estadísticas del navegador); y la calidad de la conexión, junto al tiempo.
+  let calidadUlt = null;
+  const SRTP = { AES_CM_128_HMAC_SHA1_80: 'SRTP AES-128', AES_CM_128_HMAC_SHA1_32: 'SRTP AES-128', AEAD_AES_128_GCM: 'SRTP AES-128-GCM', AEAD_AES_256_GCM: 'SRTP AES-256-GCM' };
+  const TLS = { FEFD: 'DTLS 1.2', FEFC: 'DTLS 1.3' };
+  function textoEstandar() {
+    const c = calidadUlt || {}, t = TLS[String(c.tls || '').toUpperCase()] || (c.tls ? 'DTLS' : ''), s = SRTP[String(c.srtp || '').toUpperCase()] || (c.srtp ? 'SRTP ' + c.srtp : '');
+    return t || s ? [t, s].filter(Boolean).join(' · ') : 'DTLS-SRTP';
+  }
+  function pintaCifrado(e) {
+    const c = $('#video-cifrado span'), d = $('#video-detalle'), en = e.estado === 'hablando' || e.estado === 'reconectando';
+    const k = e.sinCapa ? 'cifradaEstandar' : e.capa || !en ? 'cifradaExtremo' : 'cifradaComprobando';
+    if (c && c.dataset.t !== k) { c.dataset.t = k; c.textContent = tr(k); }
+    $('#video-cifrado').classList.toggle('estandar', !!e.sinCapa); $('#video-cifrado').classList.toggle('comprobando', k === 'cifradaComprobando');
+    d.hidden = !en || k === 'cifradaComprobando'; d.textContent = e.sinCapa ? textoEstandar() : 'ML-KEM-1024 · ECDH P-384 · AES-256-GCM';
+  }
+  M.on('calidad', (q) => { calidadUlt = q; if (ultimo.sinCapa) pintaCifrado(ultimo); });
   // Los tonos, como en GUARDIANA (dueño, 16:09: al volver a llamar no sonaba nada): quien llama oye el tono de llamada; a quien le
   // llaman le suena el timbre (y en Android vibra). Con el audio del navegador, que se desbloquea con el primer toque en la página.
   let ctxT = null, tonoT = null, tonoYa = '';
@@ -235,9 +306,9 @@
     const velo = $('#video-velo'), boton = $('#llamar'), ent = $('#entrante'), txt = $('#video-texto'), ctl = $('#controles');
     const vs = $('#video-suyo'), vm = $('#video-mio');
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
-    clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
+    clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true; if (e.estado !== 'hablando' && e.estado !== 'reconectando') calidadUlt = null;
     ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
-    { const c = $('#video-cifrado span'), k = e.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo'; if (c && c.dataset.t !== k) { c.dataset.t = k; c.textContent = tr(k); } }
+    pintaCifrado(e);
     if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !e.cruzada && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
@@ -263,7 +334,7 @@
     else if (e.estado === 'conectando') pon('llConectando');
     else if (hablando) {
       // sin límite (dueño, 16:11), el tiempo que lleva la llamada; con límite, el que queda de prueba
-      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; if (M.sinLimite) { t.append(document.createTextNode(mmss(Date.now() - e.t0))); return; } const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
+      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; if (calidadUlt && movil.matches) { const q = document.createElement('span'); q.className = 'calidad ' + calidadUlt.nivel; const b = document.createElement('i'); for (let n = 0; n < 4; n++) b.append(document.createElement('i')); q.append(b, document.createTextNode(tr('calidad_' + calidadUlt.nivel))); t.append(q); } if (M.sinLimite) { t.append(document.createTextNode(mmss(Date.now() - e.t0))); return; } const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
       pinta(); tiempo = setInterval(pinta, 250);
       $('#b-micro').setAttribute('aria-pressed', String(e.mic)); $('#b-camara').setAttribute('aria-pressed', String(e.cam));
     } else if (e.estado === 'fin') {
@@ -284,7 +355,7 @@
     const E = window.Elixire || {};
     if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
   });
-  M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) tarjeta('capa', textoTarjeta(k), 'sistema', 12000); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) toast('capa', { icono: 'candado', titulo: tr('encriptadoEstandarT'), sub: tr(k), ms: 12000 }); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
   // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
   const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
   let retoT = null;

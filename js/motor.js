@@ -450,7 +450,7 @@
     const r = { id, nombre: String(j.nombre || 'archivo').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'archivo', mime: String(j.mime || '').slice(0, 100), tam, partes, clave: await C.aes(llave), trozos: new Array(partes), llegadas: 0, seguidas: 0, avisoT: 0 };
     llave.fill(0);
     s.recibos.set(id, r);
-    emite('archivo', { id, dir: 'suya', nombre: r.nombre, tam });
+    emite('archivo', { id, dir: 'suya', nombre: r.nombre, tam, mime: r.mime });
     enviaControl(s, { tipo: 'archivo-ack', id, hasta: 0 });
   }
   async function recibeTrozo(s, de, b) {
@@ -571,6 +571,30 @@
     if (mediosPrevios) { const p = mediosPrevios; mediosPrevios = null; clearTimeout(mediosPreviosT); const st = await p; if (st && st.getTracks().length && st.getTracks().every((t) => t.readyState === 'live')) return st; }
     return medios();
   }
+  // Cómo va la llamada (dueño, 16:44: «cuando la llamada se establezca y sea poscuántica, que lo indique; y cuando no, que diga el
+  // grado de encriptación que tiene… para que la persona sepa en todo momento lo que está pasando con la llamada y la calidad»):
+  // cada 2 s, de las estadísticas del propio navegador, el encriptado del transporte que se ha negociado de verdad (DTLS y SRTP) y la
+  // calidad (pérdidas en lo que llega e ida y vuelta).
+  function vigilaCalidad(x) {
+    clearInterval(x.calT); let antes = null;
+    x.calT = setInterval(async () => {
+      if (L !== x || !x.pc) { clearInterval(x.calT); return; }
+      try {
+        const st = await x.pc.getStats(); let par = null, tra = null, v = null; const rx = { lost: 0, recv: 0 };
+        st.forEach((r) => {
+          if (r.type === 'transport') tra = r;
+          if (r.type === 'candidate-pair' && r.state === 'succeeded' && (r.nominated || r.selected) && !par) par = r;
+          if (r.type === 'inbound-rtp' && !r.isRemote) { rx.lost += r.packetsLost || 0; rx.recv += r.packetsReceived || 0; if (r.kind === 'video') v = r; }
+        });
+        if (tra && tra.selectedCandidatePairId && st.get(tra.selectedCandidatePairId)) par = st.get(tra.selectedCandidatePairId);
+        const lost = antes ? Math.max(0, rx.lost - antes.lost) : 0, recv = antes ? Math.max(0, rx.recv - antes.recv) : 0; antes = rx;
+        const perdida = lost + recv > 0 ? lost / (lost + recv) : 0, rtt = par && par.currentRoundTripTime != null ? par.currentRoundTripTime : null;
+        const nivel = perdida < 0.015 && (rtt == null || rtt < 0.3) ? 'excelente' : perdida < 0.06 && (rtt == null || rtt < 0.6) ? 'buena' : 'debil';
+        x.calidad = { nivel, rtt, perdida, ancho: (v && v.frameWidth) || 0, alto: (v && v.frameHeight) || 0, tls: (tra && tra.tlsVersion) || '', srtp: (tra && tra.srtpCipher) || '', dtls: (tra && tra.dtlsCipher) || '' };
+        emite('calidad', x.calidad);
+      } catch (_) {}
+    }, 2000);
+  }
   function prefiereCodecs(pc, compatible) {
     try {
       const caps = window.RTCRtpReceiver && RTCRtpReceiver.getCapabilities && RTCRtpReceiver.getCapabilities('video'); if (!caps || !caps.codecs) return;
@@ -646,7 +670,7 @@
       const st = pc.connectionState;
       if (st === 'connected') {
         finRecupera(L); topes(pc);
-        if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); }
+        if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); vigilaCalidad(L); }
         if (L.estado !== 'hablando') { L.estado = 'hablando'; emite('llamada', estadoLlamada()); }
       } else if (st === 'failed' || st === 'disconnected') {
         if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') colgar('fallo');
@@ -778,7 +802,7 @@
   // salen dos llamadas ni un «ocupado» entre los dos.
   function cede(st) { if (st && !mediosPrevios) mediosPrevios = Promise.resolve(st); else if (st && !(L && L.local === st)) st.getTracks().forEach((t) => t.stop()); }
   function retira(x) {
-    clearTimeout(x.limite); clearTimeout(x.espera); finRecupera(x);
+    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x);
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
     if (x.local) cede(x.local);
@@ -830,7 +854,7 @@
     if (!L) return;
     const x = L; L = null;
     if (!suyo && S) enviaControl(S, { tipo: 'llamada', que: 'colgar', id: x.id });
-    clearTimeout(x.limite); clearTimeout(x.espera); finRecupera(x); velaPantalla(false);
+    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x); velaPantalla(false);
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (x.local) x.local.getTracks().forEach((t) => t.stop()); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}

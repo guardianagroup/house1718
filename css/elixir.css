@@ -586,3 +586,53 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
   .sala #llamar{bottom:calc(env(safe-area-inset-bottom) + 184px)}
   .sala .salir-llamada{bottom:calc(env(safe-area-inset-bottom) + 34px);min-height:46px;padding:0 30px}
 }
+
+/* ---------- la llamada del móvil: avisos breves, la foto a pantalla completa y cómo va la llamada (dueño, 16:43–16:44) ---------- */
+.video-detalle,.visor-foto{display:none}
+@media (max-width:760px){
+  .sala .tarjeta{display:none}
+  .sala .video-cifrado.comprobando{color:#C9D6E3;border-color:rgba(255,255,255,.18)}
+  .sala .video-cifrado.comprobando svg{animation:latidoCandado 1.2s ease-in-out infinite}
+  .sala .video-cifrado.estandar{border-color:rgba(240,199,127,.45);color:#F7E2B8}
+  .sala .video-cifrado.estandar svg{color:#F0C77F}
+  @keyframes latidoCandado{50%{opacity:.35}}
+  .sala .video-detalle:not([hidden]){display:block;position:absolute;z-index:3;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 56px);margin:0;text-align:center;
+    font:500 11px/1.3 var(--ui);letter-spacing:.06em;color:#9CC3E4;text-shadow:0 1px 8px rgba(0,0,0,.9)}
+  .sala .video-tiempo,.sala.video-grande .video-tiempo{top:calc(env(safe-area-inset-top) + 76px);font-size:15px;gap:12px;align-items:center}
+  .sala .video-tiempo .calidad{display:inline-flex;align-items:center;gap:7px;font:500 12px/1 var(--ui);letter-spacing:.01em;color:#D7E7F5}
+  .sala .video-tiempo .calidad > i{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+  .sala .video-tiempo .calidad > i > i{display:block;width:3px;border-radius:1px;background:rgba(255,255,255,.28)}
+  .sala .video-tiempo .calidad > i > i:nth-child(1){height:4px}.sala .video-tiempo .calidad > i > i:nth-child(2){height:7px}
+  .sala .video-tiempo .calidad > i > i:nth-child(3){height:10px}.sala .video-tiempo .calidad > i > i:nth-child(4){height:12px}
+  .sala .video-tiempo .calidad.excelente > i > i{background:#5CC98A}
+  .sala .video-tiempo .calidad.buena > i > i:nth-child(-n+3){background:#9CC3E4}
+  .sala .video-tiempo .calidad.debil > i > i:nth-child(-n+1){background:#E07A6C}
+  .sala .video-tiempo .calidad.debil{color:#F2B8AE}
+  /* los avisos: compactos, uno debajo de otro, que se van solos */
+  .sala .avisos-llamada{top:calc(env(safe-area-inset-top) + 108px);left:50%;right:auto;transform:translateX(-50%);width:min(380px,calc(100% - 24px));gap:8px}
+  .sala .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 8px;border-radius:18px;background:rgba(12,16,22,.94);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 14px 40px rgba(0,0,0,.55);color:#F4F6F8;animation:aparece .3s cubic-bezier(.2,.7,.2,1) both;transition:opacity .3s,transform .3s;cursor:pointer}
+  .sala .toast.se-va{opacity:0;transform:translateY(-8px)}
+  .sala .t-ico{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;overflow:hidden;background:rgba(156,195,228,.12);color:#9CC3E4}
+  .sala .t-ico img{width:100%;height:100%;object-fit:cover;display:block}
+  .sala .t-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+  .sala .toast.hecho .t-ico{background:rgba(92,201,138,.16);color:#5CC98A}
+  .sala .t-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sala .t-txt b{font:600 14px/1.25 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sala .t-txt small{font:400 12.5px/1.3 var(--ui);color:#A9B8C7;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .sala .t-barra{display:block;height:3px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  .sala .t-barra > i{display:block;height:100%;width:0;background:#9CC3E4;transition:width .25s}
+  .sala .t-accion{flex:0 0 auto;display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;border:0;background:#9CC3E4;color:#05070A;font:600 13px/1 var(--ui);text-decoration:none;cursor:pointer}
+  /* la foto recibida, a pantalla completa */
+  .sala .visor-foto:not([hidden]){display:flex;position:fixed;inset:0;z-index:70;flex-direction:column;background:#04060A;color:#F4F6F8;text-align:center;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 18px);animation:aparece .25s ease both}
+  .sala .visor-cab{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 4px 0 10px}
+  .sala .visor-cab b{font:600 17px/1.3 var(--ui)}
+  .sala .visor-cerrar{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(232,236,241,.1);color:#F4F6F8;cursor:pointer}
+  .sala .visor-cerrar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .sala .visor-cuerpo{position:relative;flex:1;min-height:0;margin:8px 0 14px}
+  .sala .visor-cuerpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .sala .visor-pie{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .sala .visor-guardar{display:inline-flex;align-items:center;justify-content:center;min-width:210px;height:52px;border-radius:14px;background:#9CC3E4;color:#05070A;font:600 16px/1 var(--ui);text-decoration:none}
+  .sala .visor-pie small{max-width:40ch;font:400 12.5px/1.45 var(--ui);color:#9FB3C4}
+}
