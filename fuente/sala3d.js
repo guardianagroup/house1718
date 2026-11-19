@@ -561,7 +561,7 @@ function arranca() {
     retrato = camara.aspect < 0.8;
     // y más cerca: el holograma, a pantalla completa (dueño, 16:05)
     CAM.z = retrato ? 4.2 : 4.7;
-    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.07 : 0.02)), w, h);
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.095 : 0.02)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;
