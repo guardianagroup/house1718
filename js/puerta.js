@@ -33,8 +33,17 @@
     setTimeout(() => foco && foco.focus({ preventScroll: true }), quieto ? 0 : 450);
   }
   function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible'); p.hidden = true; } }
+  // Pantalla completa (dueño, 12:30: «cuando entro a la página web, quiero que salga ya en pantalla completa»). Los navegadores no
+  // dejan que una página se ponga a pantalla completa sola al cargar: hace falta un gesto. Se pide con «Empezar prueba» (y al entrar
+  // con un enlace), antes de cualquier espera, para que cuente como gesto de la persona. Esc la quita.
+  function pantallaCompleta() {
+    const r = document.documentElement;
+    if (document.fullscreenElement || !r.requestFullscreen || matchMedia('(display-mode: fullscreen)').matches) return;
+    try { const p = r.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+  }
   async function abre() {
     if (ocupado || abierta) return; ocupado = true;
+    pantallaCompleta();
     try {
       if (scrollY > 4) { scrollTo({ top: 0, behavior: quieto ? 'auto' : 'smooth' }); await espera(quieto ? 0 : 800); }
       document.body.classList.add('cerrado');
@@ -120,6 +129,7 @@
   }
   $('#entrar-enlace').addEventListener('click', async () => {
     if (!M || !semillaEnlace) return;
+    pantallaCompleta();
     const b = $('#entrar-enlace'), sp = b.querySelector('span'); b.disabled = true; sp.dataset.t = 'conectando'; sp.textContent = tr('conectando');
     const r = await M.entraSemilla(semillaEnlace.slice());
     if (!r.ok) { b.disabled = false; sp.dataset.t = 'entrar'; sp.textContent = tr('entrar'); ponError('enlace', r.por); return; }
