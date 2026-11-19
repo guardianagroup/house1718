@@ -42,7 +42,7 @@
       else { p.classList.remove('visible'); p.hidden = true; }
     }
     abierta = cual;
-    const foco = cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : $('#copiar');
+    const foco = cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : cual === 'enlace' ? $('#entrar-enlace') : $('#copiar');
     setTimeout(() => foco && foco.focus({ preventScroll: true }), quieto ? 0 : 450);
   }
   function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible'); p.hidden = true; } }
@@ -76,7 +76,7 @@
   for (const b of document.querySelectorAll('[data-volver-elige]')) b.addEventListener('click', () => { if (M && M.activa) M.termina('cancela'); paraReloj(); ponError('elige', ''); muestra('elige'); });
 
   const ERRORES = { formato: 'faltan', 'no-vale': 'eNoVale', 'sin-rele': 'eSinRele', 'sin relé': 'eSinRele', 'sin respuesta': 'eSinRele', 'sin-pq': 'eSinPq', 'demasiados intentos': 'eDemasiados', 'sin-codigo': 'eSinCodigo' };
-  function ponError(donde, por) { const e = $(donde === 'tengo' ? '#error-codigo' : '#error-elige'); e.textContent = por ? tr(ERRORES[por] || 'eSinRele') : ''; }
+  function ponError(donde, por) { const e = $(donde === 'tengo' ? '#error-codigo' : donde === 'enlace' ? '#error-enlace' : '#error-elige'); e.textContent = por ? tr(ERRORES[por] || 'eSinRele') : ''; }
 
   // ---- crear un código ----
   let reloj = null;
@@ -84,6 +84,7 @@
   $('#crear').addEventListener('click', async () => {
     if (!M) return;
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
+    { const n = $('#nota-enlace'); n.dataset.t = 'notaEnlace'; n.textContent = tr('notaEnlace'); $('#copiar-enlace').disabled = false; $('#copiar').disabled = false; }
     $('#estado-crear').dataset.t = 'creando'; $('#estado-crear').textContent = tr('creando');
     muestra('crear');
     const r = await M.crea();
@@ -100,6 +101,44 @@
     const s = $('#copiar span');
     try { await navigator.clipboard.writeText(c); s.dataset.t = 'copiado'; s.textContent = tr('copiado'); setTimeout(() => { s.dataset.t = 'copiar'; s.textContent = tr('copiar'); }, 1800); } catch (_) {}
   });
+
+  // ---- enlace de máxima protección (256 bits en el fragmento «#e=», que no llega a ningún servidor) ----
+  $('#copiar-enlace').addEventListener('click', async () => {
+    if (!M) return;
+    const u = M.enlace(); if (!u) return;
+    try { await navigator.clipboard.writeText(u); } catch (_) { return; }
+    const e = $('#codigo'); delete e.dataset.codigo; e.textContent = '···· ···· ···· ····'; $('#copiar').disabled = true;
+    const n = $('#nota-enlace'); n.dataset.t = 'enlaceCopiado'; n.textContent = tr('enlaceCopiado');
+    paraReloj(); ponEstado('esperando');
+  });
+  let semillaEnlace = null;
+  function leeEnlace() {
+    const m = /^#e=([A-Za-z0-9_-]{43})$/.exec(location.hash || ''); if (!m) return false;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+    try {
+      let b = m[1].replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '=';
+      const x = Uint8Array.from(atob(b), (c) => c.charCodeAt(0)); if (x.length !== 32) return false;
+      semillaEnlace = x; return true;
+    } catch (_) { return false; }
+  }
+  async function abreEnlace() {
+    if (ocupado || abierta) return; ocupado = true;
+    try {
+      document.body.classList.add('cerrado');
+      if (M) M.prepara();
+      $('#consola').classList.add('fuera');
+      if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
+      ponError('enlace', ''); muestra('enlace');
+    } finally { ocupado = false; }
+  }
+  $('#entrar-enlace').addEventListener('click', async () => {
+    if (!M || !semillaEnlace) return;
+    const b = $('#entrar-enlace'), sp = b.querySelector('span'); b.disabled = true; sp.dataset.t = 'conectando'; sp.textContent = tr('conectando');
+    const r = await M.entraSemilla(semillaEnlace.slice());
+    if (!r.ok) { b.disabled = false; sp.dataset.t = 'entrar'; sp.textContent = tr('entrar'); ponError('enlace', r.por); return; }
+    semillaEnlace.fill(0); semillaEnlace = null;
+  });
+  if (leeEnlace()) { const va = () => setTimeout(abreEnlace, 600); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
 
   // ---- tengo un código ----
   const normaliza = (t) => String(t || '').normalize('NFKC').toUpperCase().replace(/[\s\-‐-―−.·]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');

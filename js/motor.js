@@ -17,7 +17,8 @@
   const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   const q = new URLSearchParams(location.search);
   const TIC_MS = (LOCAL && +q.get('latido')) || 500;
-  const RENUEVA_MS = (LOCAL && +q.get('renueva') * 1000) || 5 * 60 * 1000;
+  // claves nuevas cada minuto (agencia, ronda 96, e: «trinquete poscuántico continuo», las dos voces; antes, cada 5 minutos)
+  const RENUEVA_MS = (LOCAL && +q.get('renueva') * 1000) || 60 * 1000;
   const PRUEBA_MS = (LOCAL && +q.get('prueba') * 1000) || 3 * 60 * 1000;
   const PLAZO_PALABRAS_MS = 15000;
   const CODIGO_MS = 10 * 60 * 1000;
@@ -100,6 +101,22 @@
       await nuevaSesion(semilla, 'entra');
       return { ok: true };
     } finally { d.olvida(); }
+  }
+
+  // Enlace de máxima protección (agencia, ronda 96, b: las dos voces): la semilla entera (256 bits) en el fragmento «#e=», que el
+  // navegador no manda a ningún servidor. Al pedirlo, el código sale del relé: desde ese momento solo vale el enlace.
+  function enlace() {
+    const s = S; if (!s || s.fin || s.rol !== 'crea' || s.huella) return null;
+    quitaCodigo(s);
+    return location.origin + location.pathname + '#e=' + C.b64u(s.semilla);
+  }
+  async function entraSemilla(semilla) {
+    if (!(semilla instanceof Uint8Array) || semilla.length !== 32) return { ok: false, por: 'no-vale' };
+    if (!B.hayBlindada()) return { ok: false, por: 'sin-pq' };
+    if (!(await conectado())) return { ok: false, por: 'sin-rele' };
+    if (S) termina('nueva');
+    await nuevaSesion(semilla, 'entra');
+    return { ok: true };
   }
 
   // ---------- presentaciones (Ultra v5: P-384 + ML-KEM-1024, firmas ECDSA P-384 y ML-DSA-87) ----------
@@ -559,6 +576,7 @@
       return;
     }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
+    if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
   }
   function colgar(motivo, suyo) {
     if (!L) return;
@@ -571,6 +589,17 @@
     // la prueba: una videollamada por conversación, de hasta 3 minutos
     if (S && x.t0) S.llamadaHecha = true;
     emite('llamada', { estado: 'fin', motivo: motivo || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: !!(S && S.llamadaHecha) });
+  }
+  // Prueba de vida (agencia, ronda 96, f): un reto al azar que la otra persona tiene que hacer en directo, en cámara. Va por la sesión
+  // encriptada, así que lo pide el equipo verificado con las cuatro palabras. Ayuda a detectar un vídeo grabado o una suplantación
+  // hecha con inteligencia artificial; no es una prueba infalible.
+  const RETOS = 7;
+  function reto() {
+    if (!L || L.estado !== 'hablando' || !S) return null;
+    const r = C.azar(4), i = r[0] % RETOS, L2 = window.GuardianaPalabras;
+    const w = Array.isArray(L2) && L2.length ? L2[((r[1] << 8) | r[2]) % L2.length] : '';
+    enviaControl(S, { tipo: 'llamada', que: 'reto', id: L.id, i, w });
+    const x = { i, w, mio: true }; emite('reto', x); return x;
   }
   function rechazar() { if (L && L.estado === 'entrante') { const id = L.id; L = null; if (S) enviaControl(S, { tipo: 'llamada', que: 'rechaza', id }); emite('llamada', { estado: 'fin', motivo: 'rechazada' }); } }
   function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
@@ -605,7 +634,7 @@
 
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),

@@ -11,7 +11,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-10" integrity="sha384-bkNHf9GeHy4DeuPlOQQJs0CaOBoQLJbblXUXAUT8TYFIqjhUWS3S7Ph3bQkbA1/L">
+<link rel="stylesheet" href="css/elixir.css?v=20261119-10" integrity="sha384-lunywNzICDMXcvTizHxq+Mi0bNumtUc3AbpRAhmyBfMPg+QZ4K6Hz41Gc9jXLI0b">
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -55,6 +55,15 @@
 <p class="texto-panel" data-t="daselo">Dáselo a la otra persona por otro canal. Caduca en 10 minutos y sirve una sola vez.</p>
 <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
 <div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
+<button type="button" class="cristal pequeno" id="copiar-enlace"><span data-t="copiarEnlace">Copiar enlace de máxima protección</span></button>
+<p class="nota-panel" id="nota-enlace" data-t="notaEnlace">El enlace lleva una clave de 256 bits que no pasa por ningún servidor. Al copiarlo, el código deja de valer.</p>
+</section>
+
+<section class="panel" id="panel-enlace" hidden aria-labelledby="t-enlace">
+<span class="etiqueta" id="t-enlace" data-t="enlaceTitulo">INVITACIÓN DE MÁXIMA PROTECCIÓN</span>
+<p class="texto-panel" data-t="enlaceTexto">Te han invitado con un enlace que lleva su propia clave de 256 bits. Al entrar, los dos veréis las mismas cuatro palabras.</p>
+<p class="error" id="error-enlace" role="alert"></p>
+<div class="par ancho" role="group"><button type="button" class="seg" id="entrar-enlace"><span data-t="entrar">Entrar</span></button><button type="button" class="seg" data-cerrar-camara data-t="volver">Volver</button></div>
 </section>
 
 <section class="panel" id="panel-tengo" hidden aria-labelledby="t-tengo">
@@ -139,10 +148,12 @@
 <h2 id="h-tecnologia" data-t="tecnologiaTitulo">Criptografía poscuántica, en tu navegador.</h2>
 <div class="tecnica">
 <article><b data-t="p1t">Encriptado poscuántico híbrido</b><p data-t="p1p">ML-KEM-1024 con ECDH P-384, y firmas ML-DSA-87 con ECDSA P-384. Para leer una conversación habría que romper a la vez la criptografía clásica y la poscuántica.</p><span class="algoritmos">ML-KEM-1024 · ML-DSA-87 · AES-256-GCM · SHA-384</span></article>
-<article><b data-t="p3t">Claves que se renuevan</b><p data-t="p3p">Una clave distinta para cada mensaje y claves nuevas cada cinco minutos: lo anterior ya no se puede leer con las nuevas.</p></article>
+<article><b data-t="p3t">Claves que se renuevan</b><p data-t="p3p">Una clave distinta para cada mensaje y un acuerdo poscuántico nuevo cada minuto: lo anterior ya no se puede leer con las claves nuevas.</p></article>
 <article><b data-t="t4t">Videollamada encriptada</b><p data-t="t4p">La imagen y el sonido llevan encima una capa poscuántica con claves de la conversación, y van por nuestro servidor de llamadas: ninguno de los dos ve la dirección del otro.</p></article>
 <article><b data-t="p4t">Tráfico constante</b><p data-t="p4p">Mientras la conversación está abierta salen tramas del mismo tamaño a ritmo fijo: desde fuera no se ve cuándo escribes.</p></article>
-<article><b data-t="p6t">Próximamente</b><p data-t="p6p">Prueba de vida al azar en la videollamada. Actas de entrega firmadas. Envíos de hasta 1 TB.</p></article>
+<article><b data-t="t5t">Prueba de vida</b><p data-t="t5p">En la videollamada, cualquiera de los dos puede pedir un reto al azar: un gesto o una palabra que el otro tiene que hacer en directo. Ayuda a descubrir un vídeo grabado o una cara generada con inteligencia artificial; no es una prueba infalible.</p></article>
+<article><b data-t="t6t">Enlace de máxima protección</b><p data-t="t6p">En lugar del código, una invitación con su propia clave de 256 bits que no pasa por ningún servidor.</p></article>
+<article><b data-t="p6t">Próximamente</b><p data-t="p6p">Actas de entrega firmadas. Envíos de hasta 1 TB. El cierre de confianza para órdenes de pago.</p></article>
 </div>
 <p class="nota-final" data-t="limite">Lo que ninguna herramienta puede prometer, tampoco nosotros: si un equipo está infectado, quien lo controla ve lo mismo que tú. Elixire te avisa de todo lo que puede detectar y nunca te promete lo imposible.</p>
 </section>
@@ -189,7 +200,8 @@
 </div>
 <p class="video-capa" id="video-capa" hidden><span class="punto" aria-hidden="true"></span><span data-t="capaActiva">Imagen y sonido con capa poscuántica</span></p>
 <p class="video-tiempo" id="video-tiempo" hidden></p>
-<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-colgar" data-t="colgar">Colgar</button></div>
+<p class="video-reto" id="video-reto" hidden role="status"><span class="etiqueta" id="reto-etiqueta"></span><span class="reto-texto" id="reto-texto"></span></p>
+<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg" id="b-colgar" data-t="colgar">Colgar</button></div>
 </div>
 <div class="chat">
 <span class="etiqueta" data-t="conversacion">CONVERSACIÓN</span>
@@ -214,14 +226,14 @@
 </div>
 </div>
 
-<script src="js/idioma.js?v=20261119-10" integrity="sha384-zFhQ/QobbuSRhbgYYGVEhGPy++VaDubfGRZjANCaw1gIyycOIHPtBtdEGW9QAu00"></script>
+<script src="js/idioma.js?v=20261119-10" integrity="sha384-tEf1ua+NwRATArUsFHd9I2BmxW0UYcXaflogxSYyRU5mkd44IzzYKz+uDjBxb27f"></script>
 <script src="js/pq-cnsa.js?v=20261119-10" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
 <script src="js/palabras.js?v=20261119-10" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
 <script src="js/cripto.js?v=20261119-10" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
 <script src="js/rele.js?v=20261119-10" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/motor.js?v=20261119-10" integrity="sha384-FnKWVQc36/n8qjnmvx6UeHrunN+wTalIGYItSqAgJihSwPgYA8HTjdAKx4AmZyyF"></script>
+<script src="js/motor.js?v=20261119-10" integrity="sha384-ngR/0Zh995+MPgmmshXvBWXNMBBzIl/PmFpuaM4bbl682u2SkdlgcsKa1Qi2m2tx"></script>
 <script type="module" src="js/sala3d.js?v=20261119-10" integrity="sha384-QkpF/V26/Hx4YHH3P8CUaV3HjjdPoq2HZe384x8vEW6N0ePqhHCdand79M8ojpET"></script>
-<script src="js/puerta.js?v=20261119-10" integrity="sha384-Nul8SiyfZnreXrzDeVF2bLVyyaQQixz0KGHHx1Rag6Tl+SdsteM4ai13+DUxTFJs"></script>
-<script src="js/sala.js?v=20261119-10" integrity="sha384-gWEuwf0EI/1VJFQXYUJtTaKyfER8/U9iPPJs9ah+4X0i2MrUWv0U4Wo+Whz0Fu4/"></script>
+<script src="js/puerta.js?v=20261119-10" integrity="sha384-u8B8wmMv7wtfqhthoxdB/GFKtSbzgbsTVZ0a10AII2YcuCZd91qbXqKkzyT/7uBF"></script>
+<script src="js/sala.js?v=20261119-10" integrity="sha384-CCX/kludhGVtB74HpfoEMLTEiFEgq7gRcjI0wwvopYn+EkFIKVRkz5zzJKXHG7zR"></script>
 </body>
 </html>

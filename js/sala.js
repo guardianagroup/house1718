@@ -119,6 +119,7 @@
     const vs = $('#video-suyo'), vm = $('#video-mio');
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
+    if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
     if (e.remoto && vs.srcObject !== e.remoto) vs.srcObject = e.remoto;
     const activa = ['preparando', 'llamando', 'conectando', 'hablando'].includes(e.estado);
@@ -147,6 +148,18 @@
   }
   M.on('llamada', (e) => { if (abierta) pintaLlamada(e); });
   M.on('llamada-aviso', (por) => { if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
+  const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
+  let retoT = null;
+  M.on('reto', (r) => {
+    if (!abierta) return;
+    const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
+    et.dataset.t = r.mio ? 'retoPedido' : 'retoParaTi'; et.textContent = tr(et.dataset.t);
+    tx.textContent = tr(RETOS[r.i] || 'reto0').replace('{w}', r.w || '');
+    caja.hidden = false; clearTimeout(retoT); retoT = setTimeout(() => { caja.hidden = true; }, 12000);
+    sistema(r.mio ? 'retoSistemaMio' : 'retoSistemaSuyo', '«' + tx.textContent + '»');
+  });
+  $('#b-reto').addEventListener('click', () => M.reto());
   $('#llamar').addEventListener('click', () => M.llamar());
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
