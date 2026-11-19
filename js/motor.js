@@ -480,11 +480,18 @@
   }
 
   // ---------- videollamada ----------
-  const PQM = typeof window.RTCRtpScriptTransform === 'function' && typeof window.Worker === 'function' && typeof window.RTCPeerConnection === 'function';
+  // La capa poscuántica de la imagen y el sonido: con la interfaz de hoy (RTCRtpScriptTransform: Safari, Firefox, Chrome reciente) o
+  // con la anterior de Chrome (createEncodedStreams: Brave, versiones anteriores, WebView de Android). Si uno de los dos navegadores no
+  // tiene ninguna, la llamada se hace igual, con el encriptado estándar del navegador, y se dice en la pantalla (dueño, 16:16–16:18:
+  // «quiero que se pueda hacer la llamada… que diga que ya no pasa poscuántica, que se hace normal»; «la llamada tiene que entrar
+  // automática… luego en la pantalla ya dirá si es poscuántica o es normal, dependiendo de los navegadores de cada uno»).
+  const PQ_SCRIPT = typeof window.RTCRtpScriptTransform === 'function';
+  const PQ_FLUJOS = !PQ_SCRIPT && typeof window.RTCRtpSender === 'function' && 'createEncodedStreams' in window.RTCRtpSender.prototype;
+  const PQM = (PQ_SCRIPT || PQ_FLUJOS) && typeof window.Worker === 'function' && typeof window.RTCPeerConnection === 'function';
   let L = null, obrero = null;
   function trabajador() {
     if (!obrero) {
-      obrero = new Worker('js/medios-pq.js?v=20261119-1');
+      obrero = new Worker('js/medios-pq.js?v=20261119-2');
       obrero.onmessage = (e) => { const m = e.data || {}; if (m.tipo === 'visto' && L && L.rx === m.id) { L.visto = true; emite('llamada', estadoLlamada()); } if (m.tipo === 'fallo' && L && L.estado === 'hablando' && m.cuenta && m.cuenta.seguidos > 60) emite('llamada-aviso', 'descifra'); };
     }
     return obrero;
@@ -492,7 +499,7 @@
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -505,13 +512,17 @@
     w.postMessage({ tipo: 'modo', id: L.tx, modo: 'cifra' }); w.postMessage({ tipo: 'modo', id: L.rx, modo: 'estricto' });
   }
   function ponCapa(pc) {
-    if (!L || !L.tx) return;
+    if (!L || !L.tx || L.sinCapa) return;
     const w = trabajador(); L.puestos = L.puestos || new WeakSet();
+    const pon = (x, op, k, kind) => {
+      if (PQ_SCRIPT) { x.transform = new RTCRtpScriptTransform(w, { op, k, kind }); return; }
+      const f = x.createEncodedStreams(); w.postMessage({ tipo: 'flujo', op, k, kind, readable: f.readable, writable: f.writable }, [f.readable, f.writable]);
+    };
     for (const tr of pc.getTransceivers()) {
       const kind = tr.receiver && tr.receiver.track ? tr.receiver.track.kind : '';
       if (!kind) continue;
-      if (tr.sender && !L.puestos.has(tr.sender)) { tr.sender.transform = new RTCRtpScriptTransform(w, { op: 'cifra', k: L.tx, kind }); L.puestos.add(tr.sender); }
-      if (tr.receiver && !L.puestos.has(tr.receiver)) { tr.receiver.transform = new RTCRtpScriptTransform(w, { op: 'descifra', k: L.rx, kind }); L.puestos.add(tr.receiver); }
+      if (tr.sender && !L.puestos.has(tr.sender)) { try { pon(tr.sender, 'cifra', L.tx, kind); } catch (e) { console.warn('capa', e); } L.puestos.add(tr.sender); }
+      if (tr.receiver && !L.puestos.has(tr.receiver)) { try { pon(tr.receiver, 'descifra', L.rx, kind); } catch (e) { console.warn('capa', e); } L.puestos.add(tr.receiver); }
     }
   }
   function codecs(pc) {
@@ -547,6 +558,18 @@
     }
     for (const t of st.getVideoTracks()) { try { t.contentHint = 'motion'; } catch (_) {} }
     return st;
+  }
+  // la cámara y el micrófono, pedidos antes (al tocar «Entrar a la llamada», o cuando llega la otra persona a quien invitó): cuando
+  // empieza la llamada ya están listos. Si en minuto y medio no se usan, se apagan.
+  let mediosPrevios = null, mediosPreviosT = null;
+  function preparaMedios() {
+    if (mediosPrevios || L || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return;
+    const p = mediosPrevios = medios().catch(() => null);
+    clearTimeout(mediosPreviosT); mediosPreviosT = setTimeout(() => { if (mediosPrevios !== p) return; mediosPrevios = null; p.then((st) => { if (st && !(L && L.local === st)) st.getTracks().forEach((t) => t.stop()); }); }, 90000);
+  }
+  async function tomaMedios() {
+    if (mediosPrevios) { const p = mediosPrevios; mediosPrevios = null; clearTimeout(mediosPreviosT); const st = await p; if (st && st.getTracks().length && st.getTracks().every((t) => t.readyState === 'live')) return st; }
+    return medios();
   }
   function prefiereCodecs(pc, compatible) {
     try {
@@ -616,7 +639,7 @@
   function conexion() {
     const ice = R && R.ice && R.ice.length ? R.ice : [];
     if (!LOCAL && !ice.length) throw new Error('sin-turn');
-    const pc = new RTCPeerConnection({ iceServers: ice, iceTransportPolicy: LOCAL && !ice.length ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' });
+    const pc = new RTCPeerConnection(Object.assign({ iceServers: ice, iceTransportPolicy: LOCAL && !ice.length ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }, PQ_FLUJOS && L && !L.sinCapa ? { encodedInsertableStreams: true } : {}));
     pc.addEventListener('track', (e) => { ponCapa(pc); if (!L) return; L.remoto = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]); emite('llamada', estadoLlamada()); });
     pc.addEventListener('connectionstatechange', () => {
       if (!L || L.pc !== pc) return;
@@ -690,13 +713,17 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(recuperaMedios, 400); });
   addEventListener('pageshow', () => setTimeout(recuperaMedios, 400));
   addEventListener('online', () => { if (L && L.t0 && L.pc && L.pc.connectionState !== 'connected') recupera('fallo'); });
+  // Rapidez (dueño, 16:18: «que la llamada se conecte lo más rápido posible… aplica la máxima velocidad»): la descripción sale en
+  // cuanto hay un camino por el relé (los únicos que se usan) y un instante más, sin esperar a que terminen de responder todos.
   const reunido = (pc) => new Promise((res) => {
     if (pc.iceGatheringState === 'complete') return res();
-    const f = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', f); res(); } };
-    pc.addEventListener('icegatheringstatechange', f); setTimeout(res, 4000);
+    let hecho = false, gracia = null;
+    const fin = () => { if (hecho) return; hecho = true; pc.removeEventListener('icegatheringstatechange', f); pc.removeEventListener('icecandidate', g); clearTimeout(gracia); res(); };
+    const f = () => { if (pc.iceGatheringState === 'complete') fin(); };
+    const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '') && !gracia) gracia = setTimeout(fin, 300); };
+    pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 3000);
   });
   function puedeLlamar() {
-    if (!PQM) return 'sin-capa';
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return 'sin-medios';
     if (!S || !S.conectado || !enLinea(S)) return 'sin-sesion';
     if (!LOCAL && !(R.ice && R.ice.length)) return 'sin-turn';
@@ -706,19 +733,20 @@
     const s = S, por = puedeLlamar(); if (por) { emite('llamada-aviso', por); return false; }
     if (L) return false;
     if (restante(s) < 5000) { emite('llamada-aviso', 'prueba-usada'); return false; }
-    L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid };
+    L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid, sinCapa: !PQM };
     emite('llamada', estadoLlamada());
     try {
-      const st = await medios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
+      const st = await tomaMedios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
       L.local = st; L.video = st.getVideoTracks().length > 0;
-      await llavesLlamada(s.sesion.medios, L.id, true);
+      if (!L.sinCapa) await llavesLlamada(s.sesion.medios, L.id, true);
       const pc = L.pc = conexion();
       for (const t of st.getTracks()) pc.addTrack(t, st);
       ponCapa(pc); prefiereCodecs(pc, TEL);
       await describe(pc, true); codecs(pc);
       await reunido(pc); if (!L || L.pc !== pc) return false;
       L.estado = 'llamando'; emite('llamada', estadoLlamada());
-      enviaControl(s, { tipo: 'llamada', que: 'oferta', id: L.id, sid: L.sid, sdp: pc.localDescription.sdp, video: L.video ? 1 : 0, tel: TEL ? 1 : 0 });
+      enviaControl(s, { tipo: 'llamada', que: 'oferta', id: L.id, sid: L.sid, sdp: pc.localDescription.sdp, video: L.video ? 1 : 0, tel: TEL ? 1 : 0, pq: L.sinCapa ? 0 : 1 });
+      if (L.sinCapa) emite('llamada-aviso', 'sin-capa-mia');
       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
       return true;
     } catch (e) { console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
@@ -728,9 +756,9 @@
     const ses = s.sesiones.get(L.sid); if (!ses) { colgar('fallo'); return false; }
     L.estado = 'preparando'; emite('llamada', estadoLlamada());
     try {
-      const st = await medios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
+      const st = await tomaMedios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
       L.local = st;
-      await llavesLlamada(ses.medios, L.id, false);
+      if (!L.sinCapa) await llavesLlamada(ses.medios, L.id, false);
       const pc = L.pc = conexion();
       await pc.setRemoteDescription({ type: 'offer', sdp: L.oferta }); ponCapa(pc);
       for (const t of st.getTracks()) pc.addTrack(t, st);
@@ -738,7 +766,8 @@
       await describe(pc, false); codecs(pc);
       await reunido(pc); if (!L || L.pc !== pc) return false;
       L.estado = 'conectando'; emite('llamada', estadoLlamada());
-      enviaControl(s, { tipo: 'llamada', que: 'respuesta', id: L.id, sdp: pc.localDescription.sdp });
+      enviaControl(s, { tipo: 'llamada', que: 'respuesta', id: L.id, sdp: pc.localDescription.sdp, pq: L.sinCapa ? 0 : 1 });
+      if (L.sinCapa) emite('llamada-aviso', L.suyaSinCapa ? 'sin-capa-suya' : 'sin-capa-mia');
       return true;
     } catch (e) { console.warn('llamada', e); colgar(/Permission|NotAllowed/i.test(String(e && e.name) + String(e && e.message)) ? 'sin-permiso' : 'fallo'); return false; }
   }
@@ -746,15 +775,16 @@
     const que = String(j.que || ''), id = String(j.id || '');
     if (que === 'oferta') {
       if (L || restante(s) < 5000) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
-      if (!PQM) { enviaControl(s, { tipo: 'llamada', que: 'sin-capa', id }); emite('llamada-aviso', 'sin-capa'); return; }
       if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;
-      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid), telSuyo: j.tel === 1 };
+      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid), telSuyo: j.tel === 1, sinCapa: !PQM || j.pq === 0, suyaSinCapa: j.pq === 0 };
       emite('llamada', estadoLlamada());
       return;
     }
     if (!L || L.id !== id) return;
     if (que === 'respuesta' && L.rol === 'llama' && L.pc && typeof j.sdp === 'string') {
-      clearTimeout(L.espera); L.estado = 'conectando'; emite('llamada', estadoLlamada());
+      clearTimeout(L.espera); L.estado = 'conectando';
+      if (j.pq === 0 && !L.sinCapa) { L.sinCapa = true; if (obrero && L.tx) { obrero.postMessage({ tipo: 'modo', id: L.tx, modo: 'claro' }); obrero.postMessage({ tipo: 'modo', id: L.rx, modo: 'claro' }); } emite('llamada-aviso', 'sin-capa-suya'); }
+      emite('llamada', estadoLlamada());
       try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); codecs(L.pc); ponCapa(L.pc); } catch (e) { console.warn(e); colgar('fallo'); }
       return;
     }
@@ -917,7 +947,7 @@
 
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla, invitaSemilla,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

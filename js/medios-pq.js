@@ -70,6 +70,9 @@ const cuenta = { cifrados: 0, descifrados: 0, fallos: 0, seguidos: 0, claros: 0 
 
 onmessage = (e) => {
   const m = e.data || {};
+  // los navegadores con la interfaz anterior de Chrome (createEncodedStreams: Brave, versiones anteriores, WebView de Android): los
+  // mismos pasos, con los flujos que manda la página (dueño, 16:16: «el navegador de la otra persona no admite la capa poscuántica»)
+  if (m.tipo === 'flujo' && m.readable && m.writable) { engancha(m.readable, m.writable, { op: m.op, k: m.k, kind: m.kind }); return; }
   if (m.tipo === 'llave' && m.raw) { suelta(m.id); const raw = new Uint8Array(m.raw); cadenas.set(m.id, { n: 0, abs: 0, inicio: 0, cada: 60000, lazo: null, raw: new Map([[0, raw]]), k: new Map([[0, importa(raw)]]), rota: false, codigo: false, par: null, cola: Promise.resolve(), t: null, borra: null }); }
   // los dos tienen el cambio de llave: «tx» y «rx» van juntas; quien llamó («guia») cambia cada «cada» milisegundos
   else if (m.tipo === 'cadena') {
@@ -185,8 +188,8 @@ async function descifra(f, ctl, o) {
   if (!vistos.has(o.k)) { vistos.add(o.k); postMessage({ tipo: 'visto', id: o.k }); }
 }
 
-onrtctransform = (e) => {
-  const t = e.transformer, o = t.options || {};
+function engancha(readable, writable, o) {
   const paso = o.op === 'cifra' ? cifra : descifra;
-  t.readable.pipeThrough(new TransformStream({ transform: (f, ctl) => paso(f, ctl, o).catch(() => { if (o.op !== 'cifra') fallo(); }) })).pipeTo(t.writable).catch(() => {});
-};
+  readable.pipeThrough(new TransformStream({ transform: (f, ctl) => paso(f, ctl, o).catch(() => { if (o.op !== 'cifra') fallo(); }) })).pipeTo(writable).catch(() => {});
+}
+onrtctransform = (e) => { const t = e.transformer; engancha(t.readable, t.writable, t.options || {}); };

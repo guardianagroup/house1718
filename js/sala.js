@@ -237,6 +237,7 @@
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
     ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
+    { const c = $('#video-cifrado span'), k = e.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo'; if (c && c.dataset.t !== k) { c.dataset.t = k; c.textContent = tr(k); } }
     if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
@@ -283,7 +284,7 @@
     const E = window.Elixire || {};
     if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
   });
-  M.on('llamada-aviso', (por) => { if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) tarjeta('capa', textoTarjeta(k), 'sistema', 12000); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
   // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
   const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
   let retoT = null;
@@ -311,7 +312,7 @@
     esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
     if (esperaLlamada) esperaT = setTimeout(() => { esperaLlamada = false; if (abierta && ultimo.estado === 'libre') pintaLlamada(ultimo); }, 15000);
     if (ultimo.estado === 'libre') pintaLlamada(ultimo);
-    if (E.llamaAlEntrar) { E.llamaAlEntrar = false; setTimeout(() => { if (abierta) M.llamar(); }, 700); }
+    if (E.llamaAlEntrar) { E.llamaAlEntrar = false; setTimeout(() => { if (abierta) M.llamar(); }, 150); }
   });
 
   // ---------- pasar la conversación al móvil con un QR (motor.js: pasaMovil) ----------

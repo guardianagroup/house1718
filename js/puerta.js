@@ -311,6 +311,7 @@
     pantallaCompleta();
     const p = $('#panel-invitado'), b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
     p.classList.add('esperando'); estadoInvitado('conectando');
+    if (M.preparaMedios) M.preparaMedios(); // la cámara y el micrófono, ya (más rapidez: dueño, 16:18)
     const r = semillaEnlace ? await M.entraSemilla(semillaEnlace.slice()) : await M.entra(codigoEnlace);
     if (abierta !== 'invitado') return;
     if (!r.ok) { p.classList.remove('esperando'); b.disabled = false; e.textContent = tr(ERRORES[r.por] || 'eSinRele'); return; }
@@ -348,7 +349,7 @@
   // lo que dice el motor mientras se espera
   if (M) {
     M.on('codigo-usado', () => { if (abierta === 'crear') ponEstado('alguienEntra'); });
-    M.on('llega', () => { if (abierta === 'crear') ponEstado('llegaOtra'); else if (abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando')) estadoInvitado('llegaOtra'); });
+    M.on('llega', () => { if (abierta === 'crear') { ponEstado('llegaOtra'); if (invitoLlamada && M.preparaMedios) M.preparaMedios(); } else if (abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando')) estadoInvitado('llegaOtra'); });
     M.on('ocupada', () => { if (abierta === 'tengo') { botonEntrar(false); ponError('tengo', 'no-vale'); } });
     M.on('conectado', () => { paraReloj(); clearTimeout(tardaT); olvidaInvitacion(); ocultaPaneles(); abierta = 'sala'; });
     // sin conexión con el servidor mientras se espera: se dice (y se reintenta solo); al volver, se sigue esperando
