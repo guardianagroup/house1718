@@ -4,6 +4,7 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    mensajeWa: 'Te invito a una conversación privada en Elixire, encriptada de extremo a extremo.\n\nToca para entrar:\n{enlace}\n\nTu código: {codigo}\nCaduca en 10 minutos y sirve una sola vez.',
     copiado: 'Copiado', faltan: 'Faltan símbolos: el código tiene 16.', creando: 'Creando el código…', caducado: 'El código ha caducado. Vuelve y crea otro.',
     alguienEntra: 'Alguien ha escrito el código: conectando…', llegaOtra: 'La otra persona ha entrado. Acordando las claves…', conectando: 'Conectando…',
     eNoVale: 'Ese código no existe, ya se usó o ha caducado.', eSinRele: 'Sin conexión con el servidor. Inténtalo de nuevo.',
@@ -47,7 +48,8 @@
     c4v: '$2.95 bn', c4t: 'lost to impersonation scams in the US in 2024', c4f: 'FTC · 2025',
     eligeTitulo: 'FREE TRIAL', eligeTexto: 'One person creates the code and gives it to the other. Includes a video call of up to 3 minutes.',
     crear: 'Create a code', tengo: 'I have a code', volver: 'Back', cancelar: 'Cancel', entrar: 'Enter',
-    tuCodigo: 'YOUR CODE', daselo: 'Give it to the other person through a different channel. It expires in 10 minutes and works only once.',
+    tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
+    mensajeWa: 'I am inviting you to a private conversation on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nYour code: {codigo}\nIt expires in 10 minutes and works only once.',
     esperando: 'Waiting for the other person', copiar: 'Copy the code', copiado: 'Copied',
     tengoTitulo: 'I HAVE A CODE', tengoTexto: 'The 16 characters you were given. Once inside, you will both see the same four words.',
     faltan: 'Characters missing: the code has 16.', creando: 'Creating the code…', caducado: 'The code has expired. Go back and create another.',
@@ -145,7 +147,8 @@
   }
   // De partida, en inglés (dueño, 13:09); solo se guarda lo que la persona elige con ES/EN.
   let guardado = null; try { guardado = localStorage.getItem('elixire-lengua'); } catch (_) {}
-  const inicial = guardado === 'es' ? 'es' : 'en';
+  const delEnlace = (/[#&]l=(es|en)\b/.exec(location.hash || '') || [])[1]; // la invitación lleva el idioma de quien la manda
+  const inicial = (guardado || delEnlace) === 'es' ? 'es' : 'en';
   for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => { pon(b.dataset.idioma); try { localStorage.setItem('elixire-lengua', actual); } catch (_) {} });
   window.ElixireIdioma = { t, pon, actual: () => actual };
   if (inicial !== 'es') pon(inicial);

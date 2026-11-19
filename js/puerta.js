@@ -31,13 +31,13 @@
   // copiar lo escrito en el chat tampoco: solo pegar y escribir
   for (const tipo of ['copy', 'cut']) document.addEventListener(tipo, (e) => { if (escribible(e.target) && e.target.id === 'texto') e.preventDefault(); }, true);
   const paneles = () => [...document.querySelectorAll('.panel')];
-  function muestra(cual) {
+  function muestra(cual, focoEn) {
     for (const p of paneles()) {
       if (p.id === 'panel-' + cual) { p.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => p.classList.add('visible'))); }
       else { p.classList.remove('visible'); p.hidden = true; }
     }
     abierta = cual;
-    const foco = cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : $('#copiar');
+    const foco = focoEn || (cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : $('#copiar'));
     setTimeout(() => foco && foco.focus({ preventScroll: true }), quieto ? 0 : 450);
   }
   function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible'); p.hidden = true; } }
@@ -103,23 +103,54 @@
   $('#crear').addEventListener('click', async () => {
     if (!M) return;
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
-    $('#copiar').disabled = false;
+    $('#copiar').disabled = false; ponWhatsApp(null);
     $('#estado-crear').dataset.t = 'creando'; $('#estado-crear').textContent = tr('creando');
     muestra('crear');
     const r = await M.crea();
     if (abierta !== 'crear') return;
     if (!r.ok) { if (r.por !== 'fin') { ponError('elige', r.por); muestra('elige'); } return; }
     e.dataset.codigo = r.codigo; e.textContent = r.codigo.replace(/(.{4})(?=.)/g, '$1 ');
+    ponWhatsApp(r.codigo);
     ponEstado('esperando');
     paraReloj();
     reloj = setInterval(() => { if (abierta !== 'crear') return paraReloj(); if (Date.now() > r.caduca && !(M.conectada)) { paraReloj(); ponEstado('caducado'); } }, 1000);
   });
   function ponEstado(k) { const x = $('#estado-crear'); x.dataset.t = k; x.textContent = tr(k); }
+  // «Enviar por WhatsApp» (dueño, 14:07: «para enviar el código… que se envíe por WhatsApp»). El mensaje lleva un enlace con el
+  // código en el fragmento («#c=»: el navegador no lo manda a ningún servidor; al abrirlo, el código queda puesto) y el código escrito.
+  // Sirve una sola vez y caduca a los 10 minutos; al entrar, los dos ven las cuatro palabras.
+  function ponWhatsApp(codigo) {
+    const a = $('#whatsapp');
+    if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; return; }
+    const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
+    const enlace = location.origin + location.pathname + '#c=' + codigo + '&l=' + lengua;
+    const texto = tr('mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
+    a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo;
+  }
+  document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); });
   $('#copiar').addEventListener('click', async () => {
     const c = $('#codigo').dataset.codigo; if (!c) return;
     const s = $('#copiar span');
     try { await navigator.clipboard.writeText(c); s.dataset.t = 'copiado'; s.textContent = tr('copiado'); setTimeout(() => { s.dataset.t = 'copiar'; s.textContent = tr('copiar'); }, 1800); } catch (_) {}
   });
+
+  // ---- la invitación de WhatsApp: se abre «Tengo un código» con el código ya puesto; basta con tocar «Entrar» ----
+  let codigoEnlace = null;
+  {
+    const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?$/.exec(location.hash || '');
+    if (m) { codigoEnlace = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {} }
+  }
+  async function abreConCodigo() {
+    if (ocupado || abierta || !codigoEnlace) return; ocupado = true;
+    try {
+      document.body.classList.add('cerrado');
+      if (M) M.prepara();
+      $('#consola').classList.add('fuera');
+      if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
+      campo.value = codigoEnlace.replace(/(.{4})(?=.)/g, '$1 '); codigoEnlace = null;
+      ponError('tengo', ''); botonEntrar(false); muestra('tengo', $('#entrar'));
+    } finally { ocupado = false; }
+  }
 
   // ---- tengo un código ----
   const normaliza = (t) => String(t || '').normalize('NFKC').toUpperCase().replace(/[\s\-‐-―−.·]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
@@ -137,6 +168,7 @@
     if (!M) return;
     const c = normaliza(campo.value);
     if (!/^[0-9A-HJKMNP-TV-Z]{16}$/.test(c)) { ponError('tengo', 'formato'); campo.focus(); return; }
+    pantallaCompleta();
     botonEntrar(true);
     const r = await M.entra(c);
     if (abierta !== 'tengo') return;
@@ -161,6 +193,14 @@
     abierta = null; document.body.classList.remove('cerrado');
   }
   window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, ocultaPaneles, abierta: () => abierta });
+  if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
+
+  // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const teclado = () => raiz.style.setProperty('--teclado', Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop)) + 'px');
+    vv.addEventListener('resize', teclado); vv.addEventListener('scroll', teclado); teclado();
+  }
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta && abierta !== 'sala') cierra(); });
   // con una conversación abierta, el navegador pregunta antes de salir (al salir, se borra)

@@ -92,6 +92,8 @@ html.traduciendo [data-t]{visibility:hidden;animation:muestra-texto 0s 2.5s forw
 /* tamaños: el mismo botón, más grande o más pequeño */
 .cristal.grande{height:56px;padding:0 54px;font-size:12px;letter-spacing:.32em}
 .cristal.pequeno{height:36px;padding:0 20px;font-size:10.5px;letter-spacing:.24em}
+.cristal.ancho{display:flex;width:100%;height:50px;padding:0 14px}
+.cristal[aria-disabled="true"]{opacity:.42;pointer-events:none}
 /* reflejo en el suelo pulido, como el monolito */
 .cristal.espejo{-webkit-box-reflect:below 8px linear-gradient(transparent 52%,rgba(255,255,255,.13))}
 /* grupos: segmentos separados por una costura de luz (como el monolito al partirse) */
@@ -330,4 +332,28 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   html{scroll-behavior:auto}
   .cifra,.consola,.panel,.punto,.bajar i{transition:none!important;animation:none!important}
   .cristal:hover::after,.par .seg:hover::after{animation:none}
+}
+
+/* ---------- el móvil (dueño, 14:07: «una versión móvil espectacular, súper simple, minimalista, fácil de entender… la botonería
+   súper fácil»): el botón, ancho y abajo, al alcance del pulgar; los paneles, una hoja que sube desde abajo con los botones grandes
+   uno debajo de otro; nada se esconde detrás del teclado ni de la muesca. ---------- */
+@media (max-width:760px){
+  .cabecera{padding:calc(env(safe-area-inset-top) + 14px) 16px 12px}
+  .consola{left:0;right:0;margin:0 auto;width:calc(100% - 40px);transform:none;bottom:calc(env(safe-area-inset-bottom) + 30px);gap:0}
+  .consola.fuera{transform:translateY(24px)}
+  .consola::before{inset:-60px -40px -40px}
+  .consola .cristal.grande{width:100%;height:62px;padding:0 18px;font-size:12.5px;letter-spacing:.3em}
+  .panel{left:0;right:0;top:auto;bottom:var(--teclado,0px);width:auto;max-height:calc(100% - 64px);overflow-y:auto;overscroll-behavior:contain;
+    transform:translateY(34px);border-radius:22px 22px 0 0;border-bottom:0;gap:16px;
+    padding:28px 22px calc(env(safe-area-inset-bottom) + 22px);box-shadow:0 -30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.1)}
+  .panel.visible{transform:none}
+  .texto-panel{font-size:14px;max-width:none}
+  .par.ancho .seg{height:56px;font-size:11.5px}
+  .par.ancho.apila{flex-direction:column}
+  .par.ancho.apila .seg{flex:0 0 auto;height:62px;font-size:12px;letter-spacing:.26em}
+  .par.ancho.apila .seg+.seg::before{left:14%;right:14%;top:0;bottom:auto;width:auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent)}
+  .cristal.ancho{height:62px;font-size:12px;letter-spacing:.26em}
+  .panel .cristal.pequeno{height:46px;padding:0 30px}
+  .codigo-grande{font-size:min(30px,6.3vw);letter-spacing:.11em;margin-top:2px}
+  .campo{height:64px;font-size:min(23px,5.6vw)}
 }
