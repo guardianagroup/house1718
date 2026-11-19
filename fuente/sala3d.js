@@ -659,7 +659,7 @@ function arranca() {
   // el ciclo de la luz del holograma: claro, el paso a oscuro, oscuro y el paso de vuelta (segundos)
   // (dueño, 15:55: «el cambio de color de la roca, que sea cada 3 segundos, que se sienta viva»: un cambio cada 3 segundos)
   const CICLO = { claro: 1.4, paso: 1.6, oscuro: 1.4 }; CICLO.total = CICLO.claro + CICLO.oscuro + 2 * CICLO.paso;
-  let holoFijo = null;
+  let holoFijo = null, autoPeso = 1;
   // Vida propia (dueño, 15:59: «aparte de cambiar de color, que se separe y vuelva a su estado original, que se separe cada vez de una
   // forma distinta… que tenga vida propia»): cada pocos segundos, con la roca cerrada, se abre un poco y se vuelve a juntar, cada vez
   // de una manera: las cuatro partes hacia fuera, arriba y abajo, a los lados girando, en diagonal, abriéndose en espiral o un latido.
@@ -721,7 +721,11 @@ function arranca() {
     }
     giro.v += (giro.obj - giro.v) * Math.min(1, dt * (giro.dedo === null ? 4 : 16));
     estado.vuelta += dt * VMAX * estado.giroG;
-    mono.rotation.y = (giro.v + (quieto ? 0 : Math.sin(ahora * 0.13) * 0.07)) * Math.max(0, 1 - estado.abre) + estado.vuelta;
+    // y gira sola, a un lado y a otro (dueño, 16:53: «que se mueva sola, que rote, a izquierda, a derecha, aparte de que si yo la quiero
+    // rotar»): mientras se toca, y un rato después, manda el dedo; luego vuelve poco a poco su propio giro
+    autoPeso += ((giro.dedo !== null || ahora - giro.toque < 6 ? 0 : 1) - autoPeso) * Math.min(1, dt * 0.7);
+    const propio = quieto ? 0 : (Math.sin(ahora * 0.42) * 0.78 + Math.sin(ahora * 1.07 + 1.3) * 0.12) * autoPeso;
+    mono.rotation.y = (giro.v + propio) * Math.max(0, 1 - estado.abre) + estado.vuelta;
     halo.rotation.y = nucleo.rotation.y = -mono.rotation.y; // la luz de dentro, siempre de frente
     campoGravitatorio(dt);
     const sep = 0.44 * estado.abre, sepY = 0.3 * estado.abre;

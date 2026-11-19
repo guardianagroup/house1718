@@ -636,3 +636,37 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
   .sala .visor-guardar{display:inline-flex;align-items:center;justify-content:center;min-width:210px;height:52px;border-radius:14px;background:#9CC3E4;color:#05070A;font:600 16px/1 var(--ui);text-decoration:none}
   .sala .visor-pie small{max-width:40ch;font:400 12.5px/1.45 var(--ui);color:#9FB3C4}
 }
+
+/* ---------- «Comprobar»: ¿persona real o avatar? (dueño, 16:45; js/comprueba.js) ---------- */
+.comprobacion:not([hidden]){display:block;position:absolute;inset:0;z-index:8;pointer-events:none}
+.comprobacion-lienzo{position:fixed;left:0;top:0;pointer-events:none}
+.comprobacion-estado:not([hidden]){position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 158px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:9px;
+  min-width:250px;padding:14px 22px 10px;border-radius:18px;background:rgba(8,12,18,.9);border:1px solid rgba(156,195,228,.38);box-shadow:0 18px 50px rgba(0,0,0,.55);pointer-events:auto;text-align:center}
+.comprobacion-estado .etiqueta{font-size:9.5px;letter-spacing:.32em;color:#9CC3E4}
+.comprobacion-estado b{font:600 15.5px/1.2 var(--ui);color:#F4F6F8}
+.comprobacion-barra{display:block;width:200px;height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+.comprobacion-barra > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9CC3E4,#EAF4FD);transition:width .2s linear}
+.comprobacion-cancelar{border:0;background:none;color:#A9B8C7;font:500 12.5px/1 var(--ui);padding:8px 10px;cursor:pointer}
+.comprobacion-resultado:not([hidden]){position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(370px,calc(100% - 32px));display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:24px 22px 18px;border-radius:24px;background:rgba(8,12,18,.96);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.7);pointer-events:auto;text-align:center;color:#F4F6F8;animation:aparece .3s ease both}
+.comprobacion-icono{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(240,199,127,.14);color:#F0C77F}
+.comprobacion-icono svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.comprobacion-icono .si{display:none}
+.comprobacion-resultado.real .comprobacion-icono{background:rgba(92,201,138,.16);color:#5CC98A}
+.comprobacion-resultado.real .comprobacion-icono .si{display:inline}
+.comprobacion-resultado.real .comprobacion-icono .no{display:none}
+.comprobacion-resultado.fija .comprobacion-icono,.comprobacion-resultado.labios .comprobacion-icono{background:rgba(224,122,108,.16);color:#E07A6C}
+.comprobacion-resultado b{font:600 19px/1.25 var(--ui)}
+.comprobacion-resultado p{margin:0;font:400 14px/1.45 var(--ui);color:#C9D6E3}
+.comprobacion-senales{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;align-self:stretch}
+.comprobacion-senales li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.04);font:400 13.5px/1.3 var(--ui);text-align:left}
+.comprobacion-senales li::before{content:'';flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#7C8896}
+.comprobacion-senales li.si::before{background:#5CC98A;box-shadow:0 0 10px rgba(92,201,138,.7)}
+.comprobacion-senales li.no::before{background:#E07A6C}
+.comprobacion-resultado small{font:400 12px/1.45 var(--ui);color:#8FA2B5;max-width:34ch}
+.comprobacion-cerrar{margin-top:4px;min-width:170px;height:46px;border:0;border-radius:999px;background:#9CC3E4;color:#05070A;font:600 14.5px/1 var(--ui);cursor:pointer}
+@media (max-width:760px){
+  .sala .controles,.sala.video-grande .controles{gap:40px}
+  .sala .controles .seg#b-comprobar{position:relative;width:62px;height:62px;min-width:0;padding:0;border-radius:50%;display:grid;place-items:center;overflow:visible!important;letter-spacing:0;text-transform:none;
+    background:rgba(232,236,241,.1);border:1px solid rgba(255,255,255,.26);color:#F4F6F8;box-shadow:0 12px 34px -10px rgba(0,0,0,.7);flex:0 0 auto;margin-top:3px}
+}
