@@ -437,4 +437,11 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .sala.video-grande.por-comprobar .video-mio,.sala.video-grande.por-comprobar .video-capa{top:calc(env(safe-area-inset-top) + 204px)}
   /* en el móvil sobra «Tengo un código»: la invitación llega con su enlace (dueño, 14:49) */
   #tengo{display:none}
+  /* la invitación en el móvil: sin el código a la vista ni «Copiar»; solo enviar y esperar (dueño, 14:57) */
+  #panel-crear .codigo-grande,#panel-crear #copiar{display:none}
+  #panel-crear .par.ancho{border:0;background:transparent;box-shadow:none;justify-content:center}
+  #panel-crear .par.ancho::before,#panel-crear .par.ancho::after{display:none}
+  #panel-crear .par.ancho .seg{flex:0 0 auto;height:46px;padding:0 30px;border:1px solid rgba(255,255,255,.2);border-radius:2px}
+  .estado{display:block;text-align:center}
+  .estado .punto{display:inline-block;vertical-align:middle;margin:-2px 10px 0 0}
 }

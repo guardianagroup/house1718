@@ -34,7 +34,7 @@ function arranca() {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = false;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   RectAreaLightUniformsLib.init();
   const ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -55,8 +55,7 @@ function arranca() {
   const PX = 2.4, PY = 1.5; // paneles del encofrado
   const Y_LINEA = 1.5; // la junta de luz, a la altura de los ojos (coincide con la junta entre paneles)
   const ZOC = 0.1; // zócalo de acero
-  const ANCHO = 1.36, ALTO = 2.6, PROF = 1.0, Y0 = 2.1, Z0 = -2.0; // la roca
-  const RD = 1.2; // el disco de acero pulido enrasado en el suelo, bajo la roca
+  const ANCHO = 1.3, ALTO = 2.45, PROF = 1.0, Y0 = 2.1, Z0 = -2.0; // la roca
   const LX = 5.6, LZ = 1.5, LH = 0.42, LZC = -3.0; // la luminaria: ancho, fondo, profundidad del cajón y su centro
 
   let sem = 20261119;
@@ -160,17 +159,17 @@ function arranca() {
   }
 
   // ---------------- el suelo: piedra negra pulida ----------------
-  // un espejo oscurecido y, encima, la piedra satinada con sus losas de 2,4 m (refleja como piedra pulida, no como un espejo)
-  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0x7d838b, multisample: 4 });
+  // un espejo y, encima, una capa muy fina de piedra negra con sus juntas (dueño, 14:50: «abajo debe ser efecto espejo»)
+  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0xb9bfc6, multisample: 4 });
   espejo.rotation.x = -Math.PI / 2; espejo.position.set(0, 0, ZM); escena.add(espejo);
   function texLosas() {
     const N = ligero ? 512 : 1024, k = N / 4.8, [c, g] = lienzo2d(N, N);
-    g.fillStyle = 'rgba(8,9,12,.6)'; g.fillRect(0, 0, N, N);
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = `rgba(9,11,14,${0.02 + az() * 0.07})`; g.fillRect((i * N) / 2, (j * N) / 2, N / 2, N / 2); }
+    g.fillStyle = 'rgba(8,9,12,.2)'; g.fillRect(0, 0, N, N);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = `rgba(9,11,14,${0.01 + az() * 0.03})`; g.fillRect((i * N) / 2, (j * N) / 2, N / 2, N / 2); }
     g.filter = `blur(${Math.round(k * 0.08)}px)`;
-    for (let n = 0; n < 60; n++) { g.fillStyle = `rgba(${az() < 0.5 ? '30,34,40' : '4,5,6'},${az() * 0.08})`; const r = k * (0.1 + az() * 0.5); g.beginPath(); g.ellipse(az() * N, az() * N, r * 2, r * 0.6, az() * 3.14, 0, 6.283); g.fill(); }
+    for (let n = 0; n < 60; n++) { g.fillStyle = `rgba(${az() < 0.5 ? '30,34,40' : '4,5,6'},${az() * 0.04})`; const r = k * (0.1 + az() * 0.5); g.beginPath(); g.ellipse(az() * N, az() * N, r * 2, r * 0.6, az() * 3.14, 0, 6.283); g.fill(); }
     g.filter = 'none';
-    g.strokeStyle = 'rgba(1,2,3,.95)'; g.lineWidth = Math.max(2, k * 0.006);
+    g.strokeStyle = 'rgba(1,2,3,.75)'; g.lineWidth = Math.max(2, k * 0.005);
     for (const x of [0, N / 2, N]) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, N); g.stroke(); }
     for (const y of [0, N / 2, N]) { g.beginPath(); g.moveTo(0, y); g.lineTo(N, y); g.stroke(); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = ANISO;
@@ -215,22 +214,20 @@ function arranca() {
   // (Dueño, 14:40: «quita la lámpara».) Sin luminaria a la vista: la luz cae del techo, como en una sala de museo, y da la sombra
   // de la roca en el suelo; otra, más suave, le saca el relieve por delante.
   const cenital = new THREE.SpotLight(0xeaf2fb, 70, 0, 0.5, 0.9, 2); cenital.position.set(0.5, AL - 0.05, Z0 + 0.9); cenital.target.position.set(0, 0.4, Z0);
-  cenital.castShadow = true; cenital.shadow.mapSize.set(ligero ? 1024 : 2048, ligero ? 1024 : 2048); cenital.shadow.radius = 6; cenital.shadow.bias = -0.0004; cenital.shadow.normalBias = 0.02;
-  cenital.shadow.camera.near = 0.5; cenital.shadow.camera.far = 9; escena.add(cenital, cenital.target);
-  const frontal = new THREE.SpotLight(0xdfeaf6, 40, 0, 0.5, 1, 2); frontal.position.set(-2.6, 3.4, 2.6); frontal.target.position.set(0, Y0, Z0); escena.add(frontal, frontal.target);
-  const contra = new THREE.SpotLight(0xcfe0f2, 40, 0, 0.6, 1, 2); contra.position.set(2.4, 3.9, -4.2); contra.target.position.set(0, Y0 + 0.3, Z0); escena.add(contra, contra.target);
+  escena.add(cenital, cenital.target);
   const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, AL - 0.012, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum);
 
-  // ---------------- bajo la roca: un disco de acero pulido enrasado en el suelo, con un anillo de luz ----------------
-  {
-    const disco = new THREE.Mesh(new THREE.CylinderGeometry(RD, RD, 0.012, 128), matAcero); disco.position.set(0, 0.006, Z0); disco.receiveShadow = true; escena.add(disco);
-    const anillo = new THREE.Mesh(new THREE.RingGeometry(RD + 0.012, RD + 0.026, 160), matLinea); anillo.rotation.x = -Math.PI / 2; anillo.position.set(0, 0.004, Z0); escena.add(anillo);
-  }
   // ---------------- la roca ----------------
-  // Dueño, 14:40 («así quiero», con una imagen de referencia): una roca natural, oscura y mate, con sus planos de fractura y su grano,
-  // flotando en la sala. Y 14:25: «que se abra en 4 partes, arriba y abajo también». Es una roca propia, hecha aquí: una esfera
-  // (octaedro subdividido, cuyas aristas caen en los planos del corte) deformada con ruido (bultos), lascas planas (fracturas) y
-  // rugosidad fina. Cada cuarto lleva sus dos caras de corte, de piedra negra pulida: rugosa por fuera, pulida por dentro.
+  // Dueño, 14:40 y 14:50 (con una imagen de referencia: «la piedra no se ve real como la que te envié»): una roca natural, oscura y
+  // mate, rota en planos de fractura, con conchas, grietas y grano fino, flotando sobre un suelo que es un espejo. 14:25: «que se abra
+  // en 4 partes, arriba y abajo también»; 14:51: «no debe verse la línea blanca en la roca hasta presionar el botón».
+  // Es una roca propia, hecha aquí, sin modelos de terceros:
+  //   · la forma: una esfera (octaedro subdividido: sus aristas caen en los planos del corte) llevada a un bloque irregular con ruido
+  //     de baja frecuencia, rota por planos (lascas: caras planas y aristas vivas), con conchas cóncavas (la fractura concoidea),
+  //     grietas finas y rugosidad;
+  //   · la sombra de cada hueco (oclusión) y el desgaste de las aristas van en el color de cada vértice;
+  //   · el grano fino (milímetros) se calcula en la tarjeta gráfica, en el espacio de la roca: sin texturas ni costuras.
+  // Cada cuarto lleva sus dos caras de corte, de piedra negra pulida.
   const perm = new Uint8Array(512);
   { const q = Array.from({ length: 256 }, (_, k) => k); for (let k = 255; k > 0; k--) { const m = Math.floor(az() * (k + 1)); const t = q[k]; q[k] = q[m]; q[m] = t; } for (let k = 0; k < 512; k++) perm[k] = q[k & 255]; }
   const suav = (t) => t * t * t * (t * (t * 6 - 15) + 10), mez = (a, b, t) => a + (b - a) * t;
@@ -242,74 +239,171 @@ function arranca() {
       mez(mez(grad(perm[AA + 1] & 15, x, y, z - 1), grad(perm[BA + 1] & 15, x - 1, y, z - 1), u), mez(grad(perm[AB + 1] & 15, x, y - 1, z - 1), grad(perm[BB + 1] & 15, x - 1, y - 1, z - 1), u), v), w);
   }
   const fbm = (x, y, z, n) => { let s = 0, a = 1, f = 1, t = 0; for (let k = 0; k < n; k++) { s += a * ruido(x * f, y * f, z * f); t += a; a *= 0.5; f *= 2.03; } return s / t; };
-  const lascas = [];
-  for (let k = 0; k < 34; k++) lascas.push({ n: new THREE.Vector3(az() * 2 - 1, (az() * 2 - 1) * 0.9, az() * 2 - 1).normalize(), d: 0.7 + az() * 0.3 });
+  const lascas = [], conchas = [];
+  for (let k = 0; k < 22; k++) lascas.push({ n: new THREE.Vector3(az() * 2 - 1, (az() * 2 - 1) * 0.85, az() * 2 - 1).normalize(), d: 0.62 + az() * 0.3 });
+  for (let k = 0; k < 16; k++) conchas.push({ n: new THREE.Vector3(az() * 2 - 1, az() * 2 - 1, az() * 2 - 1).normalize(), c: Math.cos(0.16 + az() * 0.3), h: 0.04 + az() * 0.08 });
   function radio(x, y, z) {
-    const pw = 3.2; // entre esfera y bloque
-    let r = Math.pow(Math.pow(Math.abs(x), pw) + Math.pow(Math.abs(y), pw) + Math.pow(Math.abs(z), pw), -1 / pw) * (0.84 + 0.3 * fbm(x * 1.15 + 7.1, y * 1.15 - 3.3, z * 1.15 + 1.7, 3));
+    const pw = 3.6; // entre esfera y bloque
+    let r = Math.pow(Math.pow(Math.abs(x), pw) + Math.pow(Math.abs(y), pw) + Math.pow(Math.abs(z), pw), -1 / pw) * (1.02 + 0.22 * fbm(x * 1.3 + 7.1, y * 1.3 - 3.3, z * 1.3 + 1.7, 3));
     for (const c of lascas) { const k = x * c.n.x + y * c.n.y + z * c.n.z; if (k > 1e-3) { const t = c.d / k; if (t < r) r = t; } }
-    return r + 0.05 * fbm(x * 4.6 + 2.2, y * 4.6, z * 4.6 - 5.5, 4) + 0.016 * (1 - Math.abs(ruido(x * 13, y * 13, z * 13))) - 0.008;
+    for (const c of conchas) { const k = x * c.n.x + y * c.n.y + z * c.n.z; if (k > c.c) r -= c.h * Math.sqrt((k - c.c) / (1 - c.c)); }
+    r -= 0.034 * Math.pow(1 - Math.abs(ruido(x * 3.4 + 1.3, y * 3.4, z * 3.4 - 2.1)), 10); // grietas
+    r -= 0.012 * Math.pow(1 - Math.abs(ruido(x * 9 - 4, y * 9 + 2, z * 9)), 8);
+    return r + 0.03 * fbm(x * 5 + 2.2, y * 5, z * 5 - 5.5, 4) + 0.008 * ruido(x * 22, y * 22, z * 22);
   }
   const RX = ANCHO / 2, RY = ALTO / 2, RZ = PROF / 2;
-  const punto = (x, y, z, o) => { const l = Math.hypot(x, y, z) || 1; x /= l; y /= l; z /= l; const r = radio(x, y, z), f = 1 + 0.2 * y * r; return o.set(x * r * RX * f, y * r * RY, z * r * RZ * f); }; // algo más ancha arriba
-  function texGrano() {
-    const n = 512, [c, g] = lienzo2d(n, n), im = g.createImageData(n, n);
-    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-      const a = (x / n) * 6.283, b = (y / n) * 6.283, X = Math.cos(a) * 2.6, Y = Math.sin(a) * 2.6, Z = Math.cos(b) * 2.6, W = Math.sin(b) * 2.6; // se repite sin costura
-      const v = 128 + 70 * fbm(X + W * 0.7, Y + Z * 0.7, Z - W * 0.5 + X * 0.3, 5) + (az() - 0.5) * 46, k = (y * n + x) * 4;
-      im.data[k] = im.data[k + 1] = im.data[k + 2] = Math.max(0, Math.min(255, v)); im.data[k + 3] = 255;
-    }
-    g.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = ANISO; return t;
-  }
-  const matRoca = new THREE.MeshStandardMaterial({ color: 0x484a4e, roughness: 0.93, metalness: 0, vertexColors: true, bumpMap: texGrano(), bumpScale: 2.4 });
-  const matCorte = new THREE.MeshPhysicalMaterial({ color: 0x050506, roughness: 0.1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03 });
+  const punto = (x, y, z, o) => { const l = Math.hypot(x, y, z) || 1; x /= l; y /= l; z /= l; const r = radio(x, y, z), f = 1 + 0.18 * y * r; return o.set(x * r * RX * f, y * r * RY, z * r * RZ * f); }; // algo más ancha arriba
+  // Dueño, 14:54: «¿puedes hacer que la piedra parezca holograma? Quedaría muy bien». La misma roca, hecha de luz: azul hielo, los
+  // bordes encendidos (lo que se ve de canto brilla más), líneas de barrido que siguen su relieve, una banda que sube despacio, un
+  // parpadeo leve y, de vez en cuando, una franja que se desplaza un instante. Las grietas y los huecos, más tenues.
+  // Dueño, 14:59: «el holograma quiero que también se vea ultra realista; utiliza todos tus recursos». Una proyección de luz de una
+  // roca real: la roca se «fotografía» con una luz alta y lateral (su relieve, sus grietas y su grano, calculados aquí) y esa imagen
+  // es de luz: se suma a la sala, deja ver un poco su cara de atrás, enciende sus cantos, la cruzan líneas de barrido finas y una
+  // banda que sube; tiembla un poco, hace grano como un proyector y, de vez en cuando, se desplaza una franja. Ilumina la sala.
+  const GLSL_RUIDO = `
+    float hR(vec3 p) { p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float vnR(vec3 x) { vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hR(i), hR(i + vec3(1.0, 0.0, 0.0)), f.x), mix(hR(i + vec3(0.0, 1.0, 0.0)), hR(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+                 mix(mix(hR(i + vec3(0.0, 0.0, 1.0)), hR(i + vec3(1.0, 0.0, 1.0)), f.x), mix(hR(i + vec3(0.0, 1.0, 1.0)), hR(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z); }
+    float granoR(vec3 p) { return 0.55 * vnR(p) + 0.3 * vnR(p * 2.13 + 7.1) + 0.15 * vnR(p * 4.37 - 3.3); }
+  `;
+  const HOLO_V = `
+    uniform float t, glitch;
+    varying vec3 vN, vV, vP; varying float vAo;
+    float h1(float n) { return fract(sin(n) * 43758.5453); }
+    ${GLSL_RUIDO}
+    void main() {
+      vec3 p = position;
+      float banda = floor(p.y * 16.0), salto = step(0.986, h1(banda * 12.9898 + floor(t * 6.0) * 78.233)) * glitch;
+      p.x += salto * 0.03 * sin(t * 90.0 + banda);
+      p += normal * (vnR(p * 9.0 + vec3(0.0, t * 0.7, 0.0)) - 0.5) * 0.004 * glitch; // la superficie de luz respira
+      vec4 mv = modelViewMatrix * vec4(p, 1.0);
+      vN = normalize(normalMatrix * normal); vV = -mv.xyz; vP = position; vAo = color.r;
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const HOLO_F = `
+    uniform float t, brillo; uniform vec3 hielo, blanco;
+    varying vec3 vN, vV, vP; varying float vAo;
+    ${GLSL_RUIDO}
+    float h2(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      float cara = gl_FrontFacing ? 1.0 : -1.0;
+      vec3 v = normalize(vV), n = normalize(vN) * cara;
+      // el grano de la piedra, en el relieve (como un mapa de relieve, calculado en la roca: sin texturas)
+      float px = length(fwidth(vP)), fino = clamp(1.0 - px * 90.0, 0.0, 1.0);
+      float h = granoR(vP * 34.0) + fino * 0.4 * vnR(vP * 150.0);
+      vec3 sx = normalize(dFdx(-vV)), sy = normalize(dFdy(-vV)), r1 = cross(sy, n), r2 = cross(n, sx); float det = dot(sx, r1);
+      n = normalize(abs(det) * n - sign(det) * (dFdx(h) * r1 + dFdy(h) * r2) * 0.5);
+      float nv = abs(dot(n, v)), fres = pow(1.0 - nv, 3.0);
+      // la «foto» de la roca: luz alta y lateral, un relleno suave y la sombra de cada hueco
+      vec3 L = normalize(vec3(-0.5, 0.78, 0.38));
+      float luz = 0.14 + 0.86 * pow(max(dot(n, L), 0.0), 1.15);
+      float ao = smoothstep(0.22, 1.0, vAo);
+      float cuerpo = luz * ao * (0.72 + 0.5 * h);
+      // líneas de barrido cada 4,5 cm, sin dientes (se apagan si se juntan demasiado en pantalla), y la banda que sube
+      float y = vP.y * 22.0 - t * 0.35, w = fwidth(y) * 1.2;
+      float linea = (1.0 - smoothstep(0.0, 0.08 + w, abs(fract(y) - 0.5) - 0.42)) * (1.0 - smoothstep(0.25, 0.6, w));
+      float banda = smoothstep(0.1, 0.0, abs(fract(vP.y * 0.3 - t * 0.11) - 0.5));
+      float grano = (h2(gl_FragCoord.xy + fract(t * 3.1) * 91.0) - 0.5) * 0.06;
+      float parpadeo = 0.95 + 0.05 * sin(t * 37.0) * sin(t * 11.3);
+      float a = (cuerpo * 0.36 + fres * 0.42 + linea * 0.09 + banda * 0.1 + grano) * (gl_FrontFacing ? 1.0 : 0.28);
+      vec3 col = mix(hielo, blanco, clamp(cuerpo * 0.45 + fres * 0.55, 0.0, 1.0));
+      col += vec3(-0.12, 0.02, 0.1) * fres * n.x; // un borde algo cian a un lado y algo violeta al otro, como en una lente
+      gl_FragColor = vec4(max(col, 0.0) * max(a, 0.0) * brillo * parpadeo, 1.0);
+    }`;
+  const uHolo = { t: { value: 0 }, glitch: { value: quieto ? 0 : 1 }, brillo: { value: 1 }, hielo: { value: new THREE.Color(0x5aa6e8) }, blanco: { value: new THREE.Color(0xdcecfb) } };
+  const matRoca = new THREE.ShaderMaterial({ uniforms: uHolo, vertexShader: HOLO_V, fragmentShader: HOLO_F, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  // las caras del corte, al abrirse: una sección de escáner, con su retícula
+  const matCorte = new THREE.ShaderMaterial({
+    uniforms: uHolo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: 'varying vec3 vP; void main() { vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform float brillo; uniform vec3 hielo; varying vec3 vP;
+      void main() { vec2 q = (abs(vP.x) < 1e-3 ? vP.zy : vP.xz) * 18.0; vec2 g = abs(fract(q) - 0.5) / fwidth(q); float red = 1.0 - min(min(g.x, g.y), 1.0);
+        gl_FragColor = vec4(hielo * (0.05 + 0.3 * red) * brillo, 1.0); }`,
+  });
   const mono = new THREE.Group(); mono.position.set(0, Y0, Z0); escena.add(mono);
-  const baseRoca = new THREE.OctahedronGeometry(1, ligero ? 30 : 44).attributes.position; // sin índices: tres vértices por triángulo
+  const baseRoca = new THREE.OctahedronGeometry(1, ligero ? 56 : 72).attributes.position; // sin índices: tres vértices por triángulo
   const cuartos = [];
   {
-    const P = new THREE.Vector3(), P1 = new THREE.Vector3(), P2 = new THREE.Vector3(), D = new THREE.Vector3(), T1 = new THREE.Vector3(), T2 = new THREE.Vector3(), Nn = new THREE.Vector3(), EJE = new THREE.Vector3(0, 1, 0), EJE2 = new THREE.Vector3(1, 0, 0);
-    const E = 0.014;
+    // cada dirección se calcula una vez (en el octaedro, cada vértice se repite en varios triángulos)
+    const memo = new Map(), P = new THREE.Vector3(), P1 = new THREE.Vector3(), P2 = new THREE.Vector3(), Q = new THREE.Vector3(), D = new THREE.Vector3(), T1 = new THREE.Vector3(), T2 = new THREE.Vector3(), Nn = new THREE.Vector3();
+    const EJE = new THREE.Vector3(0, 1, 0), EJE2 = new THREE.Vector3(1, 0, 0), E = 0.009, ANILLO = [0, 1, 2, 3, 4, 5].map((k) => [Math.cos((k * Math.PI) / 3), Math.sin((k * Math.PI) / 3)]);
+    function vertice(dx, dy, dz) {
+      const clave = Math.round(dx * 1e5) + ',' + Math.round(dy * 1e5) + ',' + Math.round(dz * 1e5);
+      let v = memo.get(clave); if (v) return v;
+      D.set(dx, dy, dz).normalize();
+      punto(D.x, D.y, D.z, P);
+      T1.crossVectors(D, Math.abs(D.y) > 0.9 ? EJE2 : EJE).normalize(); T2.crossVectors(D, T1);
+      punto(D.x + T1.x * E, D.y + T1.y * E, D.z + T1.z * E, P1); punto(D.x + T2.x * E, D.y + T2.y * E, D.z + T2.z * E, P2);
+      Nn.crossVectors(P1.sub(P), P2.sub(P)).normalize(); if (Nn.dot(P) < 0) Nn.negate();
+      // oclusión: si los vecinos sobresalen, es un hueco (más oscuro); si quedan por debajo, una arista (algo más clara, gastada)
+      const r0 = P.length(); let media = 0;
+      for (const [a, b] of ANILLO) { punto(D.x + (T1.x * a + T2.x * b) * 0.05, D.y + (T1.y * a + T2.y * b) * 0.05, D.z + (T1.z * a + T2.z * b) * 0.05, Q); media += Q.length(); }
+      const conc = media / 6 - r0;
+      const ao = Math.max(0.28, Math.min(1, 1 - 7 * conc)), arista = 1 + Math.min(0.3, Math.max(0, -conc) * 6);
+      const t = Math.max(0.55, Math.min(1.2, 0.9 + 0.22 * fbm(D.x * 2.6 + 4, D.y * 2.6, D.z * 2.6 - 2, 3))) * ao * arista;
+      v = { p: P.clone(), n: Nn.clone(), c: t, x: dx, y: dy };
+      memo.set(clave, v); return v;
+    }
     for (const sy of [-1, 1]) for (const sx of [-1, 1]) {
-      const pos = [], nor = [], col = [], uv = [], cpos = [], cnor = [];
+      const pos = [], nor = [], col = [], cpos = [], cnor = [];
       for (let i = 0; i < baseRoca.count; i += 3) {
         if ((baseRoca.getX(i) + baseRoca.getX(i + 1) + baseRoca.getX(i + 2)) * sx <= 0 || (baseRoca.getY(i) + baseRoca.getY(i + 1) + baseRoca.getY(i + 2)) * sy <= 0) continue;
         const tri = [];
         for (let k = 0; k < 3; k++) {
-          D.set(baseRoca.getX(i + k), baseRoca.getY(i + k), baseRoca.getZ(i + k)).normalize();
-          punto(D.x, D.y, D.z, P);
-          T1.crossVectors(D, Math.abs(D.y) > 0.9 ? EJE2 : EJE).normalize(); T2.crossVectors(D, T1);
-          punto(D.x + T1.x * E, D.y + T1.y * E, D.z + T1.z * E, P1); punto(D.x + T2.x * E, D.y + T2.y * E, D.z + T2.z * E, P2);
-          Nn.crossVectors(P1.sub(P), P2.sub(P)).normalize(); if (Nn.dot(P) < 0) Nn.negate();
-          pos.push(P.x, P.y, P.z); nor.push(Nn.x, Nn.y, Nn.z);
-          const t = Math.max(0.5, Math.min(1.25, 0.86 + 0.3 * fbm(D.x * 3.1 + 4, D.y * 3.1, D.z * 3.1 - 2, 3) + 0.25 * ruido(D.x * 9, D.y * 9, D.z * 9)));
-          col.push(t, t, t * 1.02);
-          uv.push((Math.atan2(D.x, D.z) / 6.283) * 5, D.y * 2.4);
-          tri.push({ x: D.x, y: D.y, p: P.clone() });
+          const v = vertice(baseRoca.getX(i + k), baseRoca.getY(i + k), baseRoca.getZ(i + k));
+          pos.push(v.p.x, v.p.y, v.p.z); nor.push(v.n.x, v.n.y, v.n.z); col.push(v.c, v.c, v.c * 1.02); tri.push(v);
         }
         // las caras del corte: cada arista que cae en un plano del corte, con el centro
         for (let k = 0; k < 3; k++) {
           const a = tri[k], b = tri[(k + 1) % 3];
           for (const [eje, nx, ny] of [['x', -sx, 0], ['y', 0, -sy]]) {
             if (a[eje] !== 0 || b[eje] !== 0) continue;
-            Nn.crossVectors(a.p, b.p); const alReves = Nn.x * nx + Nn.y * ny < 0, u = alReves ? b.p : a.p, v = alReves ? a.p : b.p;
-            cpos.push(0, 0, 0, u.x, u.y, u.z, v.x, v.y, v.z); for (let q = 0; q < 3; q++) cnor.push(nx, ny, 0);
+            Nn.crossVectors(a.p, b.p); const alReves = Nn.x * nx + Nn.y * ny < 0, u = alReves ? b.p : a.p, w = alReves ? a.p : b.p;
+            cpos.push(0, 0, 0, u.x, u.y, u.z, w.x, w.y, w.z); for (let q = 0; q < 3; q++) cnor.push(nx, ny, 0);
           }
         }
       }
       const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
       const gc = new THREE.BufferGeometry(); gc.setAttribute('position', new THREE.Float32BufferAttribute(cpos, 3)); gc.setAttribute('normal', new THREE.Float32BufferAttribute(cnor, 3));
       const grupo = new THREE.Group(), piel = new THREE.Mesh(g, matRoca), corte = new THREE.Mesh(gc, matCorte);
-      piel.castShadow = true; piel.receiveShadow = true; grupo.add(piel, corte); grupo.userData = { sx, sy }; mono.add(grupo); cuartos.push(grupo);
+      corte.visible = false; grupo.add(piel, corte); grupo.userData = { sx, sy, corte }; mono.add(grupo); cuartos.push(grupo);
     }
   }
-  // la fisura de luz por donde se parte, en cruz: sigue la piel de la roca por delante (la horizontal solo se enciende al abrirse)
-  const matSello = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(1.6), toneMapped: false, transparent: true });
-  const matSelloH = matSello.clone(); matSelloH.opacity = 0;
+  const motas = {};
+  const texPuntoH = (() => { const [c2, g2] = lienzo2d(32, 32), r = g2.createRadialGradient(16, 16, 0, 16, 16, 16); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,.45)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = r; g2.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c2); })();
+  {
+    const RP = 0.5, alto = Y0 - ALTO / 2 + 0.25;
+    const anillo = new THREE.Mesh(new THREE.RingGeometry(RP, RP + 0.012, 160), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x9cc3e4).multiplyScalar(2.2), toneMapped: false }));
+    anillo.rotation.x = -Math.PI / 2; anillo.position.set(0, 0.004, Z0); escena.add(anillo);
+    const haz = new THREE.Mesh(new THREE.CylinderGeometry(RP + 0.26, RP, alto, 96, 1, true), new THREE.ShaderMaterial({
+      uniforms: uHolo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      vertexShader: 'varying vec2 vU; varying vec3 vN, vV; void main() { vU = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }',
+      fragmentShader: `uniform float t, brillo; uniform vec3 hielo; varying vec2 vU; varying vec3 vN, vV;
+        void main() { float lado = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5); float rayas = 0.6 + 0.4 * sin(vU.x * 6.2832 * 48.0 + t * 0.6);
+          gl_FragColor = vec4(hielo * (1.0 - vU.y) * (1.0 - vU.y) * (0.03 + 0.16 * lado) * rayas * brillo, 1.0); }`,
+    }));
+    haz.position.set(0, alto / 2, Z0); escena.add(haz);
+    // el brillo del emisor en el suelo
+    const [cv, gv] = lienzo2d(256, 256), rg = gv.createRadialGradient(128, 128, 0, 128, 128, 128);
+    rg.addColorStop(0, 'rgba(255,255,255,.9)'); rg.addColorStop(0.32, 'rgba(255,255,255,.28)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); gv.fillStyle = rg; gv.fillRect(0, 0, 256, 256);
+    const charco = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0x5aa6e8).multiplyScalar(0.55), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    charco.rotation.x = -Math.PI / 2; charco.position.set(0, 0.006, Z0); escena.add(charco);
+    // motas de polvo que suben dentro del haz y brillan al cruzarlo
+    const NM = quieto ? 0 : 90, mp = new Float32Array(NM * 3); motas.v = new Float32Array(NM);
+    for (let k = 0; k < NM; k++) { const a = az() * 6.283, r = Math.sqrt(az()) * (RP + 0.1); mp[k * 3] = Math.cos(a) * r; mp[k * 3 + 1] = az() * (Y0 + ALTO / 2); mp[k * 3 + 2] = Z0 + Math.sin(a) * r; motas.v[k] = 0.04 + az() * 0.08; }
+    motas.g = new THREE.BufferGeometry(); motas.g.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+    escena.add(new THREE.Points(motas.g, new THREE.PointsMaterial({ map: texPuntoH, color: new THREE.Color(0x9cc3e4).multiplyScalar(1.4), size: 0.018, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
+  }
+  // la luz del holograma: tiñe de azul la sala y el suelo, y tiembla con él
+  const luzHolo = new THREE.PointLight(0x6fb0ea, 3.2, 7, 2); luzHolo.position.set(0, Y0 - 0.2, Z0 + 0.35); escena.add(luzHolo);
+  // la fisura de luz por donde se parte, en cruz: sigue la piel de la roca por delante; solo se enciende al pulsar
+  const matSello = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: 0 });
+  const matSelloH = matSello.clone();
   const fisura = (vertical, mat) => {
     const pts = [], lim = vertical ? 1.42 : 1.3;
-    for (let a = -lim; a <= lim + 1e-6; a += lim / 60) { const q = new THREE.Vector3(); punto(vertical ? 0 : Math.sin(a), vertical ? Math.sin(a) : 0, Math.cos(a), q); q.multiplyScalar(1.004); q.z += 0.003; pts.push(q); }
+    for (let a = -lim; a <= lim + 1e-6; a += lim / 70) { const q = new THREE.Vector3(); punto(vertical ? 0 : Math.sin(a), vertical ? Math.sin(a) : 0, Math.cos(a), q); q.multiplyScalar(1.004); q.z += 0.003; pts.push(q); }
     const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.0026, 6, false), mat); mono.add(m); return m;
   };
   const sello = fisura(true, matSello), selloH = fisura(false, matSelloH);
@@ -323,7 +417,7 @@ function arranca() {
   const luzNucleo = new THREE.RectAreaLight(0xcfe3f6, 0, 0.1, ALTO - 0.3); luzNucleo.position.set(0, 0, 0.05); mono.add(luzNucleo);
   const luzNucleo2 = new THREE.PointLight(0xbfdcf5, 0, 14, 2); luzNucleo2.position.set(0, 0, 0.7); mono.add(luzNucleo2);
 
-  // ---------------- lo que reflejan el acero y las caras pulidas de la roca: la propia sala ----------------
+  // ---------------- lo que refleja el acero: la propia sala ----------------
   // Una vista en cubo de la sala desde donde está la roca (sin ella), con las luces más intensas solo para esa vista: como en una
   // foto, el acero pulido refleja sobre todo las luces.
   {
@@ -332,7 +426,7 @@ function arranca() {
     const entorno = pmrem.fromScene(escena, 0, 0.05, 40, { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: ligero ? 256 : 512 }).texture;
     for (const m of cuartos) m.visible = true; sello.visible = true; espejo.visible = true;
     for (const m of brillan) m.color.multiplyScalar(1 / 3);
-    for (const [m, k] of [[matAcero, 1], [matCorte, 1.2]]) { m.envMap = entorno; m.envMapIntensity = k; m.needsUpdate = true; }
+    for (const [m, k] of [[matAcero, 1]]) { m.envMap = entorno; m.envMapIntensity = k; m.needsUpdate = true; }
   }
 
   // ---------------- el campo magnético entre las dos mitades ----------------
@@ -387,7 +481,7 @@ function arranca() {
   function ajusta() {
     const w = lienzo.clientWidth || innerWidth, h = lienzo.clientHeight || innerHeight;
     renderer.setSize(w, h, false); comp.setSize(w, h);
-    const ESP = ligero ? 0.7 : 0.85; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
+    const ESP = 0.85; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
     camara.fov = camara.aspect < 0.8 ? 64 : camara.aspect < 1.2 ? 54 : camara.aspect > 2.1 ? 38 : 44;
@@ -449,7 +543,8 @@ function arranca() {
     mono.rotation.y = quieto ? 0 : Math.sin(ahora * 0.13) * 0.07 * (1 - estado.abre);
     const sep = 0.44 * estado.abre, sepY = 0.3 * estado.abre;
     const zum = estado.zumbido * 0.0022 * Math.sin(ahora * 95), golpe = estado.golpe * 0.004 * Math.sin(ahora * 70);
-    for (const m of cuartos) { const { sx, sy } = m.userData; m.position.set(sx * (sep + zum + golpe), sy * (sepY + (zum + golpe) * 0.6), 0); m.rotation.set(-sy * 0.09 * estado.giro, -sx * 0.28 * estado.giro, 0); }
+    const partido = estado.abre > 0.002;
+    for (const m of cuartos) { const { sx, sy } = m.userData; m.userData.corte.visible = partido; m.position.set(sx * (sep + zum + golpe), sy * (sepY + (zum + golpe) * 0.6), 0); m.rotation.set(-sy * 0.09 * estado.giro, -sx * 0.28 * estado.giro, 0); }
     // campo: visible mientras hay separación o zumbido; parpadea un poco, como una descarga
     const vCampo = estado.campo * (0.75 + 0.25 * Math.sin(ahora * 23) * Math.sin(ahora * 7.3));
     matCampo.opacity = vCampo * 0.85; matChispa.opacity = vCampo;
@@ -464,7 +559,7 @@ function arranca() {
       if (NCH) { const a = chG.attributes.position; for (let i = 0; i < NCH; i++) { chU[i] = (chU[i] + chV[i] * dt * (0.6 + estado.campo)) % 1; curva(lineas[chL[i]], s2); bez(chU[i], Q); a.array[i * 3] = Q.x; a.array[i * 3 + 1] = Q.y; a.array[i * 3 + 2] = Q.z; } a.needsUpdate = true; }
     }
     const pulso = quieto ? 0.85 : 0.7 + Math.sin(ahora * 1.3) * 0.22;
-    matSello.opacity = Math.max(0, 1 - estado.abre * 2.5) * Math.min(1, pulso + estado.sello);
+    matSello.opacity = Math.max(0, 1 - estado.abre * 2.5) * estado.sello;
     matSelloH.opacity = Math.max(0, 1 - estado.abre * 2.5) * estado.sello;
     matNucleo.opacity = estado.luz; nucleo.scale.x = 1 + estado.luz * 1.5;
     matHalo.opacity = 0.55 * estado.luz;
@@ -476,7 +571,10 @@ function arranca() {
     camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * 2.3);
     camara.lookAt(0, 1.95 + d * 0.06, Z0 - 0.4);
     if (N) { const a = polvoG.attributes.position; for (let i = 0; i < N; i++) { let y = a.array[i * 3 + 1] + vel[i] * dt * 0.3; if (y > AL - 0.2) y = 0.1; a.array[i * 3 + 1] = y; a.array[i * 3] += Math.sin(ahora * 0.25 + i) * 0.0003; } a.needsUpdate = true; }
-    if (!quieto) grano.uniforms.semilla.value = (ahora * 61.7) % 997;
+    if (!quieto) { grano.uniforms.semilla.value = (ahora * 61.7) % 997; uHolo.t.value = ahora; }
+    uHolo.brillo.value = 1 + 0.6 * estado.sello;
+    luzHolo.intensity = (3.2 + 2.5 * estado.sello) * (0.95 + 0.05 * Math.sin(ahora * 37) * Math.sin(ahora * 11.3));
+    if (motas.g && !quieto) { const a = motas.g.attributes.position; for (let k = 0; k < a.count; k++) { let y = a.array[k * 3 + 1] + motas.v[k] * dt; if (y > Y0 + ALTO / 2) y = 0.02; a.array[k * 3 + 1] = y; } a.needsUpdate = true; }
     comp.render();
   }
   cuadro();
