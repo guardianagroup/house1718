@@ -136,15 +136,17 @@ function arranca() {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.channel = 1; return t;
   }
   const rincon = (d) => 1 - 0.42 * Math.exp(-Math.max(d, 0) / 0.55);
-  const perfil = (y) => (0.05 + 0.85 * gau(y, Y_LINEA, y > Y_LINEA ? 0.48 : 0.34) + 0.34 * gau(y, ZOC + 0.03, 0.16)) * (1 - 0.3 * Math.exp(-(AL - y) / 0.35));
+  // (dueño, 15:57: «quita las líneas, todas; así se verá mejor el holograma»: sin las juntas de luz, el muro solo recibe una luz suave
+  // y difusa; la luz de verdad es la del holograma)
+  const perfil = (y) => (0.1 + 0.2 * gau(y, 2.1, 1.25) + 0.05 * gau(y, ZOC + 0.03, 0.25)) * (1 - 0.3 * Math.exp(-(AL - y) / 0.35));
   function luzMuro(x, y, z, cual) {
-    if (cual === 'fondo') return (perfil(y) + 0.38 * Math.exp(-(AL - y) / 1.1) + 0.24 * gau(x, 0, 2.3) * gau(y, 2.9, 1.25)) * rincon(AN / 2 - Math.abs(x));
+    if (cual === 'fondo') return (perfil(y) + 0.1 * Math.exp(-(AL - y) / 1.1) + 0.3 * gau(x, 0, 2.1) * gau(y, 2.2, 1.2)) * rincon(AN / 2 - Math.abs(x));
     if (cual === 'frente') return perfil(y) * rincon(AN / 2 - Math.abs(x));
     return (perfil(y) + 0.14 * gau(z, LZC, 3.2) * (y / AL) + 0.1 * Math.exp(-(AL - y) / 1.2) * gau(z, FONDO, 1.2)) * rincon(z - FONDO) * rincon(FRENTE - z);
   }
   function luzTecho(x, z) {
     const qx = Math.abs(x) - LX / 2, qz = Math.abs(z - LZC) - LZ / 2, d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
-    return (0.05 + 0.1 * Math.exp(-d / 1.2) + 0.5 * Math.exp(-Math.max(z - FONDO - 0.22, 0) / 0.32)) * rincon(AN / 2 - Math.abs(x)) * rincon(z - FONDO) * rincon(FRENTE - z);
+    return (0.05 + 0.1 * Math.exp(-d / 1.2) + 0.08 * Math.exp(-Math.max(z - FONDO - 0.22, 0) / 0.6)) * rincon(AN / 2 - Math.abs(x)) * rincon(z - FONDO) * rincon(FRENTE - z);
   }
   const matHormigon = (luz, tono) => new THREE.MeshStandardMaterial({ map: hormigon, bumpMap: NIVEL ? hormigon : null, bumpScale: 1.4, color: tono || 0xffffff, roughness: 0.8, metalness: 0, lightMap: luz, lightMapIntensity: [1.3, 1.15, 0.95][NIVEL] });
   // un paramento de (x1, z1) a (x2, z2), mirando hacia dentro; la textura va en metros y una junta cae en la esquina del fondo
@@ -197,7 +199,7 @@ function arranca() {
   // zócalo de acero pulido
   const zocalo = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, ZOC, d), matAcero); m.position.set(x, ZOC / 2, z); m.receiveShadow = true; escena.add(m); };
   const E = 0.014;
-  zocalo(AN, E, 0, FONDO + E / 2); zocalo(AN, E, 0, FRENTE - E / 2); zocalo(E, LARGO, -AN / 2 + E / 2, ZM); zocalo(E, LARGO, AN / 2 - E / 2, ZM);
+  void zocalo; void E; // (sin zócalo: también era una línea; dueño, 15:57)
   // aletas de acero pulido en las juntas de los paneles: dos en el fondo (enmarcan la roca), dos delante y cinco en cada lado
   {
     const pos = [[-3 * PX / 2, FONDO + 0.08, 0], [3 * PX / 2, FONDO + 0.08, 0], [-3 * PX / 2, FRENTE - 0.08, 0], [3 * PX / 2, FRENTE - 0.08, 0]];
@@ -205,22 +207,18 @@ function arranca() {
     const aletas = new THREE.InstancedMesh(new RoundedBoxGeometry(0.06, AL - 0.004, 0.16, 3, 0.012), matAcero, pos.length);
     const M = new THREE.Matrix4(), R = new THREE.Matrix4().makeRotationY(Math.PI / 2);
     pos.forEach(([x, z, lado], i) => { M.makeTranslation(x, AL / 2, z); if (lado) M.multiply(R); aletas.setMatrixAt(i, M); });
-    escena.add(aletas);
+    void aletas; // (sin aletas: también eran líneas)
   }
 
   // ---------------- las líneas de luz ----------------
   const matLinea = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe9f2fb).multiplyScalar(2.4), toneMapped: false });
-  const linea = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matLinea); m.position.set(x, y, z); escena.add(m); };
-  for (const [y, h] of [[Y_LINEA, 0.022], [ZOC + 0.008, 0.008]]) {
-    linea(AN, h, 0.01, 0, y, FONDO + 0.004); linea(AN, h, 0.01, 0, y, FRENTE - 0.004);
-    linea(0.01, h, LARGO, -AN / 2 + 0.004, y, ZM); linea(0.01, h, LARGO, AN / 2 - 0.004, y, ZM);
-  }
+  // (sin líneas de luz en los muros ni en el techo: dueño, 15:57)
   // bañador de pared: una ranura de luz en el techo, a lo largo del fondo
   const matRanura = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe9f2fb).multiplyScalar(1.7), toneMapped: false });
-  { const m = new THREE.Mesh(new THREE.PlaneGeometry(AN - 0.1, 0.05), matRanura); m.rotation.x = Math.PI / 2; m.position.set(0, AL - 0.003, FONDO + 0.22); escena.add(m); }
+
   // y la luz que de verdad dan: una tira de área por pared, a la altura de la junta
   const tira = (w, x, z, mx, mz) => { const a = new THREE.RectAreaLight(0xe8f1fa, 3, w, 0.05); a.position.set(x, Y_LINEA, z); a.lookAt(mx, Y_LINEA, mz); escena.add(a); };
-  if (NIVEL === 2) { tira(AN, 0, FONDO + 0.03, 0, 0); tira(AN, 0, FRENTE - 0.03, 0, 0); tira(LARGO, -AN / 2 + 0.03, ZM, 0, ZM); tira(LARGO, AN / 2 - 0.03, ZM, 0, ZM); }
+  void tira;
   escena.add(new THREE.HemisphereLight(0x3a4452, 0x050607, 0.08));
 
   // ---------------- la luz sobre la roca ----------------
@@ -488,6 +486,34 @@ function arranca() {
   const chG = new THREE.BufferGeometry(); chG.setAttribute('position', new THREE.BufferAttribute(chPos, 3));
   const matChispa = new THREE.PointsMaterial({ map: texPunto, color: new THREE.Color(0xe3f0fb).multiplyScalar(1.6), size: 0.022, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
   const chispas = new THREE.Points(chG, matChispa); chispas.frustumCulled = false; mono.add(chispas);
+
+  // ---------------- el campo gravitatorio: el disco de luz y las ondas ----------------
+  const NG = quieto ? 0 : [260, 480, 760][NIVEL], R0 = 0.4, R1 = 1.8;
+  const disco = new THREE.Group(); disco.position.set(0, Y0, Z0); disco.rotation.x = 0.24; disco.visible = false; escena.add(disco);
+  const gP = new Float32Array(NG * 3), gC = new Float32Array(NG * 3), gR = new Float32Array(NG), gA = new Float32Array(NG), gY = new Float32Array(NG), gW = new Float32Array(NG);
+  const nace = (i, fuera) => { gR[i] = fuera ? R1 * (0.8 + 0.2 * Math.random()) : R0 + (R1 - R0) * Math.pow(Math.random(), 1.7); gA[i] = Math.random() * 6.2832; gY[i] = (Math.random() - 0.5) * 0.07 * gR[i]; gW[i] = 0.7 + Math.random() * 0.6; };
+  for (let i = 0; i < NG; i++) nace(i, false);
+  const gG = new THREE.BufferGeometry(); gG.setAttribute('position', new THREE.BufferAttribute(gP, 3)); gG.setAttribute('color', new THREE.BufferAttribute(gC, 3));
+  const matDisco = new THREE.PointsMaterial({ map: texPunto, size: 0.03, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  matDisco.color.setScalar(1.7);
+  const puntosDisco = new THREE.Points(gG, matDisco); puntosDisco.frustumCulled = false; disco.add(puntosDisco);
+  const ondas = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.RingGeometry(0.992, 1, 160), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xbfdcf5).multiplyScalar(1.5), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false })); m.rotation.x = -Math.PI / 2; disco.add(m); return m; });
+  function campoGravitatorio(dt) {
+    const f = estado.campoG; disco.visible = f > 0.002; if (!disco.visible) return;
+    matDisco.opacity = f;
+    const w = 0.8 + 1.7 * estado.giroG;
+    for (let i = 0; i < NG; i++) {
+      const r = gR[i];
+      gA[i] += dt * w * gW[i] * 2.1 * Math.pow(R0 / r, 1.5);
+      gR[i] -= dt * 0.07 * (R0 / r) * f;
+      if (gR[i] < R0 * 0.72) nace(i, true);
+      const k = i * 3, cerca = Math.pow(R0 / gR[i], 1.15), aparece = Math.min(1, (R1 * 1.02 - gR[i]) / 0.25);
+      gP[k] = Math.cos(gA[i]) * gR[i]; gP[k + 1] = gY[i]; gP[k + 2] = Math.sin(gA[i]) * gR[i];
+      gC[k] = (0.3 + 0.62 * cerca) * aparece; gC[k + 1] = (0.55 + 0.42 * cerca) * aparece; gC[k + 2] = (0.9 + 0.1 * cerca) * aparece;
+    }
+    gG.attributes.position.needsUpdate = true; gG.attributes.color.needsUpdate = true;
+    for (let k = 0; k < 3; k++) { const p = (ahora * 0.42 + k / 3) % 1, s2 = R0 + (R1 + 0.5 - R0) * p; ondas[k].scale.setScalar(s2); ondas[k].material.opacity = f * 0.42 * Math.sin(p * Math.PI) * (1 - p) * (0.4 + 0.6 * estado.giroG); }
+  }
   const P0 = new THREE.Vector3(), P1 = new THREE.Vector3(), P2 = new THREE.Vector3(), P3 = new THREE.Vector3(), Q = new THREE.Vector3();
   const bez = (u, o) => { const a = 1 - u; return o.set(0, 0, 0).addScaledVector(P0, a * a * a).addScaledVector(P1, 3 * a * a * u).addScaledVector(P2, 3 * a * u * u).addScaledVector(P3, u * u * u); };
   function curva(L, sep) {
@@ -526,11 +552,12 @@ function arranca() {
     const ESP = [0.35, 0.5, 0.85][NIVEL]; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
-    camara.fov = camara.aspect < 0.8 ? 56 : camara.aspect < 1.2 ? 54 : camara.aspect > 2.1 ? 38 : 44;
+    // (dueño, 15:42: «así se verá más grande e impresionante en el PC»: en el ordenador, menos ángulo: la roca, más grande)
+    camara.fov = camara.aspect < 0.8 ? 56 : camara.aspect < 1.2 ? 48 : camara.aspect > 2.1 ? 33 : 38;
     // en el móvil de pie (dueño, 15:41: «arriba queda mucho espacio, aprovéchalo»): la roca, más grande y más arriba (la imagen se
     // desplaza como con un objetivo descentrable, sin deformar), y abajo el suelo espejo y el botón; al abrir, se acerca menos
     retrato = camara.aspect < 0.8;
-    if (retrato) camara.setViewOffset(w, h, 0, Math.round(h * 0.14), w, h); else camara.clearViewOffset();
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.14 : 0.03)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;
@@ -543,8 +570,24 @@ function arranca() {
     // atracción: acelera al acercarse y rebota un poco al chocar
     atrae: (t) => (t < 0.82 ? Math.pow(t / 0.82, 2.6) * 1.0 : 1 - Math.sin(((t - 0.82) / 0.18) * Math.PI) * 0.035) };
   const tramos = []; let ahora = 0;
-  const estado = { sello: 0, abre: 0, giro: 0, luz: 0, dolly: 0, marca: 0, zumbido: 0, campo: 0, golpe: 0 };
-  const tween = (k, a, b, dur, e, retraso) => new Promise((res) => tramos.push({ t0: ahora + (retraso || 0), dur: Math.max(dur, 0.0001), set: (p) => { estado[k] = a + (b - a) * p; }, e: e || ease.io, res }));
+  const estado = { sello: 0, abre: 0, giro: 0, luz: 0, dolly: 0, marca: 0, zumbido: 0, campo: 0, golpe: 0, giroG: 0, campoG: 0, vuelta: 0, vida: 0 };
+  const tween = (k, a, b, dur, e, retraso) => new Promise((res) => tramos.push({ k, t0: ahora + (retraso || 0), dur: Math.max(dur, 0.0001), set: (p) => { estado[k] = a + (b - a) * p; }, e: e || ease.io, res }));
+  const cancela = (k) => { for (let i = tramos.length - 1; i >= 0; i--) if (tramos[i].k === k) { const x = tramos[i]; tramos.splice(i, 1); x.res(); } };
+  // Dueño, 15:43: «al abrirse la roca, que empiece a girar de menos a más hasta crear un campo gravitatorio… un efecto así
+  // increíble». Al abrirse, las cuatro partes empiezan a girar alrededor de la luz, despacio y cada vez más deprisa, y alrededor se
+  // forma el campo: un disco de polvo de luz que orbita (más deprisa cuanto más cerca del centro, como alrededor de una masa) y cae
+  // despacio hacia dentro, y ondas que salen del centro. Al cerrar, el giro se frena y la roca queda otra vez de frente.
+  const VMAX = 2.3;
+  function frenaGiro() {
+    cancela('giroG'); cancela('vuelta');
+    const w0 = VMAX * estado.giroG, dos = Math.PI * 2, v0 = estado.vuelta; estado.giroG = 0;
+    const resto = dos - (((v0 % dos) + dos) % dos);
+    let D = resto > dos - 1e-3 ? 0 : resto; if (w0 > 0.3 && D < w0 * 0.6) D += dos;
+    if (D < 1e-3) { estado.vuelta = 0; return; }
+    const T = Math.min(3, 1.2 + D * 0.22), m0 = w0 * T;
+    // sale a la misma velocidad que llevaba y se para justo de frente (curva de Hermite)
+    tween('vuelta', v0, v0 + D, T, (t) => (D * (3 * t * t - 2 * t * t * t) + m0 * (t - 2 * t * t + t * t * t)) / D).then(() => { if (!estado.giroG) estado.vuelta = 0; });
+  }
   const F = quieto ? 0.25 : 1;
   let abierta = false, ocupada = false;
   async function abre() {
@@ -559,11 +602,14 @@ function arranca() {
     tween('luz', 0, 1, 1.3 * F, ease.out, 0.7 * F);
     tween('campo', 1, 0.28, 1.6 * F, ease.io, 1.6 * F);
     tween('dolly', 0, 1, 2.2 * F, ease.io, 0.45 * F);
+    cancela('vida'); tween('vida', estado.vida, 0, 0.3, ease.out);
+    if (!quieto) { cancela('vuelta'); estado.vuelta = 0; tween('giroG', 0, 1, 4.4, ease.in, 0.9); tween('campoG', 0, 1, 3.4, ease.io, 1.2); }
     await new Promise((r) => setTimeout(r, 2150 * F));
     abierta = true; ocupada = false; giro.v = 0;
   }
   async function cierra() {
     if (!abierta || ocupada) return; ocupada = true;
+    cancela('campoG'); frenaGiro(); tween('campoG', estado.campoG, 0, 0.9, ease.out);
     tween('dolly', 1, 0, 1.8 * F, ease.io);
     tween('campo', estado.campo, 1, 0.5 * F, ease.out);
     tween('luz', 1, 0, 1.0 * F, ease.out, 0.3 * F);
@@ -607,8 +653,30 @@ function arranca() {
   };
   addEventListener('pointerup', suelta, { passive: true }); addEventListener('pointercancel', suelta, { passive: true });
   // el ciclo de la luz del holograma: claro, el paso a oscuro, oscuro y el paso de vuelta (segundos)
-  const CICLO = { claro: 5, paso: 2.6, oscuro: 8 }; CICLO.total = CICLO.claro + CICLO.oscuro + 2 * CICLO.paso;
+  // (dueño, 15:55: «el cambio de color de la roca, que sea cada 3 segundos, que se sienta viva»: un cambio cada 3 segundos)
+  const CICLO = { claro: 1.4, paso: 1.6, oscuro: 1.4 }; CICLO.total = CICLO.claro + CICLO.oscuro + 2 * CICLO.paso;
   let holoFijo = null;
+  // Vida propia (dueño, 15:59: «aparte de cambiar de color, que se separe y vuelva a su estado original, que se separe cada vez de una
+  // forma distinta… que tenga vida propia»): cada pocos segundos, con la roca cerrada, se abre un poco y se vuelve a juntar, cada vez
+  // de una manera: las cuatro partes hacia fuera, arriba y abajo, a los lados girando, en diagonal, abriéndose en espiral o un latido.
+  const VIDAS = [
+    (sx, sy) => [sx * 0.07, sy * 0.05, 0, 0, 0, 0],
+    (sx, sy) => [0, sy * 0.11, 0, -sy * 0.06, 0, 0],
+    (sx, sy) => [sx * 0.13, 0, 0, 0, -sx * 0.18, 0],
+    (sx, sy) => (sx * sy > 0 ? [sx * 0.1, sy * 0.08, 0.05, 0, 0, sx * 0.08] : [sx * 0.02, sy * 0.02, -0.03, 0, 0, 0]),
+    (sx, sy) => [sx * 0.05, sy * 0.04, sx * sy * 0.06, sy * 0.12, sx * 0.25, 0],
+    (sx, sy) => [sx * 0.035, sy * 0.03, 0, 0, 0, 0],
+  ];
+  const vidaD = new Map(), CERO6 = [0, 0, 0, 0, 0, 0];
+  let vidaI = -1, vidaSig = 3.5, vidaFija = false;
+  function ponVida(i, k) { for (const m of cuartos) { const { sx, sy } = m.userData; vidaD.set(m, VIDAS[i](sx, sy).map((v) => v * k)); } }
+  function nuevaVida() {
+    let i; do { i = Math.floor(Math.random() * VIDAS.length); } while (i === vidaI); vidaI = i;
+    ponVida(i, 0.8 + Math.random() * 0.5);
+    const latido = i === 5;
+    tween('vida', 0, 1, latido ? 0.3 : 0.9 + Math.random() * 0.5, latido ? ease.out : ease.iman)
+      .then(() => tween('vida', 1, 0, latido ? 0.55 : 1.1 + Math.random() * 0.5, ease.atrae, latido ? 0 : 0.25 + Math.random() * 0.6));
+  }
   let antes = performance.now(), vivo = true, pausado = false;
   const delta = () => { const t = performance.now(), d = (t - antes) / 1000; antes = t; return d; };
   document.addEventListener('visibilitychange', () => { vivo = document.visibilityState === 'visible'; if (vivo) delta(); });
@@ -648,11 +716,15 @@ function arranca() {
       if (ahora - giro.toque > 9) giro.obj *= Math.exp(-dt * 0.45);
     }
     giro.v += (giro.obj - giro.v) * Math.min(1, dt * (giro.dedo === null ? 4 : 16));
-    mono.rotation.y = (giro.v + (quieto ? 0 : Math.sin(ahora * 0.13) * 0.07)) * Math.max(0, 1 - estado.abre);
+    estado.vuelta += dt * VMAX * estado.giroG;
+    mono.rotation.y = (giro.v + (quieto ? 0 : Math.sin(ahora * 0.13) * 0.07)) * Math.max(0, 1 - estado.abre) + estado.vuelta;
+    halo.rotation.y = nucleo.rotation.y = -mono.rotation.y; // la luz de dentro, siempre de frente
+    campoGravitatorio(dt);
     const sep = 0.44 * estado.abre, sepY = 0.3 * estado.abre;
     const zum = estado.zumbido * 0.0022 * Math.sin(ahora * 95), golpe = estado.golpe * 0.004 * Math.sin(ahora * 70);
-    const partido = estado.abre > 0.002;
-    for (const m of cuartos) { const { sx, sy } = m.userData; m.userData.corte.visible = partido; m.position.set(sx * (sep + zum + golpe), sy * (sepY + (zum + golpe) * 0.6), 0); m.rotation.set(-sy * 0.09 * estado.giro, -sx * 0.28 * estado.giro, 0); }
+    if (!quieto && !vidaFija && !abierta && !ocupada && estado.abre < 0.001 && giro.dedo === null && ahora > vidaSig && !tramos.some((x) => x.k === 'vida')) { nuevaVida(); vidaSig = ahora + 3.4 + Math.random() * 3.4; }
+    const partido = estado.abre > 0.002 || estado.vida > 0.002, fv = estado.vida;
+    for (const m of cuartos) { const { sx, sy } = m.userData, v = vidaD.get(m) || CERO6; m.userData.corte.visible = partido; m.position.set(sx * (sep + zum + golpe) + v[0] * fv, sy * (sepY + (zum + golpe) * 0.6) + v[1] * fv, v[2] * fv); m.rotation.set(-sy * 0.09 * estado.giro + v[3] * fv, -sx * 0.28 * estado.giro + v[4] * fv, v[5] * fv); }
     // campo: visible mientras hay separación o zumbido; parpadea un poco, como una descarga
     const vCampo = estado.campo * (0.75 + 0.25 * Math.sin(ahora * 23) * Math.sin(ahora * 7.3));
     matCampo.opacity = vCampo * 0.85; matChispa.opacity = vCampo;
@@ -671,7 +743,7 @@ function arranca() {
     matSelloH.opacity = Math.max(0, 1 - estado.abre * 2.5) * estado.sello;
     matNucleo.opacity = estado.luz; nucleo.scale.x = 1 + estado.luz * 1.5;
     matHalo.opacity = 0.55 * estado.luz;
-    luzNucleo.intensity = 30 * estado.luz; luzNucleo2.intensity = 18 * estado.luz;
+    luzNucleo.intensity = 30 * estado.luz; luzNucleo2.intensity = 18 * estado.luz + 9 * estado.campoG;
     // cámara: deriva lenta, mirada y avance hacia la luz
     mira.x += (mira.tx - mira.x) * 0.035; mira.y += (mira.ty - mira.y) * 0.035;
     const d = estado.dolly;
@@ -705,7 +777,8 @@ function arranca() {
   return { abre, cierra, pausa, abierta: () => abierta,
     // para las pruebas y la imagen de la invitación: la calidad elegida, girar la roca y fijar la luz del holograma (null: el ciclo)
     calidad: () => ({ nivel: NIVEL, pr: +PR.toFixed(2), ms: +(med * 1000).toFixed(1), resplandor: resplandor.enabled, gpu }),
-    gira: (g) => { giro.obj = giro.v = g; giro.toque = ahora; }, holo: (n) => { holoFijo = n == null ? null : +n; } };
+    gira: (g) => { giro.obj = giro.v = g; giro.toque = ahora; }, holo: (n) => { holoFijo = n == null ? null : +n; },
+    vida: (i) => { if (i == null) { vidaFija = false; return; } vidaFija = true; cancela('vida'); ponVida(i, 1); estado.vida = 1; } };
 }
 
 let api = null;

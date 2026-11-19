@@ -158,7 +158,7 @@
   function textoInvitacion(sem) {
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
     // la tarjeta de WhatsApp (imagen y texto propios) está en /invitacion/ y /invitation/; al tocarla, esta página con el fragmento
-    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem + '&l=' + lengua + '&ll=1';
+    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem;
     return tr('mensajeLlamada').replace('{enlace}', enlace);
   }
   function abreWhatsApp(texto) { try { const w = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); if (w) { try { w.opener = null; } catch (_) {} } return !!w; } catch (_) { return false; } }

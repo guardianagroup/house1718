@@ -22,14 +22,15 @@
     pintaPalabras(M.palabras);
     sala.hidden = false; document.body.classList.add('en-sala');
     setTimeout(() => { if (abierta && window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(true); }, 900);
-    setTimeout(() => texto.focus({ preventScroll: true }), 300);
+    if (!movil.matches) setTimeout(() => texto.focus({ preventScroll: true }), 300);
   }
   function cierra() {
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
     lista.textContent = ''; texto.value = '';
-    const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null;
+    const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
+    for (const k of ['left', 'top', 'right', 'bottom']) vm.style.removeProperty(k);
     if (window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(false);
     if (window.Elixire) window.Elixire.vuelve();
   }
@@ -118,6 +119,31 @@
   // grande, pantalla completa en el móvil»); «Chat» la encoge para escribir y «Ampliar» la vuelve a poner grande.
   const movil = matchMedia('(max-width: 760px)');
   let grande = false, llamadaVista = false;
+  // En el móvil (dueño, 15:49–15:53: «simplificado al máximo… como tenemos en GUARDIANA el modo móvil»): la llamada a pantalla
+  // completa y abajo, botones redondos: rojo para colgar; al colgar o si se corta, verde para volver a llamar (css/elixir.css). Sin
+  // palabras ni chat. Mientras la llamada de la invitación está por llegar, «Conectando la llamada…» (sin botón, para no cruzarse).
+  let ultimo = { estado: 'libre' }, esperaLlamada = false, esperaT = null;
+  // Si el navegador no deja arrancar la imagen y el sonido sin un toque (dueño, 15:50: Android con Brave: «ni me escuchaba y veía toda
+  // la pantalla negra»; en GUARDIANA pasó igual el 2 de noviembre): «Toca para ver y oír a la otra persona», y con el toque, arranca.
+  function intentaVer() {
+    const vs = $('#video-suyo'); if (!vs.srcObject) return;
+    try { const p = vs.play(); if (p && p.catch) p.catch((x) => { if (x && x.name === 'NotAllowedError' && abierta) $('#video-toca').hidden = false; }); } catch (_) {}
+  }
+  $('#video-suyo').addEventListener('playing', () => { $('#video-toca').hidden = true; });
+  $('#video-toca').addEventListener('click', () => {
+    $('#video-toca').hidden = true;
+    for (const v of [$('#video-suyo'), $('#video-mio')]) { try { const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
+  });
+  // la cámara propia, donde se quiera (dueño, 15:53: «que podamos mover la cámara donde queramos»): se arrastra con el dedo
+  {
+    const vm = $('#video-mio'); let d = null;
+    const ponEn = (x, y) => { vm.style.setProperty('left', x + 'px', 'important'); vm.style.setProperty('top', y + 'px', 'important'); vm.style.setProperty('right', 'auto', 'important'); vm.style.setProperty('bottom', 'auto', 'important'); };
+    vm.addEventListener('pointerdown', (e) => { if (!movil.matches) return; const r = vm.getBoundingClientRect(); d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height }; try { vm.setPointerCapture(e.pointerId); } catch (_) {} vm.classList.add('moviendo'); e.preventDefault(); });
+    vm.addEventListener('pointermove', (e) => { if (!d || e.pointerId !== d.id) return; ponEn(Math.round(Math.max(8, Math.min(innerWidth - d.w - 8, e.clientX - d.dx))), Math.round(Math.max(8, Math.min(innerHeight - d.h - 8, e.clientY - d.dy)))); });
+    const suelta = (e) => { if (!d || e.pointerId !== d.id) return; d = null; vm.classList.remove('moviendo'); };
+    vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta);
+  }
+  $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
   function ponGrande(si) { grande = !!si; sala.classList.toggle('video-grande', grande && sala.classList.contains('en-llamada')); const x = $('#b-chat-texto'); x.dataset.t = grande ? 'chat' : 'ampliar'; x.textContent = tr(x.dataset.t); if (grande) $('#b-chat').classList.remove('nuevo'); }
   $('#b-chat').addEventListener('click', () => ponGrande(!grande));
   const mmss = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'); };
@@ -127,9 +153,12 @@
     const vs = $('#video-suyo'), vm = $('#video-mio');
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
+    ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
+    const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
-    if (e.remoto && vs.srcObject !== e.remoto) vs.srcObject = e.remoto;
+    if (e.remoto && vs.srcObject !== e.remoto) { vs.srcObject = e.remoto; intentaVer(); }
+    if (e.estado === 'hablando') intentaVer(); else if (e.estado !== 'reconectando') $('#video-toca').hidden = true;
     const hablando = e.estado === 'hablando' || e.estado === 'reconectando';
     const activa = hablando || ['preparando', 'llamando', 'conectando'].includes(e.estado);
     sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
@@ -137,11 +166,12 @@
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; }
     sala.classList.toggle('video-grande', grande && hablando);
     ent.hidden = e.estado !== 'entrante';
-    boton.hidden = e.estado !== 'libre' && e.estado !== 'fin';
+    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (m && e.estado === 'libre' && esperaLlamada) || (m && e.estado === 'fin' && (!!e.prueba || e.motivo === 'se-fue'));
+    $('#salir-llamada').hidden = !(e.estado === 'libre' || e.estado === 'fin');
     ctl.hidden = !activa;
     velo.hidden = hablando;
     $('#video-capa').hidden = !(e.estado === 'hablando' && e.capa);
-    if (e.estado === 'libre') pon('pruebaLimite');
+    if (e.estado === 'libre') { if (m) { pon(esperaLlamada ? 'conectandoLlamada' : 'pruebaLimite'); rotuloLlamar('llamar'); } else pon('pruebaLimite'); }
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
     else if (e.estado === 'entrante') pon('llEntrante');
@@ -158,6 +188,8 @@
       else { if (e.resto && e.resto < M.PRUEBA_MS) { txt.dataset.t = 'pruebaQueda'; txt.textContent = tr('pruebaQueda').replace('{t}', mmss(e.resto)); } else pon('pruebaLimite'); rotuloLlamar(cortada ? 'volverLlamar' : 'videollamada'); }
       const k = { prueba: 'llFinPrueba', rechazada: 'llRechazada', rechaza: 'llRechazada', suyo: 'llColgo', ocupado: 'llOcupado', 'sin-respuesta': 'llSinRespuesta', fallo: 'llFallo', caida: 'llCaida', 'sin-turn': 'llSinTurn', 'sin-permiso': 'llSinPermiso', 'sin-capa': 'llSinCapaSuya', 'se-fue': 'seFue', mio: 'llTerminada' }[e.motivo];
       if (k && abierta) sistema(k);
+      // en el móvil, lo que ha pasado, en el centro; y el verde: «Volver a llamar»
+      if (m) { if (k) pon(k); if (!e.prueba) rotuloLlamar('volverLlamar'); }
     }
   }
   M.on('llamada', (e) => {
@@ -165,7 +197,7 @@
     const E = window.Elixire || {};
     if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
   });
-  M.on('llamada-aviso', (por) => { if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  M.on('llamada-aviso', (por) => { if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
   // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
   const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
   let retoT = null;
@@ -190,6 +222,9 @@
     continuada = false; abre(); sistema('mConectado');
     // invitación a una llamada: quien entra con el enlace llama sin más; quien invitó contesta sola (ver puerta.js)
     const E = window.Elixire || {};
+    esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
+    if (esperaLlamada) esperaT = setTimeout(() => { esperaLlamada = false; if (abierta && ultimo.estado === 'libre') pintaLlamada(ultimo); }, 15000);
+    if (ultimo.estado === 'libre') pintaLlamada(ultimo);
     if (E.llamaAlEntrar) { E.llamaAlEntrar = false; setTimeout(() => { if (abierta) M.llamar(); }, 700); }
   });
 

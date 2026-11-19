@@ -475,3 +475,66 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .cristal.espejo{-webkit-box-reflect:none}
   .panel{background:linear-gradient(180deg,rgba(14,17,22,.96),rgba(7,9,12,.98))}
 }
+
+/* ---------- los textos aparecen y se iluminan al bajar (dueño, 15:40: «como GUARDIANA… y algunos a color»; js/luz.js) ---------- */
+.luz-b{opacity:0;transform:translateY(16px);transition:opacity .7s ease var(--retraso,0ms),transform .8s cubic-bezier(.2,.7,.2,1) var(--retraso,0ms)}
+.luz-b.visto{opacity:1;transform:none}
+::highlight(luz-0){color:rgba(232,238,245,.22)}
+::highlight(luz-1){color:#fff;text-shadow:0 0 .32em rgba(156,195,228,.8),0 0 .9em rgba(156,195,228,.4)}
+.seccion h2 em{font-style:normal}
+.c-coral{color:#E07A6C;text-shadow:0 0 .55em rgba(224,122,108,.3)}
+.c-ambar{color:#F0C77F;text-shadow:0 0 .55em rgba(240,199,127,.26)}
+.c-verde{color:#5CC98A;text-shadow:0 0 .55em rgba(92,201,138,.26)}
+.c-hielo{color:#9CC3E4;text-shadow:0 0 .55em rgba(156,195,228,.32)}
+.libro .cifra-libro{color:#E07A6C;text-shadow:0 0 .5em rgba(224,122,108,.22)}
+
+/* ---------- la llamada en el móvil: como en GUARDIANA, y nada más ----------
+   Dueño, 15:49: «la imagen debe verse a pantalla completa… quita todo eso de seguridad, de tener que repetir las palabras… solamente
+   la llamada directa, y si se cuelga, que puedas rellamar»; «aparece la videollamada y se acabó; el botón de colgar y, cuando
+   cuelgas, el botón verde de volver a llamar»; 15:53: «aplícalo como tenemos en GUARDIANA el modo móvil». La imagen de la otra
+   persona, a pantalla completa; la tuya, en una esquina; abajo, botones redondos con su nombre debajo (rojo: colgar; verde: llamar
+   o contestar). Sin palabras, sin chat, sin avisos. En el ordenador, todo sigue igual. */
+.ico-tel,.video-cifrado{display:none}
+.video-toca{position:absolute;z-index:46;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);min-height:58px;padding:0 26px 0 20px;border-radius:999px;border:1px solid rgba(156,195,228,.55);background:rgba(8,12,18,.88);color:#F4F6F8;font:500 15px/1.3 var(--ui);white-space:nowrap;cursor:pointer;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.video-toca svg{width:22px;height:22px;fill:#9CC3E4;flex:0 0 auto}
+.video-toca[hidden]{display:none}
+.salir-llamada{display:none}
+@media (max-width:760px){
+  .sala:not([hidden]){display:block!important;height:100dvh!important}
+  .sala .sala-cab,.sala .sala-palabras,.sala .chat,.sala .video-tiempo,.sala .video-reto,.sala #video-capa,
+  .sala #b-micro,.sala #b-camara,.sala #b-reto,.sala #b-chat,.sala .video-velo .etiqueta{display:none!important}
+  .sala .sala-cuerpo{display:block}
+  .sala .escena-video,.sala.con-video .escena-video,.sala.video-grande .escena-video{position:fixed;inset:0;z-index:40;flex:none;min-height:0;aspect-ratio:auto;border:0;
+    background:radial-gradient(120% 70% at 50% 28%,#101A26 0%,#05070A 70%)}
+  .sala.en-llamada .escena-video::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(6,8,12,.55) 0,transparent 140px,transparent calc(100% - 200px),rgba(6,8,12,.65) 100%)}
+  .sala .video-suyo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+  .sala .video-mio,.sala.video-grande .video-mio,.sala.por-comprobar .video-mio,.sala.video-grande.por-comprobar .video-mio{top:auto!important;right:16px;bottom:calc(env(safe-area-inset-bottom) + 150px);width:30vw;max-width:150px;aspect-ratio:3/4;border-radius:14px;border:1px solid rgba(255,255,255,.22);z-index:2}
+  .sala .video-cifrado{display:inline-flex;position:absolute;z-index:3;left:18px;top:calc(env(safe-area-inset-top) + 18px);align-items:center;gap:7px;margin:0;font:400 12px/1.3 var(--ui);color:#9CC3E4;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+  .sala .video-cifrado svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .sala #video-reconecta{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 56px);left:50%;transform:translateX(-50%)}
+  /* el centro: lo que pasa (llamando, conectando, ha colgado…) */
+  .sala .video-velo,.sala.con-video .video-velo{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;flex-wrap:nowrap;align-items:center;justify-content:center;gap:0;padding:24px 28px;text-align:center}
+  .sala .video-texto{max-width:20em;margin:0 0 120px;font:400 19px/1.45 var(--ui);letter-spacing:0;text-transform:none;color:#F4F6F8}
+  /* los botones redondos, abajo, con su nombre debajo */
+  .sala #llamar,.sala .controles .seg#b-colgar,.sala #entrante .seg{position:relative;width:68px;height:68px;min-width:0;padding:0;border-radius:50%;display:grid;place-items:center;
+    letter-spacing:0;text-transform:none;box-shadow:0 12px 34px -10px rgba(0,0,0,.7);-webkit-box-reflect:none;flex:0 0 auto}
+  .sala #llamar::before,.sala #llamar::after,.sala .controles .seg::before,.sala .controles .seg::after,.sala #entrante .seg::before,.sala #entrante .seg::after{display:none!important}
+  .sala #llamar > span,.sala .controles .seg > span,.sala #entrante .seg > span{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;font:400 13px/1.2 var(--ui);letter-spacing:0;text-transform:none;color:#C9D2DC}
+  .sala .ico-tel{display:block;width:30px;height:30px;fill:currentColor}
+  .sala #llamar,.sala #aceptar{background:#5CC98A;border:1px solid #5CC98A;color:#05070A}
+  .sala .controles .seg#b-colgar,.sala #rechazar{background:#E07A6C;border:1px solid #E07A6C;color:#05070A}
+  .sala #b-colgar .ico-tel,.sala #rechazar .ico-tel{transform:rotate(135deg)}
+  .sala #llamar{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 110px);transform:translateX(-50%)}
+  .sala #llamar[hidden],.sala #entrante[hidden],.sala .controles[hidden]{display:none!important}
+  .sala #entrante,.sala .controles,.sala.video-grande .controles{position:absolute;z-index:3;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 64px);transform:none;display:flex;justify-content:center;gap:76px;
+    margin:0;padding:0;border:0;background:none;box-shadow:none;width:auto;max-width:none}
+  .sala #entrante::before,.sala #entrante::after,.sala .controles::before,.sala .controles::after{display:none!important}
+  .sala .salir-llamada{display:inline-flex;position:absolute;z-index:3;left:50%;bottom:calc(env(safe-area-inset-bottom) + 26px);transform:translateX(-50%);align-items:center;min-height:44px;padding:0 22px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.2);background:transparent;color:#F4F6F8;font:500 14px/1 var(--ui);cursor:pointer}
+  .sala .salir-llamada[hidden]{display:none}
+}
+@media (max-width:760px){ .sala .video-mio{touch-action:none;cursor:grab} .sala .video-mio.moviendo{cursor:grabbing;box-shadow:0 24px 60px rgba(0,0,0,.7)} }
+@media (max-width:760px){
+  .sala #llamar,.sala .controles .seg#b-colgar,.sala #entrante .seg{overflow:visible!important}
+  .sala .video-texto{position:absolute;left:28px;right:28px;top:40%;transform:translateY(-50%);margin:0 auto!important}
+}
