@@ -66,6 +66,7 @@
     movilHechoEtiqueta: 'ON YOUR PHONE', movilHechoTitulo: 'The conversation continues on your phone.', movilHechoTexto: 'Everything has been erased on this computer. The other person moved to the new session automatically, with new keys.',
     traspasoEspera: 'The other person is moving the conversation to their phone…', continuaSuMovil: 'The conversation continues on their phone · new keys', continuaAqui: 'The conversation continues on this phone · new keys',
     chat: 'Chat', ampliar: 'Enlarge',
+    invitar: 'Invite to a call',
     tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
     mensajeWa: 'I am inviting you to a private conversation on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nYour code: {codigo}\nIt expires in 10 minutes and works only once.',
     esperando: 'Waiting for the other person', copiar: 'Copy the code', copiado: 'Copied',

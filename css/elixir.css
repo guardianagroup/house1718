@@ -307,6 +307,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 #panel-movil .palabras{font-size:min(22px,5.6vw);line-height:1.4}
 @media (pointer:coarse){.solo-pc{display:none}}
 .solo-movil{display:none!important}
+.t-movil{display:none}
 .controles .seg.nuevo::after{content:'';position:absolute;left:auto;right:10px;top:10px;bottom:auto;width:7px;height:7px;border-radius:50%;background:#9CC3E4;box-shadow:0 0 10px rgba(156,195,228,.9);opacity:1;transform:none;animation:none}
 .aviso.mal .etiqueta{color:var(--coral)}
 
@@ -425,4 +426,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .sala.video-grande .video-capa.reconecta{top:50%;left:50%}
   .sala.video-grande .controles{bottom:calc(env(safe-area-inset-bottom) + 18px)}
   .sala.video-grande .video-tiempo{bottom:calc(env(safe-area-inset-bottom) + 86px);left:14px}
+  /* en el móvil no se «crea un código»: se invita a una llamada (dueño, 14:35) */
+  .t-pc{display:none}
+  .t-movil{display:inline}
 }
