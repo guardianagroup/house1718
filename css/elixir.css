@@ -581,3 +581,8 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
    abajo se puede mover por la web; quiero que se quede fijo ahí») ---------- */
 body.cerrado{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none}
 html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
+/* (dueño, 16:42: «el de salir y el de volver a llamar están muy juntos; sepáralos»): el verde, más arriba; «Salir», abajo del todo */
+@media (max-width:760px){
+  .sala #llamar{bottom:calc(env(safe-area-inset-bottom) + 184px)}
+  .sala .salir-llamada{bottom:calc(env(safe-area-inset-bottom) + 34px);min-height:46px;padding:0 30px}
+}
