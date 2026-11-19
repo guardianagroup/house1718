@@ -284,7 +284,9 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 .msg.archivo .cristal{height:32px;padding:0 14px;font-size:10px}
 .msg.archivo>.tam:last-child{grid-column:1/-1;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase}
 .escribiendo{margin:0;font:400 10px/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--texto-3)}
-.redactor{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:end}
+.redactor{display:flex;gap:8px;align-items:flex-end}
+.redactor textarea{flex:1 1 auto;min-width:0}
+.redactor [hidden]{display:none!important}
 .redactor textarea{min-height:44px;max-height:160px;resize:none;padding:12px 14px;background:rgba(3,4,6,.5);border:1px solid rgba(255,255,255,.18);border-radius:2px;font:300 14.5px/1.45 var(--ui);color:var(--texto);outline:none;transition:border-color .3s,box-shadow .3s}
 .redactor textarea:focus{border-color:rgba(255,255,255,.45);box-shadow:0 0 24px rgba(196,220,244,.12)}
 .redactor .cristal{height:44px;padding:0 16px;font-size:10.5px}
@@ -503,7 +505,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 @media (max-width:760px){
   .sala:not([hidden]){display:block!important;height:100dvh!important}
   .sala .sala-cab,.sala .sala-palabras,.sala .chat,.sala .video-reto,.sala #video-capa,
-  .sala #b-micro,.sala #b-camara,.sala #b-reto,.sala #b-chat,.sala .video-velo .etiqueta{display:none!important}
+  .sala #b-micro,.sala #b-camara,.sala #b-reto,.sala .video-velo .etiqueta{display:none!important}
   .sala .sala-cuerpo{display:block}
   .sala .escena-video,.sala.con-video .escena-video,.sala.video-grande .escena-video{position:fixed;inset:0;z-index:40;flex:none;min-height:0;aspect-ratio:auto;border:0;
     background:radial-gradient(120% 70% at 50% 28%,#101A26 0%,#05070A 70%)}
@@ -670,3 +672,172 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
   .sala .controles .seg#b-comprobar{position:relative;width:62px;height:62px;min-width:0;padding:0;border-radius:50%;display:grid;place-items:center;overflow:visible!important;letter-spacing:0;text-transform:none;
     background:rgba(232,236,241,.1);border:1px solid rgba(255,255,255,.26);color:#F4F6F8;box-shadow:0 12px 34px -10px rgba(0,0,0,.7);flex:0 0 auto;margin-top:3px}
 }
+
+/* ---------- la llamada del móvil: cuatro botones iguales, en una fila y en orden (dueño, 16:57: «los botones de calidad y en orden
+   visual perfecto»): Comprobar · Chat · Enviar · Colgar; el rojo, a la derecha ---------- */
+@media (max-width:760px){
+  .sala .controles,.sala.video-grande .controles{display:grid!important;grid-template-columns:repeat(4,minmax(0,78px));justify-content:space-evenly;align-items:start;gap:0;
+    left:0;right:0;width:auto;max-width:440px;margin:0 auto;padding:0 6px;bottom:calc(env(safe-area-inset-bottom) + 58px)}
+  .sala .controles .seg#b-comprobar,.sala .controles .seg#b-chat,.sala .controles .seg#b-enviar,.sala .controles .seg#b-colgar{display:inline-flex!important;align-items:center;justify-content:center;justify-self:center;
+    position:relative;width:60px;height:60px;min-width:0;margin:0;padding:0;border-radius:50%;overflow:visible!important;letter-spacing:0;text-transform:none;flex:none;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,.75);transition:transform .15s ease,background-color .2s ease;-webkit-tap-highlight-color:transparent}
+  .sala .controles .seg#b-comprobar,.sala .controles .seg#b-chat,.sala .controles .seg#b-enviar{background:rgba(18,24,32,.62);border:1px solid rgba(255,255,255,.24);color:#F4F6F8}
+  .sala .controles .seg#b-colgar{background:#E07A6C;border:1px solid #E07A6C;color:#05070A}
+  .sala .controles .seg:active{transform:scale(.93)}
+  .sala #b-comprobar{order:1}.sala #b-chat{order:2}.sala #b-enviar{order:3}.sala #b-colgar{order:4}
+  .sala .controles .seg > span{top:calc(100% + 9px)!important;font:500 12.5px/1.2 var(--ui)!important;letter-spacing:0!important;color:#DDE5ED!important;text-shadow:0 1px 6px rgba(0,0,0,.85)}
+  .sala .controles .ico-tel{width:27px;height:27px}
+  .sala .controles .ico-env{width:25px!important;height:25px!important}
+  .sala .controles .cuenta{position:absolute;top:-3px;right:-5px;min-width:21px;height:21px;padding:0 6px;border-radius:11px;background:#E07A6C;color:#05070A;
+    font:700 11.5px/21px var(--ui);text-align:center;box-shadow:0 0 0 2px #05070A;animation:aparece .25s ease both}
+  .sala .controles .cuenta[hidden]{display:none}
+  .sala .menu-enviar:not([hidden]){position:fixed;z-index:48;bottom:calc(env(safe-area-inset-bottom) + 142px)}
+  .sala.comprobando .video-mio{opacity:0;pointer-events:none}
+}
+.chat-cab{display:none}
+
+/* ---------- pasar al chat y volver al vídeo (dueño, 16:57) ---------- */
+@media (max-width:760px){
+  .sala.en-chat .chat{display:flex!important;flex-direction:column;position:fixed;left:0;right:0;top:var(--vv-top,0px);height:var(--vv-h,100dvh);z-index:44;gap:0;padding:0;
+    background:radial-gradient(130% 55% at 50% 0%,#0D1520 0%,#06080C 62%);animation:chatEntra .3s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes chatEntra{from{transform:translateY(22px);opacity:0}to{transform:none;opacity:1}}
+  .sala.en-chat .chat>.etiqueta{display:none}
+  .sala.en-chat .chat-cab{display:flex;align-items:center;gap:6px;flex:0 0 auto;min-height:calc(env(safe-area-inset-top) + 102px);padding:calc(env(safe-area-inset-top) + 10px) 86px 10px 4px;
+    background:rgba(9,13,19,.96);border-bottom:1px solid rgba(255,255,255,.07)}
+  .chat-volver{display:inline-flex;align-items:center;gap:1px;flex:0 0 auto;height:44px;padding:0 10px 0 2px;border:0;border-radius:22px;background:none;color:#9CC3E4;font:500 16.5px/1 var(--ui);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .chat-volver svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .chat-cab-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+  .chat-cab-txt b{font:600 17px/1.2 var(--ui);color:#F4F6F8}
+  .chat-cab-txt small{display:inline-flex;align-items:center;gap:5px;max-width:100%;font:500 12px/1.2 var(--ui);color:#9CC3E4;white-space:nowrap;overflow:hidden}
+  .chat-cab-txt small svg{flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}
+  #chat-tiempo{font-feature-settings:'tnum';color:#C9D6E3}
+  #chat-tiempo:not(:empty)::before{content:'·';margin:0 5px 0 2px;color:#5F7387}
+  /* la otra persona, en directo, en una miniatura; un toque y vuelve el vídeo */
+  .sala.en-chat .escena-video{position:fixed!important;inset:auto!important;top:calc(env(safe-area-inset-top) + 10px)!important;right:10px!important;width:64px!important;height:84px!important;
+    z-index:46;border-radius:15px!important;overflow:hidden;border:1px solid rgba(255,255,255,.26)!important;box-shadow:0 12px 28px rgba(0,0,0,.6);cursor:pointer;animation:miniatura .32s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes miniatura{from{transform:scale(.55);opacity:0}to{transform:none;opacity:1}}
+  .sala.en-chat .escena-video>:not(.video-suyo){display:none!important}
+  .sala.en-chat .escena-video::after{display:none!important}
+  .sala.en-chat .mensajes{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 12px 10px;gap:5px}
+  .sala.en-chat .mensajes .vacio{margin:auto 26px;padding:0;font:400 14px/1.55 var(--ui);color:#7F93A7}
+  .sala.en-chat .msg{max-width:80%;padding:8px 12px 7px;border:0;border-radius:19px;background:rgba(255,255,255,.085);font:400 16px/1.38 var(--ui);color:#F1F4F7}
+  .sala.en-chat .msg.mia{background:#9CC3E4;color:#061019;border-bottom-right-radius:6px}
+  .sala.en-chat .msg.suya{border-bottom-left-radius:6px}
+  .sala.en-chat .msg .hora{display:inline-block;float:right;margin:9px -2px -3px 10px;font:500 11px/1 var(--ui);letter-spacing:0;color:inherit;opacity:.58}
+  .sala.en-chat .msg.mia .hora::after{content:''}
+  .sala.en-chat .msg.mia.llego .hora::after{content:' ✓'}
+  .sala.en-chat .msg.sistema{align-self:center;max-width:92%;margin:6px 0;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.05);font:500 11.5px/1.35 var(--ui);letter-spacing:.01em;text-transform:none;color:#8DA1B4}
+  .sala.en-chat .msg b{font-weight:600}
+  .sala.en-chat .msg .mapa{display:inline-flex;align-items:center;height:34px;margin:8px 0 2px;padding:0 14px;border-radius:999px;font:600 13px/1 var(--ui);letter-spacing:0;text-transform:none;background:rgba(5,7,10,.18);border:0;color:inherit}
+  .sala.en-chat .msg.suya .mapa{background:#9CC3E4;color:#05070A}
+  .sala.en-chat .msg.archivo{width:min(280px,80%);min-width:0;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px 8px;white-space:normal}
+  .sala.en-chat .msg.archivo .tam{color:inherit;opacity:.65}
+  .sala.en-chat .msg.archivo .barra{height:3px;border-radius:2px;background:rgba(127,140,155,.3)}
+  .sala.en-chat .msg.archivo .barra i{background:currentColor;box-shadow:none}
+  .sala.en-chat .msg.archivo .cristal{height:34px;padding:0 14px;border-radius:999px;font:600 12.5px/1 var(--ui);letter-spacing:0;text-transform:none;background:rgba(5,7,10,.16);border:0;color:inherit}
+  .sala.en-chat .msg.archivo .cristal::before,.sala.en-chat .msg.archivo .cristal::after{display:none}
+  .sala.en-chat .msg.archivo.foto{padding:4px 4px 8px}
+  .sala.en-chat .msg.archivo.foto .nombre,.sala.en-chat .msg.archivo.foto>.tam:not(:last-child){padding:0 8px}
+  .sala.en-chat .escribiendo{padding:0 16px 6px;font:500 12px/1.2 var(--ui);letter-spacing:.01em;text-transform:none;color:#9CC3E4}
+  .sala.en-chat .redactor{flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:8px 10px calc(env(safe-area-inset-bottom) + 10px);background:rgba(9,13,19,.97);border-top:1px solid rgba(255,255,255,.07)}
+  .sala.en-chat.teclado .redactor{padding-bottom:8px}
+  .sala.en-chat .redactor textarea{min-height:46px;max-height:132px;padding:12px 16px;border-radius:23px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font:400 16px/1.35 var(--ui);color:#F4F6F8;box-shadow:none}
+  .sala.en-chat .redactor textarea:focus{border-color:rgba(156,195,228,.55)}
+  .sala.en-chat .redactor .cristal{flex:0 0 auto;width:46px;height:46px;padding:0;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#DDE5ED}
+  .sala.en-chat .redactor .cristal::before,.sala.en-chat .redactor .cristal::after{display:none}
+  .sala.en-chat .redactor .cristal .ico{width:23px;height:23px;stroke-width:2}
+  .sala.en-chat #enviar,.sala.en-chat #b-voz{background:#9CC3E4;border-color:#9CC3E4;color:#05070A}
+  .sala.en-chat .redactor.grabando-ya #enviar{background:#5CC98A;border-color:#5CC98A}
+  .sala.en-chat .menu-enviar:not([hidden]){left:10px;transform:none;bottom:calc(env(safe-area-inset-bottom) + 72px)}
+  .sala.en-chat.teclado .menu-enviar:not([hidden]){bottom:72px}
+  .sala.en-chat .avisos-llamada{display:none!important}
+}
+/* la foto en la conversación (en el móvil y en el ordenador) */
+.msg .miniatura{grid-column:1/-1;display:block;width:100%;margin:0 0 4px;padding:0;border:0;border-radius:15px;overflow:hidden;background:#000;cursor:zoom-in}
+.msg .miniatura img{display:block;width:100%;max-height:300px;object-fit:cover}
+
+/* ---------- las notas de voz (dueño, 17:09: «el chat con audios y el botón fácil, como GUARDIANA») ---------- */
+.msg.nota{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:10px;row-gap:1px;width:min(300px,82%);min-width:220px;white-space:normal}
+.nota-play{grid-row:1/3;width:40px;height:40px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:#9CC3E4;color:#05070A;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nota-play svg{width:17px;height:17px;fill:currentColor;stroke:none}
+.nota-play svg+svg{display:none;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round}
+.msg.nota.sonando .nota-play svg{display:none}
+.msg.nota.sonando .nota-play svg+svg{display:block}
+.nota-onda{grid-column:2;display:flex;align-items:center;gap:2px;height:30px;cursor:pointer}
+.nota-onda i{flex:1 1 0;min-width:2px;max-width:4px;height:var(--h,28%);min-height:3px;border-radius:2px;background:currentColor;opacity:.32;transition:opacity .12s}
+.nota-onda i.oida{opacity:1}
+.msg.nota.sin-onda .nota-onda i{height:28%}
+.nota-t{grid-column:2;grid-row:2;font:500 12px/1 var(--ui);font-feature-settings:'tnum';opacity:.72}
+.msg.nota .hora{grid-column:3;grid-row:2;margin:0!important;float:none!important}
+.msg.nota .barra{grid-column:1/-1;height:2px;margin-top:6px;border-radius:1px;background:rgba(127,140,155,.3);overflow:hidden}
+.msg.nota .barra i{display:block;height:100%;width:0;background:currentColor;transition:width .2s}
+.msg.nota.llego .barra,.msg.nota.suya:not(.esperando) .barra{display:none}
+.msg.nota.esperando .nota-play{opacity:.45;pointer-events:none}
+@media (max-width:760px){
+  .sala.en-chat .msg.nota{padding:8px 12px 7px 8px}
+  .sala.en-chat .msg.nota.mia .nota-play{background:#05070A;color:#9CC3E4}
+}
+/* grabando: la papelera, el punto rojo, el tiempo y el nivel de la voz */
+.grabando{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px 0 3px;border-radius:23px;background:rgba(224,122,108,.1);border:1px solid rgba(224,122,108,.38)}
+.grabando[hidden]{display:none}
+.grabando .nv-x{flex:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:none;color:#E07A6C;cursor:pointer}
+.grabando .nv-x span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.grabando .nv-x svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.grabando .rec{flex:none;width:10px;height:10px;border-radius:50%;background:#E07A6C;box-shadow:0 0 10px rgba(224,122,108,.8);animation:latidoRec 1.1s ease-in-out infinite}
+@keyframes latidoRec{50%{opacity:.25}}
+.grabando b{flex:none;font:600 15px/1 var(--ui);font-feature-settings:'tnum';color:#F4F6F8}
+.grabando .nivel{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:2px;height:26px;overflow:hidden}
+.grabando .nivel i{flex:none;width:3px;height:var(--h,10%);min-height:3px;border-radius:2px;background:#E8A398;transition:height .07s linear}
+
+/* ---------- «Comprobar» reforzado: las señales en directo y el resultado (dueño, 16:56 y 17:14) ---------- */
+.comprobacion-estado:not([hidden]){width:min(360px,calc(100% - 24px));min-width:0;gap:8px;padding:14px 16px 8px}
+.comprobacion-onda{display:block;width:100%;height:48px}
+.comprobacion-vivo{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.comprobacion-vivo li{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;background:rgba(255,255,255,.06);font:500 11.5px/1 var(--ui);color:#AFC0CF}
+.comprobacion-vivo li::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:#6F8296;animation:latidoCandado 1.2s ease-in-out infinite}
+.comprobacion-vivo li.si{color:#E3F5EA}.comprobacion-vivo li.si::before{background:#5CC98A;box-shadow:0 0 8px rgba(92,201,138,.8);animation:none}
+.comprobacion-vivo li.aviso{color:#F7E2B8}.comprobacion-vivo li.aviso::before{background:#F0C77F;animation:none}
+.comprobacion-vivo li.no{color:#F6C9C1}.comprobacion-vivo li.no::before{background:#E07A6C;animation:none}
+.comprobacion-vivo li.nd::before{animation:none}
+.comprobacion-estado.giro b{font-size:16.5px;line-height:1.3}
+.comprobacion-resultado:not([hidden]){max-height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);overflow-y:auto;overscroll-behavior:contain}
+.comprobacion-confianza{font:600 10.5px/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:#5CC98A}
+.comprobacion-confianza[hidden]{display:none}
+.comprobacion-senales li{gap:10px}
+.comprobacion-senales li .v{margin-left:auto;padding-left:8px;font-size:12.5px;color:#9FB0C2;text-align:right;white-space:nowrap}
+.comprobacion-senales li.aviso::before{background:#F0C77F}
+.comprobacion-resultado.virtual .comprobacion-icono,.comprobacion-resultado.plana .comprobacion-icono,.comprobacion-resultado.giroNo .comprobacion-icono{background:rgba(224,122,108,.16);color:#E07A6C}
+.comprobacion-giro{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:200px;height:44px;margin-top:2px;padding:0 18px;border-radius:999px;border:1px solid rgba(156,195,228,.45);background:rgba(156,195,228,.08);color:#DCEBF8;font:600 14px/1 var(--ui);cursor:pointer}
+.comprobacion-giro svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.comprobacion-giro[hidden]{display:none}
+.comprobacion-resultado .regla{display:block;margin:2px 0 0;padding:10px 12px;border-radius:12px;background:rgba(240,199,127,.08);border:1px solid rgba(240,199,127,.25);font:500 12.5px/1.45 var(--ui);color:#F3DFB5;text-align:left}
+
+/* ---------- solo en vertical (dueño, 17:09 y 17:31: «no quiero que se vea en horizontal; que salga el símbolo de gira y ponlo en
+   vertical… profesional»): en un móvil en horizontal, todo se tapa con este aviso; la llamada sigue debajo ---------- */
+.girar{display:none}
+@media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
+  .girar{display:flex;position:fixed;inset:0;z-index:2147483000;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;
+    background:radial-gradient(80% 90% at 50% 42%,#0F1823 0%,#05070A 72%);color:#F4F6F8;touch-action:none}
+  .girar-icono{position:relative;width:96px;height:96px;margin-bottom:6px}
+  .girar-icono svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .girar-flecha{stroke:rgba(156,195,228,.55);stroke-width:2.2;animation:girarFlecha 2.6s ease-in-out infinite}
+  .girar-movil{stroke:#EAF4FD;stroke-width:2.4;filter:drop-shadow(0 0 10px rgba(156,195,228,.55));animation:girarMovil 2.6s cubic-bezier(.6,0,.25,1) infinite}
+  .girar b{font:600 21px/1.25 var(--ui);letter-spacing:.01em}
+  .girar span:not(.girar-icono){font:400 14.5px/1.5 var(--ui);color:#A9B8C7}
+  @keyframes girarMovil{0%,18%{transform:rotate(-90deg)}52%,100%{transform:rotate(0)}}
+  @keyframes girarFlecha{0%,12%{opacity:0;transform:rotate(-40deg)}40%{opacity:1}60%,100%{opacity:0;transform:rotate(0)}}
+}
+
+.comprobacion.con-resultado{background:rgba(3,5,8,.74);pointer-events:auto}
+.comprobacion-resultado:not([hidden]){background:#0A0F15}
+
+/* ---------- «Llamando…» mientras se espera (dueño, 17:32: «la persona que invita tiene que sentir, notar y apreciar que se está
+   llamando… con sonido o en pantalla»): grande, bajo el pulso, con sus tres puntos; y el tono de llamada (js/puerta.js) ---------- */
+.llamando{display:none}
+#panel-crear.enviada:not(.caducada) .llamando,#panel-invitado.esperando .llamando{display:flex;align-items:baseline;justify-content:center;gap:3px;margin:-2px 0 0;
+  font:600 25px/1.2 var(--ui);letter-spacing:.01em;color:#F4F6F8;text-align:center}
+.llamando i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9CC3E4;opacity:.25;animation:llamandoPunto 1.4s ease-in-out infinite}
+.llamando i:nth-child(3){animation-delay:.2s}.llamando i:nth-child(4){animation-delay:.4s}
+@keyframes llamandoPunto{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+#panel-crear.enviada .estado,#panel-invitado.esperando .estado{font-size:14px;line-height:1.5;color:#B9C7D4}
+#panel-crear.enviada .estado .punto,#panel-invitado.esperando .estado .punto{display:none}

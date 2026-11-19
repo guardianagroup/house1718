@@ -78,7 +78,7 @@
     } finally { ocupado = false; }
   }
   async function cierra() {
-    if (ocupado || !abierta) return; ocupado = true;
+    if (ocupado || !abierta) return; ocupado = true; suena(false);
     try {
       if (M && M.activa) M.termina('cancela');
       ocultaPaneles(); abierta = null;
@@ -170,6 +170,7 @@
   function ponEnlaceWa(texto) { const a = $('#whatsapp'); a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.texto = texto; delete a.dataset.codigo; }
   async function invitaMovil() {
     if (!M || ocupado || (abierta && abierta !== 'elige')) return;
+    if (window.ElixireTonos) window.ElixireTonos.prepara(); // el sonido se desbloquea con este toque (para el tono de «Llamando…»)
     const semilla = crypto.getRandomValues(new Uint8Array(32));
     invitacion = { s: b64u(semilla), t0: Date.now() }; guardaInvitacion();
     const texto = textoInvitacion(invitacion.s);
@@ -203,7 +204,7 @@
   function ponEnviada(ok) {
     if (abierta !== 'crear') return;
     $('#panel-crear').classList.toggle('enviada', !!ok);
-    if (!/llega|alguien|caducad/.test($('#estado-crear').dataset.t || '')) ponEstado(ok ? 'esperandoInicio' : 'esperandoLlamada');
+    if (!/llega|alguien|caducad/.test($('#estado-crear').dataset.t || '')) { ponEstado(ok ? 'esperandoInicio' : 'esperandoLlamada'); titulo('#panel-crear', 'llamandoT'); if (ok && !(M && M.conectada)) suena(true); }
   }
   function vigilaInvitacion() {
     paraReloj();
@@ -211,7 +212,7 @@
       if (abierta !== 'crear' || !invitacion) return paraReloj();
       if (Date.now() - invitacion.t0 > INVITACION_MS && !M.conectada) {
         paraReloj(); M.termina('caduca'); olvidaInvitacion();
-        $('#panel-crear').classList.add('enviada', 'caducada'); ponEstado('invitacionCaducada');
+        $('#panel-crear').classList.add('enviada', 'caducada'); ponEstado('invitacionCaducada'); suena(false);
       }
     }, 1000);
   }
@@ -250,9 +251,10 @@
     try {
       document.body.classList.add('cerrado');
       if (M) M.prepara();
+      if (enlaceLlamada) uneLlamada(); // ya, mientras se abre la roca: es lo más rápido
       $('#consola').classList.add('fuera');
       if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
-      if (enlaceLlamada) { $('#error-invitado').textContent = ''; $('#entrar-llamada').disabled = false; $('#panel-invitado').classList.remove('esperando'); muestra('invitado', $('#entrar-llamada')); return; }
+      if (enlaceLlamada) { if (abierta === 'sala' || (M && M.conectada)) return; $('#error-invitado').textContent = ''; muestra('invitado', $('#cancelar-invitado')); entraLlamada(); return; }
       campo.value = codigoEnlace.replace(/(.{4})(?=.)/g, '$1 '); codigoEnlace = null;
       ponError('tengo', ''); botonEntrar(false); muestra('tengo', $('#entrar'));
     } finally { ocupado = false; }
@@ -304,21 +306,40 @@
   // Dueño, 15:12: «yo entro en la llamada, pero se queda ahí, no hace más nada»: ahora se ve que se espera (el pulso, «Esperando a
   // la otra persona…»), y se espera de verdad: si quien invita aún está en WhatsApp o su página se recargó, en cuanto vuelve a la
   // web, la llamada empieza sola.
-  let tardaT = null;
+  // Dueño, 17:32–17:34: «la persona que recibe, en los mínimos pasos posibles… que cuando toca el enlace en WhatsApp ya entre la
+  // llamada directa». Sin «Entrar»: al abrir el enlace se piden ya la cámara y el micrófono (la primera vez el navegador pregunta;
+  // eso no lo puede saltar ninguna web) y la sesión se abre mientras se abre la roca. En cuanto quien invitó está en Elixire, la
+  // llamada empieza sola. Mientras, «Llamando…», como un teléfono. Si algo falla, vuelve el botón «Entrar a la llamada».
+  let tardaT = null, uniendo = null;
   const estadoInvitado = (k) => { const x = $('#estado-invitado'); x.dataset.t = k; x.textContent = tr(k); };
-  $('#entrar-llamada').addEventListener('click', async () => {
-    if (!M || !codigoEnlace) return;
-    pantallaCompleta();
-    const p = $('#panel-invitado'), b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
-    p.classList.add('esperando'); estadoInvitado('conectando');
+  function uneLlamada() {
+    if (uniendo || !M || !codigoEnlace) return uniendo;
+    window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
     if (M.preparaMedios) M.preparaMedios(); // la cámara y el micrófono, ya (más rapidez: dueño, 16:18)
-    const r = semillaEnlace ? await M.entraSemilla(semillaEnlace.slice()) : await M.entra(codigoEnlace);
+    uniendo = semillaEnlace ? M.entraSemilla(semillaEnlace.slice()) : M.entra(codigoEnlace);
+    return uniendo;
+  }
+  async function entraLlamada() {
+    if (!M || !codigoEnlace) return;
+    const p = $('#panel-invitado'), b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
+    p.classList.add('esperando'); estadoInvitado('conectando'); titulo('#panel-invitado', 'llamandoT');
+    let r; try { r = await uneLlamada(); } catch (_) { r = { ok: false }; } uniendo = null;
     if (abierta !== 'invitado') return;
-    if (!r.ok) { p.classList.remove('esperando'); b.disabled = false; e.textContent = tr(ERRORES[r.por] || 'eSinRele'); return; }
-    codigoEnlace = null; if (semillaEnlace) { semillaEnlace.fill(0); semillaEnlace = null; } window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
-    estadoInvitado('esperandoVuelva');
+    if (!r || !r.ok) { window.Elixire.llamaAlEntrar = false; p.classList.remove('esperando'); b.disabled = false; e.textContent = tr(ERRORES[r && r.por] || 'eSinRele'); suena(false); return; }
+    codigoEnlace = null; if (semillaEnlace) { semillaEnlace.fill(0); semillaEnlace = null; }
+    if (!M.conectada) { estadoInvitado('esperandoVuelva'); suena(true); }
     clearTimeout(tardaT); tardaT = setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada) estadoInvitado('tardaVuelva'); }, 45000);
-  });
+  }
+  $('#entrar-llamada').addEventListener('click', () => { pantallaCompleta(); entraLlamada(); });
+  // «Llamando…» se oye además de verse (dueño, 17:32: «la persona que invita tiene que sentir… que se está llamando»): el tono de
+  // llamada, como un teléfono, hasta que la otra persona entra (como mucho un minuto; luego sigue la espera en silencio)
+  let sonandoT = null;
+  function suena(si) {
+    const T = window.ElixireTonos; clearTimeout(sonandoT);
+    if (!T) return;
+    if (si) { T.saliente(); sonandoT = setTimeout(() => T.para(), 60000); } else T.para();
+  }
+  function titulo(panel, k) { const x = $(panel + ' .llamando span'); if (x && x.dataset.t !== k) { x.dataset.t = k; x.textContent = tr(k); } }
   if (M) M.on('ocupada', () => { if (abierta === 'invitado') { $('#panel-invitado').classList.remove('esperando'); $('#entrar-llamada').disabled = false; $('#error-invitado').textContent = tr('eNoVale'); } });
 
   // ---- tengo un código ----
@@ -349,9 +370,9 @@
   // lo que dice el motor mientras se espera
   if (M) {
     M.on('codigo-usado', () => { if (abierta === 'crear') ponEstado('alguienEntra'); });
-    M.on('llega', () => { if (abierta === 'crear') { ponEstado('llegaOtra'); if (invitoLlamada && M.preparaMedios) M.preparaMedios(); } else if (abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando')) estadoInvitado('llegaOtra'); });
+    M.on('llega', () => { if (abierta === 'crear') { ponEstado('llegaOtra'); titulo('#panel-crear', 'conectandoT'); if (invitoLlamada && M.preparaMedios) M.preparaMedios(); } else if (abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando')) { estadoInvitado('llegaOtra'); titulo('#panel-invitado', 'conectandoT'); } });
     M.on('ocupada', () => { if (abierta === 'tengo') { botonEntrar(false); ponError('tengo', 'no-vale'); } });
-    M.on('conectado', () => { paraReloj(); clearTimeout(tardaT); olvidaInvitacion(); ocultaPaneles(); abierta = 'sala'; });
+    M.on('conectado', () => { paraReloj(); clearTimeout(tardaT); clearTimeout(sonandoT); olvidaInvitacion(); ocultaPaneles(); abierta = 'sala'; });
     // sin conexión con el servidor mientras se espera: se dice (y se reintenta solo); al volver, se sigue esperando
     let sinRed = null;
     M.on('red', (ok) => {

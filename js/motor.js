@@ -818,6 +818,19 @@
       contestar();
       return;
     }
+    // La otra persona vuelve a llamar mientras aquí sigue una llamada suya anterior (dueño, 17:29: «que no se crucen… hazlo como
+    // WhatsApp o Telegram»): si para ella esa llamada ya no existe (se le cortó o la canceló), la nueva sustituye a la vieja. Si aquí
+    // aún sonaba, sigue sonando, ya con la nueva; si aquí ya estabais hablando o la habías aceptado, entra sola, sin sonar. Nunca
+    // «ocupado» entre los dos.
+    if (que === 'oferta' && L && id && id !== L.id && !(L.rol === 'llama' && !L.t0)) {
+      if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;
+      const x = L, seguia = x.rol === 'contesta' ? x.estado !== 'entrante' : true;
+      L = null; retira(x);
+      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid), telSuyo: j.tel === 1, sinCapa: !PQM || j.pq === 0, suyaSinCapa: j.pq === 0, cruzada: seguia };
+      emite('llamada', estadoLlamada());
+      if (seguia) contestar();
+      return;
+    }
     if (que === 'oferta') {
       if (L || restante(s) < 5000) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
       if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;
@@ -849,6 +862,37 @@
     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
+    // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
+    if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
+    if (que === 'fuente') { const n = j.n | 0, r = fuentes.get(n); if (r) { fuentes.delete(n); r(limpiaFuente(j.f)); } return; }
+  }
+  // De qué tipo es la cámara de este equipo, para «Comprobar» en el otro (dueño, 16:56: «detectar la estafa con la mayor tecnología
+  // posible»). Los programas que cambian la cara en directo (DeepFaceLive, Deep-Live-Cam, Avatarify…) llegan al navegador como una
+  // cámara virtual (OBS, Unity Capture…). Solo sale el tipo y, si es un programa conocido, su familia de una lista fija: nunca el
+  // nombre de la cámara, ni nada más del equipo.
+  const FAMILIAS = [['OBS', /\bobs\b/i], ['ManyCam', /manycam/i], ['Snap Camera', /snap ?camera/i], ['XSplit', /xsplit/i], ['Unity Capture', /unity ?(video ?)?capture/i], ['SplitCam', /splitcam/i], ['CamTwist', /camtwist/i], ['YouCam', /youcam/i], ['mmhmm', /mmhmm/i], ['Avatarify', /avatarify/i], ['DeepFace', /deep ?face|deep-?live|facefusion|face ?swap|swapface/i], ['Webcamoid', /webcamoid/i], ['ChromaCam', /chromacam/i], ['NVIDIA Broadcast', /nvidia broadcast/i], ['Camo', /\bcamo\b/i], ['DroidCam', /droidcam/i], ['Iriun', /iriun/i], ['EpocCam', /epoccam/i], ['iVCam', /ivcam/i], ['Elgato', /elgato|camera hub/i]];
+  const VIRTUAL = /\bobs\b|manycam|snap ?camera|xsplit|\bvcam\b|unity ?(video ?)?capture|splitcam|camtwist|youcam|mmhmm|avatarify|deep ?face|deep-?live|facefusion|face ?swap|swapface|webcamoid|chromacam|sparkocam|altercam|loopback|dummy|fake|virtual/i;
+  const INTERMEDIA = /nvidia broadcast|\bcamo\b|droidcam|iriun|epoccam|ivcam|logi capture/i;
+  const TIPOS_FUENTE = ['virtual', 'intermedia', 'movil', 'fisica', 'desconocida', 'apagada'];
+  function fuenteMia() {
+    const t = L && L.local && L.local.getVideoTracks()[0];
+    if (!t || t.readyState !== 'live' || !t.enabled) return { k: 'apagada' };
+    const et = String(t.label || ''); let a = {}; try { a = t.getSettings ? t.getSettings() : {}; } catch (_) {}
+    const n = (FAMILIAS.find(([, re]) => re.test(et)) || [''])[0];
+    if (VIRTUAL.test(et)) return { k: 'virtual', n };
+    if (INTERMEDIA.test(et)) return { k: 'intermedia', n };
+    if (a.facingMode || /front|back|frontal|trasera|delantera|facing/i.test(et)) return { k: 'movil' };
+    return { k: et ? 'fisica' : 'desconocida' };
+  }
+  function limpiaFuente(f) { if (!f || !TIPOS_FUENTE.includes(f.k)) return null; return { k: f.k, n: FAMILIAS.some(([x]) => x === f.n) ? f.n : '' }; }
+  const fuentes = new Map(); let nFuente = 0, fuenteT = 0;
+  function fuente() {
+    return new Promise((res) => {
+      if (!L || L.estado !== 'hablando' || !S) { res(null); return; }
+      const n = ++nFuente; fuentes.set(n, res);
+      enviaControl(S, { tipo: 'llamada', que: 'fuente?', id: L.id, n });
+      setTimeout(() => { if (fuentes.has(n)) { fuentes.delete(n); res(null); } }, 3500);
+    });
   }
   function colgar(motivo, suyo) {
     if (!L) return;
@@ -992,7 +1036,7 @@
 
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, fuente, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
@@ -1001,5 +1045,6 @@
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
   if (LOCAL) window.ElixireMotor._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
   if (LOCAL) window.ElixireMotor._usa = (ms) => { if (S) S.usado = ms; };
+  if (LOCAL) window.ElixireMotor._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
   if (LOCAL) window.ElixireMotor._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
 })();
