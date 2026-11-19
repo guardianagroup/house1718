@@ -11,7 +11,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-10" integrity="sha384-lunywNzICDMXcvTizHxq+Mi0bNumtUc3AbpRAhmyBfMPg+QZ4K6Hz41Gc9jXLI0b">
+<link rel="stylesheet" href="css/elixir.css?v=20261119-10" integrity="sha384-nGWH3jVFp0Z9kmK9yAEHi82nAZKi+29qmNiRfJo8nLFZEwV2hZi+2iYrbwyTViAZ">
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -28,6 +28,7 @@
 <button type="button" class="seg" data-idioma="es" aria-pressed="true">ES</button>
 <button type="button" class="seg" data-idioma="en" aria-pressed="false">EN</button>
 </div>
+<button type="button" class="cristal icono" id="pantalla" aria-label="Pantalla completa" hidden><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path id="pantalla-icono" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"/></svg></button>
 </div>
 </header>
 
@@ -224,14 +225,14 @@
 </div>
 </div>
 
-<script src="js/idioma.js?v=20261119-10" integrity="sha384-tEf1ua+NwRATArUsFHd9I2BmxW0UYcXaflogxSYyRU5mkd44IzzYKz+uDjBxb27f"></script>
+<script src="js/idioma.js?v=20261119-10" integrity="sha384-N5hmvYqB9j4XuQUkkB+gyxkft9Y07bUPL56Yuez8w/Lz1sSrqRxCISfWP6LJiQRF"></script>
 <script src="js/pq-cnsa.js?v=20261119-10" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
 <script src="js/palabras.js?v=20261119-10" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
 <script src="js/cripto.js?v=20261119-10" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
 <script src="js/rele.js?v=20261119-10" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
 <script src="js/motor.js?v=20261119-10" integrity="sha384-ngR/0Zh995+MPgmmshXvBWXNMBBzIl/PmFpuaM4bbl682u2SkdlgcsKa1Qi2m2tx"></script>
 <script type="module" src="js/sala3d.js?v=20261119-10" integrity="sha384-QkpF/V26/Hx4YHH3P8CUaV3HjjdPoq2HZe384x8vEW6N0ePqhHCdand79M8ojpET"></script>
-<script src="js/puerta.js?v=20261119-10" integrity="sha384-UGu88ae0v4tm7BNEpPh9SQvg2F2/W4G1Nc57HzqBR/wLUhSTNkmupRU+u97rKWSU"></script>
+<script src="js/puerta.js?v=20261119-10" integrity="sha384-14/n9pk4/Wmbr+T1fE/XhHKyesI9MIZMMtclwQqenWg/1JhIKPgapfcqoGAKW40Q"></script>
 <script src="js/sala.js?v=20261119-10" integrity="sha384-CCX/kludhGVtB74HpfoEMLTEiFEgq7gRcjI0wwvopYn+EkFIKVRkz5zzJKXHG7zR"></script>
 </body>
 </html>

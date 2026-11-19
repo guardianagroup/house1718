@@ -41,6 +41,21 @@
     if (document.fullscreenElement || !r.requestFullscreen || matchMedia('(display-mode: fullscreen)').matches) return;
     try { const p = r.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); } catch (_) {}
   }
+  // el botón de la cabecera (dueño, 12:31: «una en pantalla que sea maximizar la pantalla»): entra y sale de la pantalla completa
+  const bPantalla = $('#pantalla');
+  const ICONO = { entrar: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5', salir: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' };
+  function pintaPantalla() {
+    const dentro = !!document.fullscreenElement;
+    $('#pantalla-icono').setAttribute('d', dentro ? ICONO.salir : ICONO.entrar);
+    bPantalla.setAttribute('aria-label', tr(dentro ? 'salirPantalla' : 'pantallaCompleta')); bPantalla.title = bPantalla.getAttribute('aria-label');
+  }
+  if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
+    bPantalla.hidden = false;
+    bPantalla.addEventListener('click', () => { if (document.fullscreenElement) { const p = document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); } else pantallaCompleta(); });
+    document.addEventListener('fullscreenchange', pintaPantalla);
+    document.addEventListener('elixire-idioma', pintaPantalla);
+    pintaPantalla();
+  }
   async function abre() {
     if (ocupado || abierta) return; ocupado = true;
     pantallaCompleta();

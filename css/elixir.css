@@ -97,6 +97,8 @@ a{color:inherit}
 .cabecera-der{display:flex;align-items:center;gap:12px}
 .cabecera .par .seg{height:36px;padding:0 18px;font-size:10.5px;letter-spacing:.22em}
 .idiomas .seg{min-width:52px;padding:0 14px}
+.cabecera .cristal.icono{width:46px;height:36px;padding:0}
+.cristal.icono svg{position:relative;z-index:1;display:block}
 
 /* ---------- portada: el monolito y un solo botón ---------- */
 main{position:relative;z-index:2}
