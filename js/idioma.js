@@ -67,7 +67,7 @@
     movilHechoEtiqueta: 'ON YOUR PHONE', movilHechoTitulo: 'The conversation continues on your phone.', movilHechoTexto: 'Everything has been erased on this computer. The other person moved to the new session automatically, with new keys.',
     traspasoEspera: 'The other person is moving the conversation to their phone…', continuaSuMovil: 'The conversation continues on their phone · new keys', continuaAqui: 'The conversation continues on this phone · new keys',
     chat: 'Chat', ampliar: 'Enlarge',
-    invitar: 'Invite to a call',
+    invitar: 'Invite to a call', eligeTextoMovil: 'Send the invitation via WhatsApp: when the other person opens it, the video call will start by itself. Up to 3 minutes of trial.',
     enviarInvitacion: 'Send the invitation', teInvitan: 'YOU ARE INVITED TO A VIDEO CALL', teInvitanTexto: 'Private and encrypted end to end. When you join, your camera and microphone will turn on.', entrarLlamada: 'Join the call',
     esperandoLlamada: 'Waiting for the other person: the call will start by itself', mensajeLlamada: 'I am inviting you to a private video call on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nIt expires in 10 minutes and works only once.',
     tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
