@@ -499,7 +499,7 @@
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -733,30 +733,31 @@
     const s = S, por = puedeLlamar(); if (por) { emite('llamada-aviso', por); return false; }
     if (L) return false;
     if (restante(s) < 5000) { emite('llamada-aviso', 'prueba-usada'); return false; }
-    L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid, sinCapa: !PQM };
+    const x = L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid, sinCapa: !PQM };
     emite('llamada', estadoLlamada());
     try {
-      const st = await tomaMedios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
+      const st = await tomaMedios(); if (L !== x) { cede(st); return false; }
       L.local = st; L.video = st.getVideoTracks().length > 0;
       if (!L.sinCapa) await llavesLlamada(s.sesion.medios, L.id, true);
+      if (L !== x) return false;
       const pc = L.pc = conexion();
       for (const t of st.getTracks()) pc.addTrack(t, st);
       ponCapa(pc); prefiereCodecs(pc, TEL);
-      await describe(pc, true); codecs(pc);
-      await reunido(pc); if (!L || L.pc !== pc) return false;
+      await describe(pc, true); if (L !== x) return false; codecs(pc);
+      await reunido(pc); if (L !== x || L.pc !== pc) return false;
       L.estado = 'llamando'; emite('llamada', estadoLlamada());
       enviaControl(s, { tipo: 'llamada', que: 'oferta', id: L.id, sid: L.sid, sdp: pc.localDescription.sdp, video: L.video ? 1 : 0, tel: TEL ? 1 : 0, pq: L.sinCapa ? 0 : 1 });
       if (L.sinCapa) emite('llamada-aviso', 'sin-capa-mia');
       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
       return true;
-    } catch (e) { console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
+    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
   }
   async function contestar() {
     const s = S; if (!L || L.estado !== 'entrante' || !s) return false;
     const ses = s.sesiones.get(L.sid); if (!ses) { colgar('fallo'); return false; }
-    L.estado = 'preparando'; emite('llamada', estadoLlamada());
+    const x = L; L.estado = 'preparando'; emite('llamada', estadoLlamada());
     try {
-      const st = await tomaMedios(); if (!L) { st.getTracks().forEach((t) => t.stop()); return false; }
+      const st = await tomaMedios(); if (L !== x) { cede(st); return false; }
       L.local = st;
       if (!L.sinCapa) await llavesLlamada(ses.medios, L.id, false);
       const pc = L.pc = conexion();
@@ -771,8 +772,28 @@
       return true;
     } catch (e) { console.warn('llamada', e); colgar(/Permission|NotAllowed/i.test(String(e && e.name) + String(e && e.message)) ? 'sin-permiso' : 'fallo'); return false; }
   }
+  // Dos llamadas que se cruzan (dueño, 16:30: «no quiero que se crucen las llamadas… si hay una llamada, luego me salía otra de
+  // volver a llamar, una cosa muy rara»): si llega una llamada mientras la mía aún está sonando o preparándose, sigue solo una, la de
+  // identificador menor, en los dos lados a la vez; la otra se retira sin aviso y quien la hizo contesta sola a la que sigue. Nunca
+  // salen dos llamadas ni un «ocupado» entre los dos.
+  function cede(st) { if (st && !mediosPrevios) mediosPrevios = Promise.resolve(st); else if (st && !(L && L.local === st)) st.getTracks().forEach((t) => t.stop()); }
+  function retira(x) {
+    clearTimeout(x.limite); clearTimeout(x.espera); finRecupera(x);
+    try { if (x.pc) x.pc.close(); } catch (_) {}
+    try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
+    if (x.local) cede(x.local);
+  }
   async function llamadaRecibe(s, j) {
     const que = String(j.que || ''), id = String(j.id || '');
+    if (que === 'oferta' && L && L.rol === 'llama' && !L.t0 && (L.estado === 'preparando' || L.estado === 'llamando') && id && id !== L.id) {
+      if (L.id < id) return; // sigue la mía: la otra persona retira la suya y contesta
+      const x = L; L = null; retira(x);
+      if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) { emite('llamada', estadoLlamada()); return; }
+      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid), telSuyo: j.tel === 1, sinCapa: !PQM || j.pq === 0, suyaSinCapa: j.pq === 0, cruzada: true };
+      emite('llamada', estadoLlamada());
+      contestar();
+      return;
+    }
     if (que === 'oferta') {
       if (L || restante(s) < 5000) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
       if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;

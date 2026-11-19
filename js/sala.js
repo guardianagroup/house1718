@@ -238,7 +238,7 @@
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
     ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
     { const c = $('#video-cifrado span'), k = e.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo'; if (c && c.dataset.t !== k) { c.dataset.t = k; c.textContent = tr(k); } }
-    if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
+    if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !e.cruzada && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
@@ -297,7 +297,8 @@
     sistema(r.mio ? 'retoSistemaMio' : 'retoSistemaSuyo', '«' + tx.textContent + '»');
   });
   $('#b-reto').addEventListener('click', () => M.reto());
-  $('#llamar').addEventListener('click', () => M.llamar());
+  // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
+  $('#llamar').addEventListener('click', () => { if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return; $('#llamar').hidden = true; M.llamar(); });
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
   $('#b-colgar').addEventListener('click', () => M.colgar());
