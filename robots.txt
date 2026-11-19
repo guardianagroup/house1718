@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://www.house1718.com/sitemap.xml
