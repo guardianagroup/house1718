@@ -28,7 +28,7 @@
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
-    lista.textContent = ''; texto.value = '';
+    lista.textContent = ''; texto.value = ''; avisos.textContent = ''; menuEnviar.hidden = true;
     const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
     for (const k of ['left', 'top', 'right', 'bottom']) vm.style.removeProperty(k);
     if (window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(false);
@@ -39,10 +39,20 @@
   // ---------- mensajes ----------
   function quitaVacio() { const v = lista.querySelector('.vacio'); if (v) v.remove(); }
   function abajo() { lista.scrollTop = lista.scrollHeight; }
+  // una ubicación enviada desde la llamada: «📍 …» y el enlace del mapa (solo este formato exacto se convierte en enlace)
+  const UBICACION = /^\u{1F4CD} ([^\n]{0,40})\nhttps:\/\/www\.google\.com\/maps\?q=(-?\d{1,2}\.\d{1,7}),(-?\d{1,3}\.\d{1,7})$/u;
+  function contenido(texto) {
+    const f = document.createDocumentFragment(), u = UBICACION.exec(texto || '');
+    if (!u) { f.append(document.createTextNode(texto)); return f; }
+    const b = document.createElement('b'); b.textContent = '\u{1F4CD} ' + tr('ubicacion');
+    const a = document.createElement('a'); a.className = 'cristal mapa'; a.href = 'https://www.google.com/maps?q=' + u[2] + ',' + u[3]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    const s = document.createElement('span'); s.dataset.t = 'abrirMapa'; s.textContent = tr('abrirMapa'); a.append(s);
+    f.append(b, a); return f;
+  }
   function pintaMensaje(m) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg ' + m.dir; li.dataset.id = m.id;
-    li.append(document.createTextNode(m.texto));
+    li.append(contenido(m.texto)); tarjeta(m.id, contenido(m.texto), m.dir, 20000);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
   }
@@ -65,7 +75,51 @@
   M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
 
   // ---------- archivos ----------
+  // ---------- en la llamada del móvil: lo que se envía y llega, en tarjetas arriba (el chat no se ve) ----------
+  // Dueño, 15:54: «y podamos adjuntar fotos, ubicación, etc.», como en GUARDIANA: «Enviar» junto a «Colgar» abre foto, ubicación o
+  // archivo; lo que llega sale arriba en una tarjeta (la foto, con su imagen) y se puede guardar.
+  const avisos = $('#avisos-llamada');
+  function tarjeta(id, nodo, dir, ms) {
+    if (!movil.matches || !abierta) return null;
+    let li = id ? avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]') : null;
+    if (!li) { li = document.createElement('li'); if (id) li.dataset.id = id; avisos.append(li); }
+    li.className = 'tarjeta ' + (dir || 'sistema'); li.textContent = '';
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'quita'; x.setAttribute('aria-label', '×'); x.textContent = '×'; x.addEventListener('click', () => li.remove());
+    li.append(nodo, x);
+    while (avisos.children.length > 3) avisos.firstElementChild.remove();
+    clearTimeout(li._t); if (ms) li._t = setTimeout(() => li.remove(), ms);
+    return li;
+  }
+  function textoTarjeta(k) { const s = document.createElement('span'); s.dataset.t = k; s.textContent = tr(k); return s; }
+  const menuEnviar = $('#menu-enviar');
+  $('#b-enviar').addEventListener('click', () => { menuEnviar.hidden = !menuEnviar.hidden; $('#b-enviar').setAttribute('aria-expanded', String(!menuEnviar.hidden)); });
+  document.addEventListener('pointerdown', (e) => { if (!menuEnviar.hidden && !menuEnviar.contains(e.target) && !e.target.closest('#b-enviar')) { menuEnviar.hidden = true; $('#b-enviar').setAttribute('aria-expanded', 'false'); } }, true);
+  $('#enviar-foto').addEventListener('click', () => { menuEnviar.hidden = true; $('#foto-llamada').click(); });
+  $('#enviar-archivo').addEventListener('click', () => { menuEnviar.hidden = true; $('#archivo').click(); });
+  $('#foto-llamada').addEventListener('change', (e) => { enviaArchivos([...e.target.files]); e.target.value = ''; });
+  $('#enviar-ubicacion').addEventListener('click', () => {
+    menuEnviar.hidden = true;
+    if (!navigator.geolocation) { tarjeta('ubi', textoTarjeta('sinUbicacion'), 'sistema', 6000); return; }
+    tarjeta('ubi', textoTarjeta('buscandoUbicacion'), 'sistema', 20000);
+    navigator.geolocation.getCurrentPosition((p) => {
+      const q = avisos.querySelector('li[data-id="ubi"]'); if (q) q.remove();
+      const m = M.envia('\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6));
+      if (m) pintaMensaje(m);
+    }, () => tarjeta('ubi', textoTarjeta('sinUbicacion'), 'sistema', 6000), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+  });
+  function tarjetaArchivo(a, estado) {
+    const f = document.createDocumentFragment();
+    const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
+    const t = document.createElement('span'); t.className = 'tam'; t.textContent = estado ? tr(estado) : tam(a.tam);
+    f.append(n, t);
+    if (a.url) {
+      if (/^image\/(png|jpe?g|gif|webp|heic|heif|avif)$/i.test(a.mime || '')) { const i = document.createElement('img'); i.src = a.url; i.alt = ''; f.prepend(i); }
+      const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre; d.append(textoTarjeta('guardar')); f.append(d);
+    } else { const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i')); f.append(b); }
+    return tarjeta('a-' + a.id, f, a.dir || 'suya', a.url ? 90000 : 0);
+  }
   function filaArchivo(a) {
+    tarjetaArchivo(a);
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg archivo ' + a.dir; li.dataset.id = a.id;
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
@@ -87,9 +141,10 @@
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) enviaArchivos([...e.dataTransfer.files]); });
   M.on('archivo', (a) => filaArchivo(a));
-  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; });
-  M.on('archivo-enviado', (p) => { const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
+  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const c = avisos.querySelector('li[data-id="a-' + CSS.escape(p.id) + '"] .barra i'); if (c) c.style.width = Math.round(p.hecho * 100) + '%'; });
+  M.on('archivo-enviado', (p) => { const c = avisos.querySelector('li[data-id="a-' + CSS.escape(p.id) + '"]'); if (c) { const t = c.querySelector('.tam'); if (t) { t.dataset.t = 'archivoEnviado'; t.textContent = tr('archivoEnviado'); } const b = c.querySelector('.barra'); if (b) b.remove(); clearTimeout(c._t); c._t = setTimeout(() => c.remove(), 5000); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
   M.on('archivo-listo', (a) => {
+    tarjetaArchivo(Object.assign({ dir: 'suya' }, a));
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;

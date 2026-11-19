@@ -551,3 +551,27 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .sala .video-tiempo small{font:500 10px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:#9CC3E4}
   .sala #video-reconecta{top:calc(env(safe-area-inset-top) + 92px)}
 }
+
+/* ---------- enviar en la llamada del móvil: foto, ubicación o archivo, y lo que llega, en tarjetas (dueño, 15:54) ---------- */
+.menu-enviar,.avisos-llamada{display:none}
+@media (max-width:760px){
+  .sala .controles .seg#b-enviar{position:relative;width:62px;height:62px;min-width:0;padding:0;border-radius:50%;display:grid;place-items:center;overflow:visible!important;letter-spacing:0;text-transform:none;
+    background:rgba(232,236,241,.1);border:1px solid rgba(255,255,255,.26);color:#F4F6F8;box-shadow:0 12px 34px -10px rgba(0,0,0,.7);flex:0 0 auto;margin-top:3px}
+  .sala .ico-env{fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;width:26px!important;height:26px!important;transform:none!important}
+  .sala .menu-enviar:not([hidden]){display:flex;position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 172px);gap:10px;padding:10px;border-radius:22px;
+    background:rgba(8,12,18,.94);border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 60px rgba(0,0,0,.6);animation:aparece .25s ease both}
+  .sala .menu-enviar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:86px;height:78px;border:0;border-radius:15px;background:rgba(255,255,255,.06);color:#F4F6F8;font:400 13px/1.2 var(--ui);cursor:pointer}
+  .sala .menu-enviar svg{width:26px;height:26px;fill:none;stroke:#9CC3E4;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+  .sala .avisos-llamada{display:flex;position:absolute;z-index:5;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 94px);flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;pointer-events:none}
+  .sala .tarjeta{pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 42px 12px 14px;border-radius:14px;background:rgba(8,12,18,.88);
+    border:1px solid rgba(156,195,228,.28);color:#F4F6F8;font:400 14px/1.4 var(--ui);overflow-wrap:anywhere;animation:aparece .3s ease both}
+  .sala .tarjeta.mia{border-color:rgba(92,201,138,.4)}
+  .sala .tarjeta img{display:block;flex:1 1 100%;width:100%;max-height:210px;object-fit:contain;border-radius:10px;background:#000}
+  .sala .tarjeta .nombre{font-weight:500}
+  .sala .tarjeta .tam{color:#9FB0C2;font-size:12.5px}
+  .sala .tarjeta .barra{flex:1 1 100%;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  .sala .tarjeta .barra i{display:block;width:0;height:100%;background:#9CC3E4;transition:width .2s}
+  .sala .tarjeta .cristal{height:36px;padding:0 16px;font-size:11px;letter-spacing:.14em;display:inline-flex;align-items:center}
+  .sala .tarjeta .quita{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;border-radius:50%;background:none;color:#9FB0C2;font:300 22px/1 var(--ui);cursor:pointer}
+}
+@media (max-width:760px){ .sala .controles,.sala #entrante,.sala .video-velo{overflow:visible!important} }
