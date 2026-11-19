@@ -31,7 +31,6 @@
     noCoincidenTexto: 'Has cortado la conversación y se ha borrado todo. Si las palabras no coinciden, alguien puede estar en medio: crea un código nuevo y dáselo a la otra persona por otro canal.',
     escribeAqui: 'Escribe un mensaje',
     pantallaCompleta: 'Pantalla completa', salirPantalla: 'Salir de pantalla completa',
-    enlaceCopiado: 'Enlace copiado. El código ya no vale: solo entra quien tenga el enlace. Envíalo por otro canal.',
     retoPedido: 'HAS PEDIDO UNA PRUEBA DE VIDA', retoParaTi: 'PRUEBA DE VIDA: HAZLO AHORA',
     retoSistemaMio: 'Prueba de vida pedida:', retoSistemaSuyo: 'Te han pedido una prueba de vida:',
     reto0: 'Gira la cabeza despacio a la derecha y vuelve', reto1: 'Pasa la mano abierta por delante de la cara',
@@ -120,16 +119,12 @@
     noCoincidenTexto: 'You cut the conversation and everything was erased. If the words do not match, someone may be in the middle: create a new code and give it to the other person through another channel.',
     entendido: 'Understood', verRepositorio: 'View the code',
     pantallaCompleta: 'Full screen', salirPantalla: 'Exit full screen',
-    copiarEnlace: 'Copy maximum-protection link', notaEnlace: 'The link carries a 256-bit key that never passes through any server. Once copied, the code stops working.',
-    enlaceCopiado: 'Link copied. The code no longer works: only whoever has the link can enter. Send it through another channel.',
-    enlaceTitulo: 'MAXIMUM-PROTECTION INVITATION', enlaceTexto: 'You have been invited with a link that carries its own 256-bit key. Once inside, you will both see the same four words.',
     pruebaVida: 'Liveness check', retoPedido: 'YOU REQUESTED A LIVENESS CHECK', retoParaTi: 'LIVENESS CHECK: DO IT NOW',
     retoSistemaMio: 'Liveness check requested:', retoSistemaSuyo: 'You were asked for a liveness check:',
     reto0: 'Turn your head slowly to the right and back', reto1: 'Pass your open hand in front of your face',
     reto2: 'Touch your left ear', reto3: 'Raise three fingers next to your face', reto4: 'Say out loud: “{w}”',
     reto5: 'Move your face close to the camera and back', reto6: 'Look up, then back at the camera',
     t5t: 'Liveness check', t5p: 'During a video call either of you can request a random challenge: a gesture or a word the other must perform live. It helps expose a recorded video or an AI-generated face; it is not infallible proof.',
-    t6t: 'Maximum-protection link', t6p: 'Instead of the code, an invitation with its own 256-bit key that never passes through any server.',
     verificarEtiqueta: 'VERIFY THIS PAGE', verificarTitulo: 'The code is public.',
     verificarTexto: 'This page is published as-is from a public repository. Every script and the stylesheet carry their SHA-384 fingerprint here, and your browser will not load any that does not match. You can compare those fingerprints with the repository.',
   };
@@ -146,12 +141,13 @@
     for (const el of document.querySelectorAll('[data-t]')) { const v = t(el.dataset.t); if (el.innerHTML !== v) el.innerHTML = v; }
     for (const el of document.querySelectorAll('[data-t-placeholder]')) el.setAttribute('placeholder', t(el.dataset.tPlaceholder));
     for (const b of document.querySelectorAll('[data-idioma]')) b.setAttribute('aria-pressed', String(b.dataset.idioma === actual));
-    try { localStorage.setItem('elixire-idioma', actual); } catch (_) {}
     document.dispatchEvent(new CustomEvent('elixire-idioma', { detail: { idioma: actual } }));
   }
-  let guardado = null; try { guardado = localStorage.getItem('elixire-idioma'); } catch (_) {}
-  const inicial = guardado || ((navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en');
-  for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => pon(b.dataset.idioma));
+  // De partida, en inglés (dueño, 13:09); solo se guarda lo que la persona elige con ES/EN.
+  let guardado = null; try { guardado = localStorage.getItem('elixire-lengua'); } catch (_) {}
+  const inicial = guardado === 'es' ? 'es' : 'en';
+  for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => { pon(b.dataset.idioma); try { localStorage.setItem('elixire-lengua', actual); } catch (_) {} });
   window.ElixireIdioma = { t, pon, actual: () => actual };
   if (inicial !== 'es') pon(inicial);
+  document.documentElement.classList.remove('traduciendo');
 })();

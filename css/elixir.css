@@ -22,6 +22,7 @@
   --display:'Inter Display','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   --marca:'Unbounded','Inter',system-ui,sans-serif;
   --bajada:0;
+  --margen:clamp(22px,2.4vw,64px);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;background:var(--negro)}
@@ -58,6 +59,23 @@ a{color:inherit}
   font:400 11.5px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;font-feature-settings:'case','cpsp';
   text-decoration:none;white-space:nowrap;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .cristal{overflow:hidden}
+/* Dueño, 13:07: «que no salga el palito para escribir, ni que se pueda copiar ni pegar… solamente los botones».
+   La página no se selecciona ni muestra cursor de texto: responden los botones y los enlaces. Solo se escribe en la casilla
+   del código y en la del mensaje (sin ellas no se puede entrar ni hablar). */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:default;caret-color:transparent}
+img,svg,canvas,video{-webkit-user-drag:none}
+a,button,label,summary,[role=button]{cursor:pointer}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;caret-color:#9CC3E4;cursor:text}
+/* La barra de la derecha, sin flechas (dueño, 13:08): un hilo de cristal que se puede arrastrar si el ratón no tiene rueda. */
+::-webkit-scrollbar{width:9px;height:9px;background:transparent}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-button{display:none;width:0;height:0}
+::-webkit-scrollbar-thumb{border:3px solid transparent;border-radius:9px;background:rgba(236,239,243,.16);background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(236,239,243,.34);background-clip:padding-box}
+@supports not selector(::-webkit-scrollbar){html,.mensajes,.sala{scrollbar-width:thin;scrollbar-color:rgba(236,239,243,.18) transparent}}
+/* El idioma de partida es el inglés (dueño, 13:09): hasta que se aplica, los textos traducibles no se pintan (sin parpadeo). */
+html.traduciendo [data-t]{visibility:hidden;animation:muestra-texto 0s 2.5s forwards}
+@keyframes muestra-texto{to{visibility:visible}}
 /* el brillo que cruza el cristal al pasar */
 .cristal::after,.par .seg::after{content:'';position:absolute;top:0;bottom:0;left:-70%;width:45%;pointer-events:none;opacity:0;
   background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);transform:skewX(-18deg)}
@@ -90,9 +108,10 @@ a{color:inherit}
 @media (min-resolution:2dppx){.cristal,.par{border-width:.5px}}
 
 /* ---------- cabecera ---------- */
-.cabecera{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 40px;pointer-events:none}
+.cabecera{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px var(--margen);pointer-events:none}
 .cabecera>*{pointer-events:auto}
-.cabecera::before{content:'';position:absolute;inset:0 0 -40px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,10,calc(.2 + var(--bajada) * .55)),rgba(5,7,10,0))}
+/* al bajar, el velo detrás de la cabecera se oscurece: el texto que pasa por debajo no se mezcla con los botones */
+.cabecera::before{content:'';position:absolute;inset:0 0 -44px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,10,calc(.2 + var(--bajada) * .76)),rgba(5,7,10,calc(var(--bajada) * .78)) 62%,rgba(5,7,10,0))}
 .marca{font-family:var(--marca);font-weight:500;font-size:15px;letter-spacing:.46em;margin:0;color:var(--texto);text-decoration:none}
 .cabecera-der{display:flex;align-items:center;gap:12px}
 .cabecera .par .seg{height:36px;padding:0 18px;font-size:10.5px;letter-spacing:.22em}
@@ -148,14 +167,19 @@ main{position:relative;z-index:2}
 .error:empty{display:none}
 
 /* ---------- las secciones, al bajar, sobre la misma sala ---------- */
-.seccion{position:relative;max-width:1160px;margin:0 auto;padding:16vh 6vw 4vh}
+/* Dueño, 13:08: «no utiliza toda la pantalla… a izquierda y a derecha salen como una cosa negra». Las secciones ocupan todo el
+   ancho, con el mismo margen que la cabecera: el título a la izquierda y la entradilla a la derecha, como un informe a doble página. */
+.seccion{position:relative;margin:0;padding:18vh var(--margen) 5vh;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);column-gap:clamp(40px,6vw,150px);align-items:start}
+.seccion>*{grid-column:1/-1;min-width:0}
 .seccion>.etiqueta{display:block;margin-bottom:22px}
-.seccion h2{margin:0 0 26px;max-width:20ch;font:300 clamp(34px,4.3vw,60px)/1.06 var(--display);letter-spacing:-.025em;color:#F4F6F8}
-.intro{margin:0 0 46px;max-width:62ch;font:300 18px/1.7 var(--ui);color:var(--texto-2)}
+.seccion h2{margin:0 0 26px;max-width:20ch;font:300 clamp(34px,4.2vw,84px)/1.04 var(--display);letter-spacing:-.025em;color:#F4F6F8}
+.seccion>h2{grid-column:1;margin-bottom:60px}
+.intro{margin:0 0 46px;max-width:62ch;font:300 clamp(16px,1.05vw,20px)/1.7 var(--ui);color:var(--texto-2)}
+.seccion>h2+.intro{grid-column:2;grid-row:2;align-self:end;margin-bottom:60px}
 /* el libro de cifras: fino, como un informe anual */
 .libro{list-style:none;margin:0;padding:0;border-bottom:1px solid var(--hilo)}
-.libro li{display:grid;grid-template-columns:minmax(230px,32%) 1fr auto;gap:12px 40px;align-items:baseline;padding:28px 0;border-top:1px solid var(--hilo)}
-.cifra-libro{font:200 clamp(34px,3.6vw,52px)/1 var(--display);white-space:nowrap;letter-spacing:-.02em;font-feature-settings:'tnum','lnum';color:#F4F6F8}
+.libro li{display:grid;grid-template-columns:minmax(230px,30%) minmax(0,1fr) auto;gap:12px clamp(40px,4vw,96px);align-items:baseline;padding:28px 0;border-top:1px solid var(--hilo)}
+.cifra-libro{font:200 clamp(34px,3.6vw,72px)/1 var(--display);white-space:nowrap;letter-spacing:-.02em;font-feature-settings:'tnum','lnum';color:#F4F6F8}
 .libro b{display:block;margin-bottom:6px;font:500 15px/1.4 var(--ui);color:var(--texto)}
 .libro p{margin:0;font:300 15px/1.65 var(--ui);color:var(--texto-2);max-width:60ch}
 .fuente{font:400 10px/1.4 var(--ui);letter-spacing:.18em;text-transform:uppercase;color:var(--texto-3);text-decoration:none;white-space:nowrap;transition:color .3s}
@@ -176,7 +200,7 @@ a.fuente:hover{color:var(--texto)}
 .recuadro p{margin:0;font:300 16px/1.65 var(--ui);color:var(--texto)}
 .recuadro .menor,.menor{font:300 14px/1.65 var(--ui);color:var(--texto-2)}
 /* la solución: cinco principios numerados */
-.pasos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 48px;counter-reset:paso;border-bottom:1px solid var(--hilo)}
+.pasos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 clamp(40px,3.5vw,84px);counter-reset:paso;border-bottom:1px solid var(--hilo)}
 .pasos li{counter-increment:paso;padding:30px 0 30px 64px;position:relative;border-top:1px solid var(--hilo)}
 .pasos li::before{content:counter(paso,decimal-leading-zero);position:absolute;left:0;top:28px;font:200 28px/1 var(--display);color:var(--texto-3);font-feature-settings:'tnum'}
 .pasos b{display:block;margin-bottom:8px;font:500 16px/1.4 var(--ui);color:var(--texto)}
@@ -193,16 +217,17 @@ table.comparacion td{color:var(--texto-2)}
 table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));color:#F4F6F8}
 .pie-tabla{margin:16px 0 0;font:400 12px/1.5 var(--ui);color:var(--texto-3)}
 /* la tecnología */
-.tecnica{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 48px;border-bottom:1px solid var(--hilo)}
+.tecnica{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(40px,3.5vw,84px);border-bottom:1px solid var(--hilo)}
 .tecnica article{padding:30px 0;border-top:1px solid var(--hilo)}
 .tecnica b{display:block;margin-bottom:8px;font:500 16px/1.4 var(--ui);color:var(--texto)}
 .tecnica p{margin:0;font:300 15px/1.65 var(--ui);color:var(--texto-2)}
 .algoritmos{display:block;margin-top:14px;font:400 10.5px/1.6 var(--ui);letter-spacing:.2em;color:var(--texto-3)}
 /* acceso */
-.cierre{display:flex;flex-direction:column;align-items:flex-start;padding-bottom:16vh}
-.cierre .recuadro{max-width:640px;margin-bottom:36px}
-.pie{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1160px;margin:0 auto;padding:30px 6vw 40px}
-.pie::before{content:'';position:absolute;left:6vw;right:6vw;top:0;height:1px;background:var(--hilo)}
+.cierre{padding-bottom:16vh}
+.cierre .recuadro{grid-column:1;max-width:640px;margin:0}
+.cierre [data-empezar]{grid-column:2;grid-row:3;align-self:end;justify-self:start}
+.pie{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:20px;margin:0;padding:30px var(--margen) 40px}
+.pie::before{content:'';position:absolute;left:var(--margen);right:var(--margen);top:0;height:1px;background:var(--hilo)}
 .pie-marca{font:500 11px/1 var(--marca);letter-spacing:.46em;color:var(--texto-3)}
 .verificar{font:400 10.5px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:var(--texto-3);text-decoration:none;transition:color .3s,text-shadow .3s}
 .verificar:hover{color:#fff;text-shadow:0 0 12px rgba(220,236,252,.6)}
@@ -269,7 +294,13 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 .aviso-botones{display:flex;flex-wrap:wrap;gap:10px}
 .aviso.mal .etiqueta{color:var(--coral)}
 
+@media (max-width:1100px){.tecnica{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:980px){
+  .seccion{display:block}
+  .seccion>h2{margin-bottom:26px}
+  .seccion>h2+.intro{margin-bottom:46px}
+  .cierre{display:flex;flex-direction:column;align-items:flex-start}
+  .cierre .recuadro{margin-bottom:36px}
   /* en una ventana estrecha, una columna que baja: la videollamada arriba y el chat debajo */
   .sala{display:block;overflow-y:auto}
   .sala-cuerpo{display:block}
@@ -287,6 +318,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .cristal.grande{padding:0 34px}
   .libro li{grid-template-columns:1fr;gap:8px;padding:24px 0}
   .pasos li{padding-left:52px}
+  .tecnica{grid-template-columns:1fr}
   .seccion{padding:12vh 22px 2vh}
   .sala-cab,.sala-palabras{padding-left:18px;padding-right:18px}
   .palabras{font-size:20px}
