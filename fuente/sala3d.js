@@ -292,25 +292,26 @@ function arranca() {
   }
   const conUV = (g) => { const p = g.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { uv[i * 2] = p.getX(i) * 0.55 + p.getZ(i) * 0.8; uv[i * 2 + 1] = p.getY(i) * 0.55; } g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); return g; };
   const PUNTOS = puntosRoca();
-  // media roca: la envolvente de los puntos de un lado más los del otro llevados al plano del corte (x = 0): la cara del corte, plana
-  const mitadDe = (signo) => conUV(new ConvexGeometry(PUNTOS.map((q) => new THREE.Vector3(signo > 0 ? Math.max(q.x, 0) : Math.min(q.x, 0), q.y, q.z))));
+  // Dueño, 14:25: «la piedra quiero que se abra en 4 partes, arriba y abajo también». Cada cuarto es la envolvente de los puntos de
+  // su lado, con los demás llevados a los planos del corte (x = 0 e y = 0): las caras del corte quedan planas.
+  const cuartoDe = (sx, sy) => conUV(new ConvexGeometry(PUNTOS.map((q) => new THREE.Vector3(sx > 0 ? Math.max(q.x, 0) : Math.min(q.x, 0), sy > 0 ? Math.max(q.y, 0) : Math.min(q.y, 0), q.z))));
   const matObsidiana = new THREE.MeshPhysicalMaterial({
     color: 0x040405, metalness: 0, roughness: 0.24, roughnessMap: texPulido(256), ior: 1.49, specularIntensity: 1,
     clearcoat: 1, clearcoatRoughness: 0.012,
   });
   const geoRoca = conUV(new ConvexGeometry(PUNTOS));
   const mono = new THREE.Group(); mono.position.set(0, Y0, Z0); escena.add(mono);
-  const mitad = (signo) => { const m = new THREE.Mesh(mitadDe(signo), matObsidiana); m.castShadow = true; m.receiveShadow = true; mono.add(m); return m; };
-  const mIzq = mitad(-1), mDer = mitad(1);
-  // la fisura de luz por donde se parte: sigue la cara de delante de la piedra
+  const cuartos = [];
+  for (const sy of [-1, 1]) for (const sx of [-1, 1]) { const m = new THREE.Mesh(cuartoDe(sx, sy), matObsidiana); m.castShadow = true; m.receiveShadow = true; m.userData = { sx, sy }; mono.add(m); cuartos.push(m); }
+  // la fisura de luz por donde se parte, en cruz: sigue la cara de delante de la piedra
   const matSello = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(1.6), toneMapped: false, transparent: true });
-  const sello = (() => {
-    const rc = new THREE.Raycaster(), pts = [], o = new THREE.Vector3(), d = new THREE.Vector3(0, 0, -1), aux = new THREE.Mesh(geoRoca);
-    for (let y = -ALTO / 2 + 0.05; y <= ALTO / 2 - 0.05; y += 0.025) { o.set(0, y, 2); rc.set(o, d); const h = rc.intersectObject(aux)[0]; if (h) pts.push(new THREE.Vector3(0, y, h.point.z + 0.0035)); }
-    if (pts.length < 2) pts.push(new THREE.Vector3(0, -1, PROF / 2), new THREE.Vector3(0, 1, PROF / 2));
-    return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(8, pts.length * 2), 0.0024, 6, false), matSello);
-  })();
-  mono.add(sello);
+  const fisura = (vertical) => {
+    const rc = new THREE.Raycaster(), pts = [], o = new THREE.Vector3(), d = new THREE.Vector3(0, 0, -1), aux = new THREE.Mesh(geoRoca), L = (vertical ? ALTO : ANCHO) / 2 - 0.05;
+    for (let u = -L; u <= L; u += 0.025) { o.set(vertical ? 0 : u, vertical ? u : 0, 2); rc.set(o, d); const h = rc.intersectObject(aux)[0]; if (h) pts.push(new THREE.Vector3(o.x, o.y, h.point.z + 0.0035)); }
+    if (pts.length < 2) pts.push(new THREE.Vector3(vertical ? 0 : -0.4, vertical ? -1 : 0, PROF / 2), new THREE.Vector3(vertical ? 0 : 0.4, vertical ? 1 : 0, PROF / 2));
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(8, pts.length * 2), 0.0024, 6, false), matSello); mono.add(m); return m;
+  };
+  const sello = fisura(true), selloH = fisura(false);
   const marca = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })); marca.visible = false; mono.add(marca);
   // dentro: una hoja de luz y su halo
   const matNucleo = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xd6e8f8).multiplyScalar(3), toneMapped: false, transparent: true, opacity: 0 });
@@ -329,7 +330,7 @@ function arranca() {
   {
     const brillan = [matLinea, matDifusor, matRanura]; for (const m of brillan) m.color.multiplyScalar(3);
     const e0 = matCajon.emissiveIntensity; matCajon.emissiveIntensity = e0 * 3;
-    mIzq.visible = mDer.visible = sello.visible = false; espejo.visible = false;
+    for (const m of cuartos) m.visible = false; sello.visible = selloH.visible = false; espejo.visible = false;
     const desde = { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: ligero ? 256 : 512 };
     const entornoSala = pmrem.fromScene(escena, 0, 0.05, 40, desde).texture;
     const estudio = new THREE.Group();
@@ -349,7 +350,7 @@ function arranca() {
     escena.add(estudio);
     const entornoRoca = pmrem.fromScene(escena, 0, 0.05, 40, desde).texture;
     escena.remove(estudio);
-    mIzq.visible = mDer.visible = sello.visible = true; espejo.visible = true;
+    for (const m of cuartos) m.visible = true; sello.visible = selloH.visible = true; espejo.visible = true;
     for (const m of brillan) m.color.multiplyScalar(1 / 3); matCajon.emissiveIntensity = e0;
     for (const [m, e, k] of [[matAcero, entornoSala, 1], [matLama, entornoSala, 0.2], [matCajon, entornoSala, 0.9], [matObsidiana, entornoRoca, 1]]) { m.envMap = e; m.envMapIntensity = k; m.needsUpdate = true; }
   }
@@ -463,12 +464,12 @@ function arranca() {
     if (!vivo || pausado) return;
     const dt = Math.min(delta(), DT_MAX); ahora += dt;
     for (let i = tramos.length - 1; i >= 0; i--) { const x = tramos[i]; if (ahora < x.t0) continue; const p = Math.min(1, (ahora - x.t0) / x.dur); x.set(x.e(p)); if (p >= 1) { tramos.splice(i, 1); x.res(); } }
-    // la roca flota y gira muy poco; al abrir, la fisura destella, se parte en dos y las mitades se apartan girando como dos hojas
+    // la roca flota y gira muy poco; al abrir, la fisura destella, se parte en cuatro y los cuartos se apartan girando
     mono.position.y = Y0 + (quieto ? 0 : Math.sin(ahora * 0.6) * 0.02);
     mono.rotation.y = quieto ? 0 : Math.sin(ahora * 0.13) * 0.07 * (1 - estado.abre);
-    const sep = 0.44 * estado.abre;
+    const sep = 0.44 * estado.abre, sepY = 0.3 * estado.abre;
     const zum = estado.zumbido * 0.0022 * Math.sin(ahora * 95), golpe = estado.golpe * 0.004 * Math.sin(ahora * 70);
-    mIzq.position.x = -sep - zum - golpe; mDer.position.x = sep + zum + golpe;
+    for (const m of cuartos) { const { sx, sy } = m.userData; m.position.set(sx * (sep + zum + golpe), sy * (sepY + (zum + golpe) * 0.6), 0); m.rotation.set(-sy * 0.09 * estado.giro, -sx * 0.28 * estado.giro, 0); }
     // campo: visible mientras hay separación o zumbido; parpadea un poco, como una descarga
     const vCampo = estado.campo * (0.75 + 0.25 * Math.sin(ahora * 23) * Math.sin(ahora * 7.3));
     matCampo.opacity = vCampo * 0.85; matChispa.opacity = vCampo;
@@ -482,10 +483,9 @@ function arranca() {
       }
       if (NCH) { const a = chG.attributes.position; for (let i = 0; i < NCH; i++) { chU[i] = (chU[i] + chV[i] * dt * (0.6 + estado.campo)) % 1; curva(lineas[chL[i]], s2); bez(chU[i], Q); a.array[i * 3] = Q.x; a.array[i * 3 + 1] = Q.y; a.array[i * 3 + 2] = Q.z; } a.needsUpdate = true; }
     }
-    mIzq.rotation.y = 0.28 * estado.giro; mDer.rotation.y = -0.28 * estado.giro;
     const pulso = quieto ? 0.85 : 0.7 + Math.sin(ahora * 1.3) * 0.22;
     matSello.opacity = Math.max(0, 1 - estado.abre * 2.5) * Math.min(1, pulso + estado.sello);
-    sello.scale.x = 1 + estado.sello * 2.5;
+    sello.scale.x = 1 + estado.sello * 2.5; selloH.scale.y = 1 + estado.sello * 2.5;
     matNucleo.opacity = estado.luz; nucleo.scale.x = 1 + estado.luz * 1.5;
     matHalo.opacity = 0.55 * estado.luz;
     luzNucleo.intensity = 30 * estado.luz; luzNucleo2.intensity = 18 * estado.luz;
