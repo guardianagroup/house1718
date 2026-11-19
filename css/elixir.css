@@ -308,6 +308,20 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 @media (pointer:coarse){.solo-pc{display:none}}
 .solo-movil{display:none!important}
 .t-movil{display:none}
+/* la espera tras enviar la invitación: un pulso tranquilo, como un latido de luz */
+.t-enviada,.espera-llamada,#cancelar-invitacion{display:none}
+#panel-crear.enviada .t-pc,#panel-crear.enviada .t-movil{display:none}
+#panel-crear.enviada .t-enviada{display:inline}
+#panel-crear.enviada .espera-llamada{display:block}
+#panel-crear.enviada #cancelar-invitacion{display:inline-flex}
+#panel-crear.enviada .texto-panel,#panel-crear.enviada #whatsapp,#panel-crear.enviada .par.ancho{display:none}
+.espera-llamada{position:relative;width:132px;height:132px;margin:6px auto 2px}
+.espera-llamada b{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#EAF2FA;box-shadow:0 0 18px rgba(156,195,228,.95),0 0 44px rgba(156,195,228,.5)}
+.espera-llamada i{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(156,195,228,.7);opacity:0;animation:onda 3.6s cubic-bezier(.2,.6,.3,1) infinite}
+.espera-llamada i:nth-child(2){animation-delay:1.2s}
+.espera-llamada i:nth-child(3){animation-delay:2.4s}
+@keyframes onda{0%{transform:scale(.12);opacity:.9}100%{transform:scale(1);opacity:0}}
+#panel-crear.enviada .estado{font-size:15px;color:var(--texto)}
 .controles .seg.nuevo::after{content:'';position:absolute;left:auto;right:10px;top:10px;bottom:auto;width:7px;height:7px;border-radius:50%;background:#9CC3E4;box-shadow:0 0 10px rgba(156,195,228,.9);opacity:1;transform:none;animation:none}
 .aviso.mal .etiqueta{color:var(--coral)}
 
@@ -444,4 +458,20 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   #panel-crear .par.ancho .seg{flex:0 0 auto;height:46px;padding:0 30px;border:1px solid rgba(255,255,255,.2);border-radius:2px}
   .estado{display:block;text-align:center}
   .estado .punto{display:inline-block;vertical-align:middle;margin:-2px 10px 0 0}
+}
+
+/* ---------- la invitación recibida: mientras se espera a la otra persona (dueño, 15:12: «entro en la llamada, pero se queda ahí») ---------- */
+#panel-invitado:not(.esperando) .estado,#panel-invitado:not(.esperando) .t-cancelar,#panel-invitado.esperando .t-volver{display:none}
+#panel-invitado.esperando .espera-llamada{display:block}
+#panel-invitado.esperando .texto-panel,#panel-invitado.esperando #entrar-llamada{display:none}
+#panel-invitado.esperando .estado{font-size:15px;color:var(--texto)}
+#panel-crear.caducada .espera-llamada{display:none}
+
+/* ---------- móviles y tabletas: sin desenfoque del fondo (dueño, 15:13: «tiene muchísimo lag») ----------
+   Sobre el 3D en movimiento, el navegador vuelve a desenfocar lo que hay detrás de cada cristal en cada cuadro: es lo que más pesa
+   en un teléfono. Sin desenfoque, la hoja de los paneles, casi opaca. */
+@media (pointer: coarse), (max-width:760px){
+  *,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .cristal.espejo{-webkit-box-reflect:none}
+  .panel{background:linear-gradient(180deg,rgba(14,17,22,.96),rgba(7,9,12,.98))}
 }

@@ -29,7 +29,20 @@ function arranca() {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: false, powerPreference: 'high-performance' }); } catch (_) { return null; }
   if (!renderer.getContext()) return null;
-  const PR = Math.min(devicePixelRatio || 1, ligero ? 1.75 : 2); // (dueño, 14:38: «veo pixelación… arriba y abajo»)
+  // Calidad según el equipo (dueño, 15:13: «tiene muchísimo lag… que funcione en cualquier tipo de dispositivo, de última generación
+  // o de bajos recursos»). 2: ordenador; 1: móvil o tableta; 0: equipo modesto (poca memoria, pocos núcleos o una gráfica sencilla).
+  // En los niveles 1 y 0, sin luces de área (cuestan en cada píxel: queda la luz horneada), sin antialiasing por muestras y con el
+  // espejo del suelo a menos resolución; en el 0, además, sin resplandor y a 30 cuadros por segundo. Y en todos, la resolución se
+  // ajusta sola al ritmo real de cuadros (abajo, «calidad»).
+  const gl = renderer.getContext();
+  let gpu = ''; try { const x = gl.getExtension('WEBGL_debug_renderer_info'); if (x) gpu = String(gl.getParameter(x.UNMASKED_RENDERER_WEBGL) || ''); } catch (_) {}
+  const esIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const modesto = (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4) || (!esIOS && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
+    /Mali-(4|T|G(31|51|52|57|68|71|72|76)\b)|Adreno[^0-9]*([1-5]\d\d|6[01]\d)\b|PowerVR|SwiftShader|llvmpipe|softpipe/i.test(gpu);
+  const pedida = /[?&]calidad=([012])\b/.exec(location.search);
+  const NIVEL = pedida ? +pedida[1] : modesto ? 0 : ligero || esIOS ? 1 : 2;
+  const PR_MAX = Math.min(devicePixelRatio || 1, [1, 1.5, 2][NIVEL]), PR_MIN = Math.min(PR_MAX, [0.6, 0.75, 1][NIVEL]);
+  let PR = PR_MAX;
   renderer.setPixelRatio(PR);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -68,7 +81,7 @@ function arranca() {
   // paneles y seis agujeros de tensor por panel, tapados con mortero, como el hormigón de Tadao Ando. La misma textura da el relieve:
   // lo oscuro (juntas, agujeros, poros) queda hundido.
   function texHormigon() {
-    const W = ligero ? 1024 : 2048, H = Math.round((W * 3) / 4.8), k = W / 4.8; // k: píxeles por metro
+    const W = [768, 1024, 2048][NIVEL], H = Math.round((W * 3) / 4.8), k = W / 4.8; // k: píxeles por metro
     const [c, g] = lienzo2d(W, H);
     g.fillStyle = 'rgb(118,122,127)'; g.fillRect(0, 0, W, H);
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
@@ -83,7 +96,7 @@ function arranca() {
     }
     g.filter = 'none';
     const s = W / 2048;
-    for (let n = 0; n < (ligero ? 2600 : 9000); n++) {
+    for (let n = 0; n < [1600, 2600, 9000][NIVEL]; n++) {
       const r = (0.5 + az() * az() * 2.6) * s; g.fillStyle = `rgba(38,42,46,${0.16 + az() * 0.42})`;
       g.beginPath(); g.arc(az() * W, az() * H, r, 0, 6.283); g.fill();
     }
@@ -133,7 +146,7 @@ function arranca() {
     const qx = Math.abs(x) - LX / 2, qz = Math.abs(z - LZC) - LZ / 2, d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
     return (0.05 + 0.1 * Math.exp(-d / 1.2) + 0.5 * Math.exp(-Math.max(z - FONDO - 0.22, 0) / 0.32)) * rincon(AN / 2 - Math.abs(x)) * rincon(z - FONDO) * rincon(FRENTE - z);
   }
-  const matHormigon = (luz, tono) => new THREE.MeshStandardMaterial({ map: hormigon, bumpMap: hormigon, bumpScale: 1.4, color: tono || 0xffffff, roughness: 0.8, metalness: 0, lightMap: luz, lightMapIntensity: 0.95 });
+  const matHormigon = (luz, tono) => new THREE.MeshStandardMaterial({ map: hormigon, bumpMap: NIVEL ? hormigon : null, bumpScale: 1.4, color: tono || 0xffffff, roughness: 0.8, metalness: 0, lightMap: luz, lightMapIntensity: [1.3, 1.15, 0.95][NIVEL] });
   // un paramento de (x1, z1) a (x2, z2), mirando hacia dentro; la textura va en metros y una junta cae en la esquina del fondo
   function muro(x1, z1, x2, z2, cual, juntaAlFinal) {
     const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz);
@@ -160,10 +173,10 @@ function arranca() {
 
   // ---------------- el suelo: piedra negra pulida ----------------
   // un espejo y, encima, una capa muy fina de piedra negra con sus juntas (dueño, 14:50: «abajo debe ser efecto espejo»)
-  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0xb9bfc6, multisample: 4 });
+  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0xb9bfc6, multisample: NIVEL === 2 ? 4 : 0 });
   espejo.rotation.x = -Math.PI / 2; espejo.position.set(0, 0, ZM); escena.add(espejo);
   function texLosas() {
-    const N = ligero ? 512 : 1024, k = N / 4.8, [c, g] = lienzo2d(N, N);
+    const N = NIVEL === 2 ? 1024 : 512, k = N / 4.8, [c, g] = lienzo2d(N, N);
     g.fillStyle = 'rgba(8,9,12,.2)'; g.fillRect(0, 0, N, N);
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = `rgba(9,11,14,${0.01 + az() * 0.03})`; g.fillRect((i * N) / 2, (j * N) / 2, N / 2, N / 2); }
     g.filter = `blur(${Math.round(k * 0.08)}px)`;
@@ -176,7 +189,7 @@ function arranca() {
     const r = LARGO / (2 * PX); t.repeat.set(AN / (2 * PX), r); t.offset.set(0, Math.ceil(r * 2 - 1e-6) / 2 - r); // juntas alineadas con el fondo
     return t;
   }
-  const piedra = new THREE.Mesh(new THREE.PlaneGeometry(AN, LARGO), new THREE.MeshPhysicalMaterial({ map: texLosas(), transparent: true, roughness: 0.4, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.2 }));
+  const piedra = new THREE.Mesh(new THREE.PlaneGeometry(AN, LARGO), NIVEL === 2 ? new THREE.MeshPhysicalMaterial({ map: texLosas(), transparent: true, roughness: 0.4, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.2 }) : new THREE.MeshStandardMaterial({ map: texLosas(), transparent: true, roughness: 0.4, metalness: 0 }));
   piedra.rotation.x = -Math.PI / 2; piedra.position.set(0, 0.002, ZM); piedra.receiveShadow = true; escena.add(piedra);
 
   // ---------------- acero ----------------
@@ -207,7 +220,7 @@ function arranca() {
   { const m = new THREE.Mesh(new THREE.PlaneGeometry(AN - 0.1, 0.05), matRanura); m.rotation.x = Math.PI / 2; m.position.set(0, AL - 0.003, FONDO + 0.22); escena.add(m); }
   // y la luz que de verdad dan: una tira de área por pared, a la altura de la junta
   const tira = (w, x, z, mx, mz) => { const a = new THREE.RectAreaLight(0xe8f1fa, 3, w, 0.05); a.position.set(x, Y_LINEA, z); a.lookAt(mx, Y_LINEA, mz); escena.add(a); };
-  tira(AN, 0, FONDO + 0.03, 0, 0); tira(AN, 0, FRENTE - 0.03, 0, 0); tira(LARGO, -AN / 2 + 0.03, ZM, 0, ZM); tira(LARGO, AN / 2 - 0.03, ZM, 0, ZM);
+  if (NIVEL === 2) { tira(AN, 0, FONDO + 0.03, 0, 0); tira(AN, 0, FRENTE - 0.03, 0, 0); tira(LARGO, -AN / 2 + 0.03, ZM, 0, ZM); tira(LARGO, AN / 2 - 0.03, ZM, 0, ZM); }
   escena.add(new THREE.HemisphereLight(0x3a4452, 0x050607, 0.08));
 
   // ---------------- la luz sobre la roca ----------------
@@ -215,7 +228,7 @@ function arranca() {
   // de la roca en el suelo; otra, más suave, le saca el relieve por delante.
   const cenital = new THREE.SpotLight(0xeaf2fb, 70, 0, 0.5, 0.9, 2); cenital.position.set(0.5, AL - 0.05, Z0 + 0.9); cenital.target.position.set(0, 0.4, Z0);
   escena.add(cenital, cenital.target);
-  const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, AL - 0.012, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum);
+  if (NIVEL === 2) { const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, AL - 0.012, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum); }
 
   // ---------------- la roca ----------------
   // Dueño, 14:40 y 14:50 (con una imagen de referencia: «la piedra no se ve real como la que te envié»): una roca natural, oscura y
@@ -268,7 +281,7 @@ function arranca() {
     float granoR(vec3 p) { return 0.55 * vnR(p) + 0.3 * vnR(p * 2.13 + 7.1) + 0.15 * vnR(p * 4.37 - 3.3); }
   `;
   const HOLO_V = `
-    uniform float t, glitch;
+    uniform float t, glitch, nivel, paso, alto;
     varying vec3 vN, vV, vP; varying float vAo;
     float h1(float n) { return fract(sin(n) * 43758.5453); }
     ${GLSL_RUIDO}
@@ -276,13 +289,16 @@ function arranca() {
       vec3 p = position;
       float banda = floor(p.y * 16.0), salto = step(0.986, h1(banda * 12.9898 + floor(t * 6.0) * 78.233)) * glitch;
       p.x += salto * 0.03 * sin(t * 90.0 + banda);
+      // en el frente del cambio de luz, la proyección tiembla un instante (como si la roca se volviera a proyectar)
+      float dF = p.y / alto + 0.5 - nivel;
+      p.x += exp(-dF * dF / 0.0012) * paso * glitch * 0.011 * sin(t * 70.0 + p.y * 90.0);
       p += normal * (vnR(p * 9.0 + vec3(0.0, t * 0.7, 0.0)) - 0.5) * 0.004 * glitch; // la superficie de luz respira
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
       vN = normalize(normalMatrix * normal); vV = -mv.xyz; vP = position; vAo = color.r;
       gl_Position = projectionMatrix * mv;
     }`;
   const HOLO_F = `
-    uniform float t, brillo; uniform vec3 hielo, blanco;
+    uniform float t, brillo, nivel, paso, alto, sube; uniform vec3 hielo, blanco, profundo;
     varying vec3 vN, vV, vP; varying float vAo;
     ${GLSL_RUIDO}
     float h2(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -306,13 +322,38 @@ function arranca() {
       float banda = smoothstep(0.1, 0.0, abs(fract(vP.y * 0.3 - t * 0.11) - 0.5));
       float grano = (h2(gl_FragCoord.xy + fract(t * 3.1) * 91.0) - 0.5) * 0.06;
       float parpadeo = 0.95 + 0.05 * sin(t * 37.0) * sin(t * 11.3);
-      float a = (cuerpo * 0.36 + fres * 0.42 + linea * 0.09 + banda * 0.1 + grano) * (gl_FrontFacing ? 1.0 : 0.28);
+      float atras = gl_FrontFacing ? 1.0 : 0.28;
+      // claro: la luz blanca y hielo
+      float a = (cuerpo * 0.36 + fres * 0.42 + linea * 0.09 + banda * 0.1 + grano) * atras;
       vec3 col = mix(hielo, blanco, clamp(cuerpo * 0.45 + fres * 0.55, 0.0, 1.0));
       col += vec3(-0.12, 0.02, 0.1) * fres * n.x; // un borde algo cian a un lado y algo violeta al otro, como en una lente
-      gl_FragColor = vec4(max(col, 0.0) * max(a, 0.0) * brillo * parpadeo, 1.0);
+      vec3 claro = max(col, 0.0) * max(a, 0.0);
+      // oscuro (dueño, 15:10: «en vez de blanco, que sea más oscuro»): un cristal de noche que apaga lo que hay detrás; el relieve y
+      // los cantos, en azul profundo; las líneas de barrido, apenas
+      float aO = (cuerpo * 0.08 + fres * 0.55 + linea * 0.05 + banda * 0.06 + grano * 0.5) * (gl_FrontFacing ? 1.0 : 0.4);
+      vec3 colO = mix(profundo, hielo, clamp(fres * 0.85 + cuerpo * 0.2, 0.0, 1.0));
+      colO += vec3(-0.06, 0.0, 0.09) * fres * n.x;
+      vec3 oscuro = max(colO, 0.0) * max(aO, 0.0);
+      float tapa = (0.48 + 0.32 * cuerpo) * (gl_FrontFacing ? 1.0 : 0.6);
+      // el cambio (15:17: «que vaya cambiando de blanco a oscuro… la transición tiene que ser espectacular»): un frente recorre la
+      // roca (lo oscuro sube desde abajo; la luz vuelve bajando desde arriba), con el borde irregular de la piedra, un filo de luz
+      // blanca, chispas y una estela que se apaga detrás
+      float hy = vP.y / alto + 0.5;
+      float fr = nivel + (vnR(vP * 3.2 + vec3(0.0, t * 0.3, 0.0)) - 0.5) * 0.12 + (h - 0.6) * 0.04;
+      float d = hy - fr;
+      float o = 1.0 - smoothstep(-0.01, 0.01, d);
+      float filo = exp(-d * d / 0.00016) * paso;
+      float chispa = step(0.955, h2(floor(vP.xz * 240.0 + vP.y * 37.0) + floor(t * 24.0))) * exp(-d * d / 0.0014) * paso;
+      float tras = -d * sube;
+      float estela = tras > 0.0 ? exp(-tras * 16.0) * paso : 0.0;
+      vec3 rgb = mix(claro, oscuro, o) + (blanco * (filo * 1.8 + chispa * 2.4) + hielo * estela * 0.22) * atras;
+      gl_FragColor = vec4(rgb * brillo * parpadeo, tapa * o);
     }`;
-  const uHolo = { t: { value: 0 }, glitch: { value: quieto ? 0 : 1 }, brillo: { value: 1 }, hielo: { value: new THREE.Color(0x5aa6e8) }, blanco: { value: new THREE.Color(0xdcecfb) } };
-  const matRoca = new THREE.ShaderMaterial({ uniforms: uHolo, vertexShader: HOLO_V, fragmentShader: HOLO_F, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const uHolo = { t: { value: 0 }, glitch: { value: quieto ? 0 : 1 }, brillo: { value: 1 }, hielo: { value: new THREE.Color(0x5aa6e8) }, blanco: { value: new THREE.Color(0xdcecfb) },
+    nivel: { value: quieto ? 1.2 : -0.2 }, paso: { value: 0 }, sube: { value: 1 }, alto: { value: ALTO }, ambiente: { value: 1 }, profundo: { value: new THREE.Color(0x0c1f36) } };
+  const matRoca = new THREE.ShaderMaterial({ uniforms: uHolo, vertexShader: HOLO_V, fragmentShader: HOLO_F, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    // premultiplicado: en lo claro suma luz (como antes); en lo oscuro, además, apaga lo que hay detrás
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor });
   // las caras del corte, al abrirse: una sección de escáner, con su retícula
   const matCorte = new THREE.ShaderMaterial({
     uniforms: uHolo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
@@ -322,7 +363,7 @@ function arranca() {
         gl_FragColor = vec4(hielo * (0.05 + 0.3 * red) * brillo, 1.0); }`,
   });
   const mono = new THREE.Group(); mono.position.set(0, Y0, Z0); escena.add(mono);
-  const baseRoca = new THREE.OctahedronGeometry(1, ligero ? 56 : 72).attributes.position; // sin índices: tres vértices por triángulo
+  const baseRoca = new THREE.OctahedronGeometry(1, [40, 52, 72][NIVEL]).attributes.position; // sin índices: tres vértices por triángulo
   const cuartos = [];
   {
     // cada dirección se calcula una vez (en el octaedro, cada vértice se repite en varios triángulos)
@@ -380,21 +421,21 @@ function arranca() {
     const haz = new THREE.Mesh(new THREE.CylinderGeometry(RP + 0.26, RP, alto, 96, 1, true), new THREE.ShaderMaterial({
       uniforms: uHolo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       vertexShader: 'varying vec2 vU; varying vec3 vN, vV; void main() { vU = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }',
-      fragmentShader: `uniform float t, brillo; uniform vec3 hielo; varying vec2 vU; varying vec3 vN, vV;
+      fragmentShader: `uniform float t, brillo, ambiente; uniform vec3 hielo; varying vec2 vU; varying vec3 vN, vV;
         void main() { float lado = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5); float rayas = 0.6 + 0.4 * sin(vU.x * 6.2832 * 48.0 + t * 0.6);
-          gl_FragColor = vec4(hielo * (1.0 - vU.y) * (1.0 - vU.y) * (0.03 + 0.16 * lado) * rayas * brillo, 1.0); }`,
+          gl_FragColor = vec4(hielo * (1.0 - vU.y) * (1.0 - vU.y) * (0.03 + 0.16 * lado) * rayas * brillo * ambiente, 1.0); }`,
     }));
     haz.position.set(0, alto / 2, Z0); escena.add(haz);
     // el brillo del emisor en el suelo
     const [cv, gv] = lienzo2d(256, 256), rg = gv.createRadialGradient(128, 128, 0, 128, 128, 128);
     rg.addColorStop(0, 'rgba(255,255,255,.9)'); rg.addColorStop(0.32, 'rgba(255,255,255,.28)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); gv.fillStyle = rg; gv.fillRect(0, 0, 256, 256);
     const charco = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0x5aa6e8).multiplyScalar(0.55), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
-    charco.rotation.x = -Math.PI / 2; charco.position.set(0, 0.006, Z0); escena.add(charco);
+    charco.rotation.x = -Math.PI / 2; charco.position.set(0, 0.006, Z0); escena.add(charco); motas.charco = charco; motas.cc = charco.material.color.clone();
     // motas de polvo que suben dentro del haz y brillan al cruzarlo
-    const NM = quieto ? 0 : 90, mp = new Float32Array(NM * 3); motas.v = new Float32Array(NM);
+    const NM = quieto ? 0 : [40, 70, 90][NIVEL], mp = new Float32Array(NM * 3); motas.v = new Float32Array(NM);
     for (let k = 0; k < NM; k++) { const a = az() * 6.283, r = Math.sqrt(az()) * (RP + 0.1); mp[k * 3] = Math.cos(a) * r; mp[k * 3 + 1] = az() * (Y0 + ALTO / 2); mp[k * 3 + 2] = Z0 + Math.sin(a) * r; motas.v[k] = 0.04 + az() * 0.08; }
     motas.g = new THREE.BufferGeometry(); motas.g.setAttribute('position', new THREE.BufferAttribute(mp, 3));
-    escena.add(new THREE.Points(motas.g, new THREE.PointsMaterial({ map: texPuntoH, color: new THREE.Color(0x9cc3e4).multiplyScalar(1.4), size: 0.018, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })));
+    motas.mat = new THREE.PointsMaterial({ map: texPuntoH, color: new THREE.Color(0x9cc3e4).multiplyScalar(1.4), size: 0.018, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }); escena.add(new THREE.Points(motas.g, motas.mat));
   }
   // la luz del holograma: tiñe de azul la sala y el suelo, y tiembla con él
   const luzHolo = new THREE.PointLight(0x6fb0ea, 3.2, 7, 2); luzHolo.position.set(0, Y0 - 0.2, Z0 + 0.35); escena.add(luzHolo);
@@ -414,7 +455,7 @@ function arranca() {
   const texHalo = (() => { const [c, g] = lienzo2d(128, 256), r = g.createRadialGradient(64, 128, 0, 64, 128, 128); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.35)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 256); return new THREE.CanvasTexture(c); })();
   const matHalo = new THREE.MeshBasicMaterial({ map: texHalo, color: 0x9cc3e4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   const halo = new THREE.Mesh(new THREE.PlaneGeometry(1.4, ALTO + 0.6), matHalo); halo.position.z = -0.01; mono.add(halo);
-  const luzNucleo = new THREE.RectAreaLight(0xcfe3f6, 0, 0.1, ALTO - 0.3); luzNucleo.position.set(0, 0, 0.05); mono.add(luzNucleo);
+  const luzNucleo = NIVEL === 2 ? new THREE.RectAreaLight(0xcfe3f6, 0, 0.1, ALTO - 0.3) : { intensity: 0 }; if (luzNucleo.isLight) { luzNucleo.position.set(0, 0, 0.05); mono.add(luzNucleo); }
   const luzNucleo2 = new THREE.PointLight(0xbfdcf5, 0, 14, 2); luzNucleo2.position.set(0, 0, 0.7); mono.add(luzNucleo2);
 
   // ---------------- lo que refleja el acero: la propia sala ----------------
@@ -423,7 +464,7 @@ function arranca() {
   {
     const brillan = [matLinea, matRanura]; for (const m of brillan) m.color.multiplyScalar(3);
     for (const m of cuartos) m.visible = false; sello.visible = false; espejo.visible = false;
-    const entorno = pmrem.fromScene(escena, 0, 0.05, 40, { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: ligero ? 256 : 512 }).texture;
+    const entorno = pmrem.fromScene(escena, 0, 0.05, 40, { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: [128, 256, 512][NIVEL] }).texture;
     for (const m of cuartos) m.visible = true; sello.visible = true; espejo.visible = true;
     for (const m of brillan) m.color.multiplyScalar(1 / 3);
     for (const [m, k] of [[matAcero, 1]]) { m.envMap = entorno; m.envMapIntensity = k; m.needsUpdate = true; }
@@ -442,7 +483,7 @@ function arranca() {
     const lado = k % 2 ? 1 : -1, i = Math.floor(k / 2), n = Math.ceil(ML / 2) - 1;
     lineas.push({ l, lado, y: (-0.42 + (0.84 * i) / n) * ALTO, fase: Math.random() * 6.28 });
   }
-  const NCH = quieto ? 0 : 160, chPos = new Float32Array(NCH * 3), chU = new Float32Array(NCH), chL = new Uint8Array(NCH), chV = new Float32Array(NCH);
+  const NCH = quieto ? 0 : [70, 120, 160][NIVEL], chPos = new Float32Array(NCH * 3), chU = new Float32Array(NCH), chL = new Uint8Array(NCH), chV = new Float32Array(NCH);
   for (let i = 0; i < NCH; i++) { chU[i] = Math.random(); chL[i] = Math.floor(Math.random() * ML); chV[i] = 0.25 + Math.random() * 0.6; }
   const chG = new THREE.BufferGeometry(); chG.setAttribute('position', new THREE.BufferAttribute(chPos, 3));
   const matChispa = new THREE.PointsMaterial({ map: texPunto, color: new THREE.Color(0xe3f0fb).multiplyScalar(1.6), size: 0.022, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
@@ -457,7 +498,7 @@ function arranca() {
   }
 
   // ---------------- polvo en la luz (muy poco) ----------------
-  const N = quieto ? 0 : 160, pos = new Float32Array(N * 3), vel = new Float32Array(N);
+  const N = quieto ? 0 : [50, 100, 160][NIVEL], pos = new Float32Array(N * 3), vel = new Float32Array(N);
   for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - 0.5) * (AN - 1); pos[i * 3 + 1] = Math.random() * (AL - 0.3); pos[i * 3 + 2] = FONDO + 0.5 + Math.random() * 9; vel[i] = 0.015 + Math.random() * 0.035; }
   const polvoG = new THREE.BufferGeometry(); polvoG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   escena.add(new THREE.Points(polvoG, new THREE.PointsMaterial({ map: texPunto, color: 0xd7e3ef, size: 0.012, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending })));
@@ -465,9 +506,10 @@ function arranca() {
   // ---------------- composición ----------------
   // con antialiasing de verdad (MSAA en el búfer de la composición), un poco de resplandor en las luces y un grano finísimo que evita
   // los escalones en los degradados oscuros
-  const comp = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+  const comp = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: NIVEL === 2 ? 4 : 0 }));
   comp.addPass(new RenderPass(escena, camara));
-  comp.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.55, 0.92));
+  const resplandor = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.55, 0.92); resplandor.enabled = NIVEL >= 1;
+  comp.addPass(resplandor);
   comp.addPass(new OutputPass());
   const grano = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, semilla: { value: 0 } },
@@ -476,17 +518,22 @@ function arranca() {
       'float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n' +
       'void main() { vec4 c = texture2D(tDiffuse, vUv); float n = h(gl_FragCoord.xy + semilla) + h(gl_FragCoord.yx * 1.37 - semilla) - 1.0; c.rgb += n * 0.011; gl_FragColor = c; }',
   });
-  comp.addPass(grano);
+  comp.addPass(grano); grano.enabled = NIVEL >= 1;
 
   function ajusta() {
     const w = lienzo.clientWidth || innerWidth, h = lienzo.clientHeight || innerHeight;
     renderer.setSize(w, h, false); comp.setSize(w, h);
-    const ESP = 0.85; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
+    const ESP = [0.35, 0.5, 0.85][NIVEL]; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
-    camara.fov = camara.aspect < 0.8 ? 64 : camara.aspect < 1.2 ? 54 : camara.aspect > 2.1 ? 38 : 44;
+    camara.fov = camara.aspect < 0.8 ? 56 : camara.aspect < 1.2 ? 54 : camara.aspect > 2.1 ? 38 : 44;
+    // en el móvil de pie (dueño, 15:41: «arriba queda mucho espacio, aprovéchalo»): la roca, más grande y más arriba (la imagen se
+    // desplaza como con un objetivo descentrable, sin deformar), y abajo el suelo espejo y el botón; al abrir, se acerca menos
+    retrato = camara.aspect < 0.8;
+    if (retrato) camara.setViewOffset(w, h, 0, Math.round(h * 0.14), w, h); else camara.clearViewOffset();
     camara.updateProjectionMatrix();
   }
+  let retrato = false;
   addEventListener('resize', ajusta); ajusta();
 
   // ---------------- animación ----------------
@@ -502,6 +549,7 @@ function arranca() {
   let abierta = false, ocupada = false;
   async function abre() {
     if (abierta || ocupada) return; ocupada = true;
+    giro.obj = 0; giro.dedo = null;
     tween('sello', estado.sello, 1, 0.45 * F, ease.out);
     tween('zumbido', 0, 1, 0.5 * F, ease.in);
     tween('campo', 0, 1, 0.5 * F, ease.out, 0.35 * F);
@@ -512,7 +560,7 @@ function arranca() {
     tween('campo', 1, 0.28, 1.6 * F, ease.io, 1.6 * F);
     tween('dolly', 0, 1, 2.2 * F, ease.io, 0.45 * F);
     await new Promise((r) => setTimeout(r, 2150 * F));
-    abierta = true; ocupada = false;
+    abierta = true; ocupada = false; giro.v = 0;
   }
   async function cierra() {
     if (!abierta || ocupada) return; ocupada = true;
@@ -528,19 +576,79 @@ function arranca() {
   }
 
   const mira = { x: 0, y: 0, tx: 0, ty: 0 };
-  if (!quieto) addEventListener('pointermove', (e) => { mira.tx = e.clientX / innerWidth - 0.5; mira.ty = e.clientY / innerHeight - 0.5; });
+  if (!quieto) addEventListener('pointermove', (e) => { if (e.pointerType !== 'mouse') return; mira.tx = e.clientX / innerWidth - 0.5; mira.ty = e.clientY / innerHeight - 0.5; });
+  // Dueño, 15:11: «que si la persona con el móvil desliza pueda ver 180 grados la roca holográfica… un recorrido por toda la página
+  // web, no de alto y de bajo, solamente hacia los lados». Deslizar a los lados en cualquier parte de la página (no sobre un botón,
+  // un panel o la tabla) gira la roca: el ancho de la pantalla son 180 grados, con inercia y un tope suave a 90 grados por cada lado.
+  // Arriba y abajo sigue siendo la página. Si nadie la toca en un rato, vuelve despacio de frente; al abrirla, de frente.
+  const GIRO_MAX = Math.PI / 2;
+  const giro = { v: 0, obj: 0, vel: 0, dedo: null, x0: 0, y0: 0, g0: 0, lado: 0, ux: 0, ut: 0, toque: -99 };
+  const noGira = (t) => !!(t && t.closest && t.closest('button, a, input, textarea, select, label, video, dialog, .panel, .sala, .aviso, .tabla, [data-no-gira]'));
+  addEventListener('pointerdown', (e) => {
+    if (giro.dedo !== null || (e.pointerType === 'mouse' && e.button !== 0) || noGira(e.target) || abierta || ocupada || pausado) return;
+    giro.dedo = e.pointerId; giro.x0 = giro.ux = e.clientX; giro.y0 = e.clientY; giro.g0 = giro.obj; giro.lado = 0; giro.vel = 0; giro.ut = performance.now();
+  }, { passive: true });
+  addEventListener('pointermove', (e) => {
+    if (e.pointerId !== giro.dedo) return;
+    const dx = e.clientX - giro.x0, dy = e.clientY - giro.y0;
+    if (!giro.lado) { if (Math.hypot(dx, dy) < 8) return; if (Math.abs(dx) < Math.abs(dy) * 1.15) { giro.dedo = null; return; } giro.lado = 1; }
+    const ancho = Math.max(320, innerWidth);
+    let g = giro.g0 + (dx / ancho) * Math.PI;
+    if (g > GIRO_MAX) g = GIRO_MAX + (g - GIRO_MAX) * 0.25; else if (g < -GIRO_MAX) g = -GIRO_MAX + (g + GIRO_MAX) * 0.25;
+    giro.obj = g;
+    const t = performance.now(), d = Math.max(8, t - giro.ut);
+    giro.vel = giro.vel * 0.5 + (((e.clientX - giro.ux) / ancho) * Math.PI * 1000 / d) * 0.5; giro.ux = e.clientX; giro.ut = t;
+    giro.toque = ahora;
+  }, { passive: true });
+  const suelta = (e) => {
+    if (e.pointerId !== giro.dedo) return;
+    giro.dedo = null;
+    if (giro.lado) { giro.obj = Math.max(-GIRO_MAX, Math.min(GIRO_MAX, giro.obj + Math.max(-3, Math.min(3, giro.vel)) * 0.16)); giro.toque = ahora; }
+  };
+  addEventListener('pointerup', suelta, { passive: true }); addEventListener('pointercancel', suelta, { passive: true });
+  // el ciclo de la luz del holograma: claro, el paso a oscuro, oscuro y el paso de vuelta (segundos)
+  const CICLO = { claro: 5, paso: 2.6, oscuro: 8 }; CICLO.total = CICLO.claro + CICLO.oscuro + 2 * CICLO.paso;
+  let holoFijo = null;
   let antes = performance.now(), vivo = true, pausado = false;
   const delta = () => { const t = performance.now(), d = (t - antes) / 1000; antes = t; return d; };
   document.addEventListener('visibilitychange', () => { vivo = document.visibilityState === 'visible'; if (vivo) delta(); });
 
-  function cuadro() {
+  // la resolución se adapta: si no llega al ritmo, baja; si va holgada un rato, sube (hasta el máximo de su nivel); en lo más bajo, y
+  // si aún no llega, sin resplandor ni grano
+  let med = 1 / 60, cuenta = 0, holgado = 0, tCal = 0;
+  const OBJ = NIVEL === 0 ? 1 / 30 : 1 / 60;
+  function calidad(real) {
+    if (real > 0.25 || ++cuenta < 90) return; // los primeros cuadros compilan
+    med += (real - med) * 0.06;
+    if (ahora - tCal < 1.6) return; tCal = ahora;
+    let nuevo = PR;
+    if (med > OBJ * 1.3 && PR > PR_MIN + 0.01) { nuevo = Math.max(PR_MIN, PR * 0.84); holgado = 0; }
+    else if (med > OBJ * 1.55 && resplandor.enabled) { resplandor.enabled = false; grano.enabled = false; }
+    else if (med < OBJ * 1.08) { if (++holgado >= 3 && PR < PR_MAX - 0.01) { nuevo = Math.min(PR_MAX, PR * 1.12); holgado = 0; } }
+    else holgado = 0;
+    if (Math.abs(nuevo - PR) > 0.01) { PR = nuevo; renderer.setPixelRatio(PR); comp.setPixelRatio(PR); ajusta(); }
+  }
+  // en equipos modestos, 30 cuadros por segundo; al bajar por la página (la sala queda tapada), quieta
+  const MIN_MS = NIVEL === 0 ? 1000 / 31 : 0;
+  let ultimo = 0;
+  function cuadro(tq) {
     requestAnimationFrame(cuadro);
     if (!vivo || pausado) return;
-    const dt = Math.min(delta(), DT_MAX); ahora += dt;
+    if (scrollY > innerHeight * 1.05 && !tramos.length) { antes = performance.now(); return; }
+    tq = tq || performance.now();
+    if (MIN_MS && tq - ultimo < MIN_MS) return;
+    ultimo = tq;
+    const real = delta(), dt = Math.min(real, DT_MAX); ahora += dt;
+    calidad(real);
     for (let i = tramos.length - 1; i >= 0; i--) { const x = tramos[i]; if (ahora < x.t0) continue; const p = Math.min(1, (ahora - x.t0) / x.dur); x.set(x.e(p)); if (p >= 1) { tramos.splice(i, 1); x.res(); } }
     // la roca flota y gira muy poco; al abrir, la fisura destella, se parte en cuatro y los cuartos se apartan girando
     mono.position.y = Y0 + (quieto ? 0 : Math.sin(ahora * 0.6) * 0.02);
-    mono.rotation.y = quieto ? 0 : Math.sin(ahora * 0.13) * 0.07 * (1 - estado.abre);
+    if (giro.dedo === null) {
+      if (giro.obj > GIRO_MAX) giro.obj += (GIRO_MAX - giro.obj) * Math.min(1, dt * 8); else if (giro.obj < -GIRO_MAX) giro.obj += (-GIRO_MAX - giro.obj) * Math.min(1, dt * 8);
+      if (ahora - giro.toque > 9) giro.obj *= Math.exp(-dt * 0.45);
+    }
+    giro.v += (giro.obj - giro.v) * Math.min(1, dt * (giro.dedo === null ? 4 : 16));
+    mono.rotation.y = (giro.v + (quieto ? 0 : Math.sin(ahora * 0.13) * 0.07)) * Math.max(0, 1 - estado.abre);
     const sep = 0.44 * estado.abre, sepY = 0.3 * estado.abre;
     const zum = estado.zumbido * 0.0022 * Math.sin(ahora * 95), golpe = estado.golpe * 0.004 * Math.sin(ahora * 70);
     const partido = estado.abre > 0.002;
@@ -568,19 +676,36 @@ function arranca() {
     mira.x += (mira.tx - mira.x) * 0.035; mira.y += (mira.ty - mira.y) * 0.035;
     const d = estado.dolly;
     const dx = quieto ? 0 : Math.sin(ahora * 0.19) * 0.06, dy = quieto ? 0 : Math.cos(ahora * 0.15) * 0.035;
-    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * 2.3);
+    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * (retrato ? 1.6 : 2.3));
     camara.lookAt(0, 1.95 + d * 0.06, Z0 - 0.4);
     if (N) { const a = polvoG.attributes.position; for (let i = 0; i < N; i++) { let y = a.array[i * 3 + 1] + vel[i] * dt * 0.3; if (y > AL - 0.2) y = 0.1; a.array[i * 3 + 1] = y; a.array[i * 3] += Math.sin(ahora * 0.25 + i) * 0.0003; } a.needsUpdate = true; }
     if (!quieto) { grano.uniforms.semilla.value = (ahora * 61.7) % 997; uHolo.t.value = ahora; }
     uHolo.brillo.value = 1 + 0.6 * estado.sello;
-    luzHolo.intensity = (3.2 + 2.5 * estado.sello) * (0.95 + 0.05 * Math.sin(ahora * 37) * Math.sin(ahora * 11.3));
+    // de luz a oscuro y vuelta: el frente sube (lo oscuro llega desde abajo) y luego baja (la luz vuelve desde arriba)
+    if (holoFijo !== null) uHolo.nivel.value = holoFijo;
+    else if (!quieto) {
+      const c = ahora % CICLO.total, p1 = CICLO.claro, p2 = p1 + CICLO.paso, p3 = p2 + CICLO.oscuro;
+      if (c < p1) { uHolo.nivel.value = -0.2; uHolo.sube.value = 1; }
+      else if (c < p2) { uHolo.nivel.value = -0.2 + 1.4 * ease.suave((c - p1) / CICLO.paso); uHolo.sube.value = 1; }
+      else if (c < p3) { uHolo.nivel.value = 1.2; uHolo.sube.value = -1; }
+      else { uHolo.nivel.value = 1.2 - 1.4 * ease.suave((c - p3) / CICLO.paso); uHolo.sube.value = -1; }
+    }
+    const nh = uHolo.nivel.value, oscura = Math.min(1, Math.max(0, nh)), filo = Math.max(0, Math.min(1, (nh + 0.1) / 0.15, (1.1 - nh) / 0.15));
+    uHolo.paso.value = filo;
+    uHolo.ambiente.value = 1 - 0.55 * oscura + 0.35 * filo;
+    if (motas.charco) motas.charco.material.color.copy(motas.cc).multiplyScalar(1 - 0.6 * oscura + 0.5 * filo);
+    if (motas.mat) motas.mat.opacity = 0.55 * (1 - 0.5 * oscura + 0.4 * filo);
+    luzHolo.intensity = (3.2 * (1 - 0.65 * oscura) + 2.5 * estado.sello + 2.4 * filo) * (0.95 + 0.05 * Math.sin(ahora * 37) * Math.sin(ahora * 11.3));
     if (motas.g && !quieto) { const a = motas.g.attributes.position; for (let k = 0; k < a.count; k++) { let y = a.array[k * 3 + 1] + motas.v[k] * dt; if (y > Y0 + ALTO / 2) y = 0.02; a.array[k * 3 + 1] = y; } a.needsUpdate = true; }
     comp.render();
   }
-  cuadro();
+  requestAnimationFrame(cuadro);
   // la sala de la conversación tapa el 3D: mientras tanto, quieto (sin gastar la tarjeta gráfica durante la videollamada)
   const pausa = (si) => { pausado = !!si; if (!pausado) delta(); };
-  return { abre, cierra, pausa, abierta: () => abierta };
+  return { abre, cierra, pausa, abierta: () => abierta,
+    // para las pruebas y la imagen de la invitación: la calidad elegida, girar la roca y fijar la luz del holograma (null: el ciclo)
+    calidad: () => ({ nivel: NIVEL, pr: +PR.toFixed(2), ms: +(med * 1000).toFixed(1), resplandor: resplandor.enabled, gpu }),
+    gira: (g) => { giro.obj = giro.v = g; giro.toque = ahora; }, holo: (n) => { holoFijo = n == null ? null : +n; } };
 }
 
 let api = null;

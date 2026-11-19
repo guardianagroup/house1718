@@ -109,6 +109,18 @@
     } finally { d.olvida(); }
   }
 
+  // Invitar desde el móvil (dueño, 15:15: «con los mínimos clics posibles… en el móvil no hará falta meter el código»): la semilla
+  // nace en la página y viaja entera (256 bits) en el enlace de WhatsApp, en el fragmento; no hay código ni sobre en el relé. Si el
+  // teléfono cierra la página mientras se está en WhatsApp, al volver se entra en la misma sala con la misma semilla (puerta.js).
+  // No espera al relé: la sala se pide en cuanto haya conexión (rele.js la vuelve a pedir al reconectar).
+  async function invitaSemilla(semilla) {
+    if (!(semilla instanceof Uint8Array) || semilla.length !== 32) return { ok: false, por: 'no-vale' };
+    if (!B.hayBlindada()) return { ok: false, por: 'sin-pq' };
+    if (S) termina('nueva');
+    await nuevaSesion(semilla, 'crea');
+    return { ok: true };
+  }
+
   // Enlace de máxima protección (agencia, ronda 96, b: las dos voces): la semilla entera (256 bits) en el fragmento «#e=», que el
   // navegador no manda a ningún servidor. Al pedirlo, el código sale del relé: desde ese momento solo vale el enlace.
   function enlace() {
@@ -818,7 +830,7 @@
 
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, enlace, entraSemilla, invitaSemilla,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

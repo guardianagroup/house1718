@@ -89,10 +89,17 @@
       $('#empezar').focus({ preventScroll: true });
     } finally { ocupado = false; }
   }
-  $('#empezar').addEventListener('click', abre);
-  for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', abre);
-  for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', cierra);
-  for (const b of document.querySelectorAll('[data-volver-elige]')) b.addEventListener('click', () => { if (M && M.activa) M.termina('cancela'); paraReloj(); ponError('elige', ''); muestra('elige'); });
+  // en el móvil, el botón de la portada es «Invitar a una llamada» (abajo, invitaMovil); en el ordenador, «Empezar prueba»
+  const empieza = () => (enMovil() ? invitaMovil() : abre());
+  $('#empezar').addEventListener('click', empieza);
+  for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', empieza);
+  for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', () => { olvidaInvitacion(); cierra(); });
+  // «Cancelar» y «Volver»: en el móvil, a la portada (no hay más pasos); en el ordenador, a elegir
+  for (const b of document.querySelectorAll('[data-volver-elige]')) b.addEventListener('click', () => {
+    if (M && M.activa) M.termina('cancela'); paraReloj(); olvidaInvitacion();
+    if (enMovil()) { cierra(); return; }
+    ponError('elige', ''); muestra('elige');
+  });
 
   const ERRORES = { formato: 'faltan', 'no-vale': 'eNoVale', 'sin-rele': 'eSinRele', 'sin relé': 'eSinRele', 'sin respuesta': 'eSinRele', 'sin-pq': 'eSinPq', 'demasiados intentos': 'eDemasiados', 'sin-codigo': 'eSinCodigo' };
   function ponError(donde, por) { const e = $(donde === 'tengo' ? '#error-codigo' : '#error-elige'); e.textContent = por ? tr(ERRORES[por] || 'eSinRele') : ''; }
@@ -106,9 +113,10 @@
   let invitoLlamada = false;
   $('#crear').addEventListener('click', async () => {
     if (!M) return;
-    invitoLlamada = enMovil(); window.Elixire.contestaSola = invitoLlamada; window.Elixire.llamaAlEntrar = false;
+    if (enMovil()) return invitaMovil();
+    invitoLlamada = false; olvidaInvitacion(); window.Elixire.contestaSola = false; window.Elixire.llamaAlEntrar = false;
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
-    $('#copiar').disabled = false; ponWhatsApp(null);
+    $('#copiar').disabled = false; ponWhatsApp(null); $('#panel-crear').classList.remove('enviada');
     $('#estado-crear').dataset.t = 'creando'; $('#estado-crear').textContent = tr('creando');
     muestra('crear');
     const r = await M.crea();
@@ -116,7 +124,7 @@
     if (!r.ok) { if (r.por !== 'fin') { ponError('elige', r.por); muestra('elige'); } return; }
     e.dataset.codigo = r.codigo; e.textContent = r.codigo.replace(/(.{4})(?=.)/g, '$1 ');
     ponWhatsApp(r.codigo);
-    ponEstado(invitoLlamada ? 'esperandoLlamada' : 'esperando');
+    ponEstado('esperando');
     paraReloj();
     reloj = setInterval(() => { if (abierta !== 'crear') return paraReloj(); if (Date.now() > r.caduca && !(M.conectada)) { paraReloj(); ponEstado('caducado'); } }, 1000);
   });
@@ -126,21 +134,100 @@
   // Sirve una sola vez y caduca a los 10 minutos; al entrar, los dos ven las cuatro palabras.
   function ponWhatsApp(codigo) {
     const a = $('#whatsapp');
-    if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; return; }
+    if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; delete a.dataset.texto; return; }
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
-    const enlace = location.origin + location.pathname + '#c=' + codigo + '&l=' + lengua + (invitoLlamada ? '&ll=1' : '');
-    const texto = tr(invitoLlamada ? 'mensajeLlamada' : 'mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
+    const enlace = location.origin + '/#c=' + codigo + '&l=' + lengua;
+    const texto = tr('mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
     a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo; a.dataset.texto = texto;
+  }
+
+  // ---- invitar desde el móvil: un solo toque ----
+  // Dueño, 15:15: «simplifícalo… con los mínimos clics posibles y súper fácil y entendible para cualquier persona de cualquier
+  // edad»; «en la versión de móvil no hará falta meter el código, porque ya irá encriptado en la forma de enviarlo por WhatsApp».
+  // «Invitar a una llamada» abre en el acto el menú «Compartir» del teléfono con la invitación (se elige WhatsApp y la persona);
+  // detrás, la roca se abre y la página se queda esperando. La semilla (256 bits) nace aquí y va entera en el enlace, en el
+  // fragmento (#e=…), que el navegador no manda a ningún servidor: no hay código. Si el teléfono cierra la página mientras se está
+  // en WhatsApp (15:13: «cuando vuelve a la web ya le vuelve a decir otra vez lo mismo»), al volver se retoma la misma invitación:
+  // se guarda solo en esta pestaña, 10 minutos como mucho, y se borra en cuanto empieza la llamada, se cancela o caduca.
+  const GUARDA = 'elixire-invitacion', INVITACION_MS = 10 * 60 * 1000;
+  const b64u = (x) => btoa(String.fromCharCode.apply(null, x)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const deB64u = (t) => { let b = t.replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; return Uint8Array.from(atob(b), (q) => q.charCodeAt(0)); };
+  let invitacion = null; // { s: la semilla en base64url, t0 }
+  function guardaInvitacion() { try { if (invitacion) sessionStorage.setItem(GUARDA, JSON.stringify(invitacion)); else sessionStorage.removeItem(GUARDA); } catch (_) {} }
+  function olvidaInvitacion() { if (!invitacion) return; invitacion = null; guardaInvitacion(); }
+  function textoInvitacion(sem) {
+    const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
+    // la tarjeta de WhatsApp (imagen y texto propios) está en /invitacion/ y /invitation/; al tocarla, esta página con el fragmento
+    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem + '&l=' + lengua + '&ll=1';
+    return tr('mensajeLlamada').replace('{enlace}', enlace);
+  }
+  function abreWhatsApp(texto) { try { const w = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); if (w) { try { w.opener = null; } catch (_) {} } return !!w; } catch (_) { return false; } }
+  // el menú «Compartir» tiene que abrirse en el mismo toque (el teléfono lo exige); sin él, WhatsApp directamente
+  function comparte(texto) {
+    if (navigator.share) { try { return navigator.share({ text: texto }).then(() => true, (x) => (x && x.name === 'AbortError' ? false : abreWhatsApp(texto))); } catch (_) {} }
+    return Promise.resolve(abreWhatsApp(texto));
+  }
+  function ponEnlaceWa(texto) { const a = $('#whatsapp'); a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.texto = texto; delete a.dataset.codigo; }
+  async function invitaMovil() {
+    if (!M || ocupado || (abierta && abierta !== 'elige')) return;
+    const semilla = crypto.getRandomValues(new Uint8Array(32));
+    invitacion = { s: b64u(semilla), t0: Date.now() }; guardaInvitacion();
+    const texto = textoInvitacion(invitacion.s);
+    const compartida = comparte(texto);
+    M.prepara();
+    await abreInvitacion(semilla, texto, false);
+    const ok = await compartida;
+    if (abierta === 'crear' && invitacion) ponEnviada(ok);
+  }
+  async function abreInvitacion(semilla, texto, retomada) {
+    if (!M || ocupado || (abierta && abierta !== 'elige')) return;
+    ocupado = true;
+    try {
+      const yaAbierta = abierta === 'elige';
+      if (scrollY > 4) scrollTo({ top: 0, behavior: 'auto' });
+      document.body.classList.add('cerrado');
+      M.prepara();
+      invitoLlamada = true; window.Elixire.contestaSola = true; window.Elixire.llamaAlEntrar = false;
+      ponEnlaceWa(texto);
+      const panel = $('#panel-crear'); panel.classList.toggle('enviada', !!retomada); panel.classList.remove('caducada');
+      ponEstado(retomada ? 'esperandoInicio' : 'esperandoLlamada');
+      const r = M.invitaSemilla(semilla); // la sala, mientras se abre la roca
+      if (!yaAbierta) { $('#consola').classList.add('fuera'); if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); } }
+      const x = await r;
+      if (!x.ok) { olvidaInvitacion(); ponError('elige', x.por); muestra('elige'); return; }
+      if (!invitacion) return;
+      muestra('crear', $('#cancelar-invitacion'));
+      vigilaInvitacion();
+    } finally { ocupado = false; }
+  }
+  function ponEnviada(ok) {
+    if (abierta !== 'crear') return;
+    $('#panel-crear').classList.toggle('enviada', !!ok);
+    if (!/llega|alguien|caducad/.test($('#estado-crear').dataset.t || '')) ponEstado(ok ? 'esperandoInicio' : 'esperandoLlamada');
+  }
+  function vigilaInvitacion() {
+    paraReloj();
+    reloj = setInterval(() => {
+      if (abierta !== 'crear' || !invitacion) return paraReloj();
+      if (Date.now() - invitacion.t0 > INVITACION_MS && !M.conectada) {
+        paraReloj(); M.termina('caduca'); olvidaInvitacion();
+        $('#panel-crear').classList.add('enviada', 'caducada'); ponEstado('invitacionCaducada');
+      }
+    }, 1000);
   }
   // En el móvil se usa el menú «Compartir» del teléfono (se elige WhatsApp ahí): al enviar, el propio teléfono devuelve a esta página,
   // que se queda esperando (dueño, 14:39). Si el navegador no lo trae, el enlace directo a WhatsApp.
+  // Enviada la invitación, la pantalla pasa a la espera (dueño, 15:05: «la pantalla tiene que poner esperando para iniciar la
+  // llamada con la otra persona»): «Invitación enviada», un pulso tranquilo y «Cancelar». En cuanto la otra persona entra, la sala.
+  function enviada() { ponEnviada(true); }
   $('#whatsapp').addEventListener('click', (e) => {
     const a = e.currentTarget;
-    if (!a.dataset.texto || !navigator.share || !matchMedia('(pointer: coarse)').matches) return;
+    if (!a.dataset.texto) return;
+    if (!navigator.share || !matchMedia('(pointer: coarse)').matches) { setTimeout(enviada, 600); return; }
     e.preventDefault();
-    navigator.share({ text: a.dataset.texto }).catch((x) => { if (!x || x.name !== 'AbortError') { try { window.open(a.href, '_blank', 'noopener'); } catch (_) {} } });
+    navigator.share({ text: a.dataset.texto }).then(enviada).catch((x) => { if (!x || x.name !== 'AbortError') { try { window.open(a.href, '_blank', 'noopener'); } catch (_) {} setTimeout(enviada, 600); } });
   });
-  document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); });
+  document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); else if (invitacion && abierta === 'crear') ponEnlaceWa(textoInvitacion(invitacion.s)); });
   $('#copiar').addEventListener('click', async () => {
     const c = $('#codigo').dataset.codigo; if (!c) return;
     const s = $('#copiar span');
@@ -148,8 +235,13 @@
   });
 
   // ---- la invitación de WhatsApp: se abre «Tengo un código» con el código ya puesto; basta con tocar «Entrar» ----
-  let codigoEnlace = null, enlaceLlamada = false;
+  let codigoEnlace = null, enlaceLlamada = false, semillaEnlace = null;
   {
+    const e = /^#e=([A-Za-z0-9_-]{43})(?:&l=(?:es|en))?(&ll=1)?$/.exec(location.hash || '');
+    if (e) {
+      try { let b = e[1].replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; const x = Uint8Array.from(atob(b), (q) => q.charCodeAt(0)); if (x.length === 32) { semillaEnlace = x; enlaceLlamada = true; codigoEnlace = 'semilla'; } } catch (_) {}
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+    }
     const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?(&ll=1)?$/.exec(location.hash || '');
     if (m) { codigoEnlace = m[1]; enlaceLlamada = !!m[2]; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {} }
   }
@@ -160,7 +252,7 @@
       if (M) M.prepara();
       $('#consola').classList.add('fuera');
       if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
-      if (enlaceLlamada) { $('#error-invitado').textContent = ''; $('#entrar-llamada').disabled = false; muestra('invitado', $('#entrar-llamada')); return; }
+      if (enlaceLlamada) { $('#error-invitado').textContent = ''; $('#entrar-llamada').disabled = false; $('#panel-invitado').classList.remove('esperando'); muestra('invitado', $('#entrar-llamada')); return; }
       campo.value = codigoEnlace.replace(/(.{4})(?=.)/g, '$1 '); codigoEnlace = null;
       ponError('tengo', ''); botonEntrar(false); muestra('tengo', $('#entrar'));
     } finally { ocupado = false; }
@@ -208,18 +300,25 @@
     M.on('continua', () => { paraReloj(); ocultaPaneles(); abierta = 'sala'; });
   }
 
-  // la invitación a una llamada: un solo toque (el navegador lo exige para encender la cámara) y la llamada arranca sola
+  // la invitación a una llamada: un solo toque (el navegador lo exige para encender la cámara) y la llamada arranca sola.
+  // Dueño, 15:12: «yo entro en la llamada, pero se queda ahí, no hace más nada»: ahora se ve que se espera (el pulso, «Esperando a
+  // la otra persona…»), y se espera de verdad: si quien invita aún está en WhatsApp o su página se recargó, en cuanto vuelve a la
+  // web, la llamada empieza sola.
+  let tardaT = null;
+  const estadoInvitado = (k) => { const x = $('#estado-invitado'); x.dataset.t = k; x.textContent = tr(k); };
   $('#entrar-llamada').addEventListener('click', async () => {
     if (!M || !codigoEnlace) return;
     pantallaCompleta();
-    const b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
-    const r = await M.entra(codigoEnlace);
+    const p = $('#panel-invitado'), b = $('#entrar-llamada'), e = $('#error-invitado'); b.disabled = true; e.textContent = '';
+    p.classList.add('esperando'); estadoInvitado('conectando');
+    const r = semillaEnlace ? await M.entraSemilla(semillaEnlace.slice()) : await M.entra(codigoEnlace);
     if (abierta !== 'invitado') return;
-    if (!r.ok) { b.disabled = false; e.textContent = tr(ERRORES[r.por] || 'eSinRele'); return; }
-    codigoEnlace = null; window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
-    setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada) { b.disabled = false; e.textContent = tr('eSinRele'); } }, 30000);
+    if (!r.ok) { p.classList.remove('esperando'); b.disabled = false; e.textContent = tr(ERRORES[r.por] || 'eSinRele'); return; }
+    codigoEnlace = null; if (semillaEnlace) { semillaEnlace.fill(0); semillaEnlace = null; } window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
+    estadoInvitado('esperandoVuelva');
+    clearTimeout(tardaT); tardaT = setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada) estadoInvitado('tardaVuelva'); }, 45000);
   });
-  if (M) M.on('ocupada', () => { if (abierta === 'invitado') { $('#entrar-llamada').disabled = false; $('#error-invitado').textContent = tr('eNoVale'); } });
+  if (M) M.on('ocupada', () => { if (abierta === 'invitado') { $('#panel-invitado').classList.remove('esperando'); $('#entrar-llamada').disabled = false; $('#error-invitado').textContent = tr('eNoVale'); } });
 
   // ---- tengo un código ----
   const normaliza = (t) => String(t || '').normalize('NFKC').toUpperCase().replace(/[\s\-‐-―−.·]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
@@ -249,9 +348,18 @@
   // lo que dice el motor mientras se espera
   if (M) {
     M.on('codigo-usado', () => { if (abierta === 'crear') ponEstado('alguienEntra'); });
-    M.on('llega', () => { if (abierta === 'crear') ponEstado('llegaOtra'); });
+    M.on('llega', () => { if (abierta === 'crear') ponEstado('llegaOtra'); else if (abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando')) estadoInvitado('llegaOtra'); });
     M.on('ocupada', () => { if (abierta === 'tengo') { botonEntrar(false); ponError('tengo', 'no-vale'); } });
-    M.on('conectado', () => { paraReloj(); ocultaPaneles(); abierta = 'sala'; });
+    M.on('conectado', () => { paraReloj(); clearTimeout(tardaT); olvidaInvitacion(); ocultaPaneles(); abierta = 'sala'; });
+    // sin conexión con el servidor mientras se espera: se dice (y se reintenta solo); al volver, se sigue esperando
+    let sinRed = null;
+    M.on('red', (ok) => {
+      clearTimeout(sinRed);
+      const crea = abierta === 'crear' && invitacion, entra = abierta === 'invitado' && $('#panel-invitado').classList.contains('esperando') && !codigoEnlace;
+      if (!crea && !entra) return;
+      if (ok) { if (crea && $('#estado-crear').dataset.t === 'reintentando') ponEstado($('#panel-crear').classList.contains('enviada') ? 'esperandoInicio' : 'esperandoLlamada'); if (entra && $('#estado-invitado').dataset.t === 'reintentando') estadoInvitado('esperandoVuelva'); return; }
+      sinRed = setTimeout(() => { if (crea && abierta === 'crear') ponEstado('reintentando'); if (entra && abierta === 'invitado') estadoInvitado('reintentando'); }, 6000);
+    });
     M.on('fin', () => { paraReloj(); if (abierta === 'crear' || abierta === 'tengo') { botonEntrar(false); } });
   }
   // la sala terminó: el monolito se cierra y vuelve la portada
@@ -264,6 +372,15 @@
   window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, ocultaPaneles, abierta: () => abierta });
   if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
+  // la invitación que se estaba esperando, si el teléfono recargó la página (al volver de WhatsApp): se retoma sola
+  if (M && !codigoEnlace && !semillaMovil) {
+    let g = null; try { g = JSON.parse(sessionStorage.getItem(GUARDA) || 'null'); } catch (_) {}
+    if (g && typeof g.s === 'string' && /^[A-Za-z0-9_-]{43}$/.test(g.s) && Date.now() - (+g.t0 || 0) < INVITACION_MS) {
+      invitacion = { s: g.s, t0: +g.t0 };
+      const va = () => setTimeout(() => { if (invitacion) abreInvitacion(deB64u(invitacion.s), textoInvitacion(invitacion.s), true); }, 300);
+      if (document.readyState === 'complete') va(); else addEventListener('load', va);
+    } else if (g) { try { sessionStorage.removeItem(GUARDA); } catch (_) {} }
+  }
 
   for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault());
   // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)

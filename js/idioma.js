@@ -4,7 +4,7 @@
 'use strict';
 (() => {
   const ES_MAS = {
-    mensajeWa: 'Te invito a una conversación privada en Elixire, encriptada de extremo a extremo.\n\nToca para entrar:\n{enlace}\n\nTu código: {codigo}\nCaduca en 10 minutos y sirve una sola vez.',
+    mensajeWa: '*Te han invitado a una conversación poscuántica en Elixire*\n\nPrivada y encriptada de extremo a extremo con criptografía poscuántica. Sin cuenta ni instalación.\n\nToca para entrar:\n{enlace}\n\nTu código: {codigo}\nVale una sola vez · caduca en 10 minutos',
     volverLlamar: 'Volver a llamar', llCaida: 'La llamada se ha cortado. Puedes volver a llamar.', pruebaQueda: 'Quedan {t} de prueba',
     movilConectando: 'Conectando con tu ordenador…', movilCompruebaPc: 'Comprueba que en tu ordenador salen estas mismas palabras y pulsa allí «Sí, es mi móvil».',
     movilPasando: 'Pasando la conversación…', movilUsado: 'Este código ya se ha usado o ha caducado. Genera otro en el ordenador.', movilCancelado: 'Se ha cancelado desde el ordenador.',
@@ -12,7 +12,8 @@
     movilHechoEtiqueta: 'EN TU MÓVIL', movilHechoTitulo: 'La conversación sigue en tu móvil.', movilHechoTexto: 'En este ordenador se ha borrado todo. La otra persona ha pasado sola a la sesión nueva, con claves nuevas.',
     traspasoEspera: 'La otra persona está pasando la conversación a su móvil…', continuaSuMovil: 'La conversación continúa en su móvil · claves nuevas', continuaAqui: 'La conversación continúa en este móvil · claves nuevas',
     ampliar: 'Ampliar',
-    esperandoLlamada: 'Esperando a que la otra persona abra la invitación', mensajeLlamada: 'Te invito a una videollamada privada en Elixire, encriptada de extremo a extremo.\n\nToca para entrar:\n{enlace}\n\nCaduca en 10 minutos y sirve una sola vez.',
+    esperandoLlamada: 'Esperando a que la otra persona abra la invitación', mensajeLlamada: '*Te han invitado a una videollamada poscuántica*\n\nPrivada y encriptada de extremo a extremo con criptografía poscuántica. Sin cuenta ni instalación.\n\nToca para entrar:\n{enlace}\n\nVale una sola vez · caduca en 10 minutos',
+    esperandoInicio: 'Esperando a que la otra persona entre. La llamada empezará sola.', esperandoVuelva: 'Esperando a la otra persona. La llamada empezará sola en cuanto vuelva a Elixire.', tardaVuelva: 'Si tarda, pídele que vuelva a abrir Elixire. La llamada empezará sola.', reintentando: 'Sin conexión. Reintentando…', invitacionCaducada: 'La invitación ha caducado. Vuelve y envía otra.',
     copiado: 'Copiado', faltan: 'Faltan símbolos: el código tiene 16.', creando: 'Creando el código…', caducado: 'El código ha caducado. Vuelve y crea otro.',
     alguienEntra: 'Alguien ha escrito el código: conectando…', llegaOtra: 'La otra persona ha entrado. Acordando las claves…', conectando: 'Conectando…',
     eNoVale: 'Ese código no existe, ya se usó o ha caducado.', eSinRele: 'Sin conexión con el servidor. Inténtalo de nuevo.',
@@ -67,11 +68,11 @@
     movilHechoEtiqueta: 'ON YOUR PHONE', movilHechoTitulo: 'The conversation continues on your phone.', movilHechoTexto: 'Everything has been erased on this computer. The other person moved to the new session automatically, with new keys.',
     traspasoEspera: 'The other person is moving the conversation to their phone…', continuaSuMovil: 'The conversation continues on their phone · new keys', continuaAqui: 'The conversation continues on this phone · new keys',
     chat: 'Chat', ampliar: 'Enlarge',
-    invitar: 'Invite to a call', invitacionLista: 'YOUR INVITATION', invitacionTexto: 'Send it via WhatsApp. When the other person opens it, the video call will start by itself. It expires in 10 minutes.', eligeTextoMovil: 'Send the invitation via WhatsApp: when the other person opens it, the video call will start by itself. Up to 3 minutes of trial.',
-    enviarInvitacion: 'Send the invitation', teInvitan: 'YOU ARE INVITED TO A VIDEO CALL', teInvitanTexto: 'Private and encrypted end to end. When you join, your camera and microphone will turn on.', entrarLlamada: 'Join the call',
-    esperandoLlamada: 'Waiting for the other person to open the invitation', mensajeLlamada: 'I am inviting you to a private video call on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nIt expires in 10 minutes and works only once.',
+    invitar: 'Invite to a call', invitacionEnviada: 'INVITATION SENT', esperandoInicio: 'Waiting for the other person to join. The call will start by itself.', esperandoVuelva: 'Waiting for the other person. The call will start by itself as soon as they are back on Elixire.', tardaVuelva: 'If it takes long, ask them to open Elixire again. The call will start by itself.', reintentando: 'No connection. Retrying…', invitacionCaducada: 'The invitation has expired. Go back and send another.', invitacionLista: 'YOUR INVITATION', invitacionTexto: 'Send it via WhatsApp. When the other person opens it, the video call will start by itself. It expires in 10 minutes.', eligeTextoMovil: 'Send the invitation via WhatsApp: when the other person opens it, the video call will start by itself. Up to 3 minutes of trial.',
+    enviarInvitacion: 'Send the invitation', teInvitan: 'POST-QUANTUM VIDEO CALL', teInvitanTexto: 'You have been invited to a private video call, end-to-end encrypted with post-quantum cryptography. When you join, your camera and microphone will turn on.', entrarLlamada: 'Join the call',
+    esperandoLlamada: 'Waiting for the other person to open the invitation', mensajeLlamada: '*You have been invited to a post-quantum video call*\n\nPrivate and end-to-end encrypted with post-quantum cryptography. No account, nothing to install.\n\nTap to join:\n{enlace}\n\nValid once · expires in 10 minutes',
     tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
-    mensajeWa: 'I am inviting you to a private conversation on Elixire, encrypted end to end.\n\nTap to join:\n{enlace}\n\nYour code: {codigo}\nIt expires in 10 minutes and works only once.',
+    mensajeWa: '*You have been invited to a post-quantum conversation on Elixire*\n\nPrivate and end-to-end encrypted with post-quantum cryptography. No account, nothing to install.\n\nTap to join:\n{enlace}\n\nYour code: {codigo}\nValid once · expires in 10 minutes',
     esperando: 'Waiting for the other person', copiar: 'Copy the code', copiado: 'Copied',
     tengoTitulo: 'I HAVE A CODE', tengoTexto: 'The 16 characters you were given. Once inside, you will both see the same four words.',
     faltan: 'Characters missing: the code has 16.', creando: 'Creating the code…', caducado: 'The code has expired. Go back and create another.',
@@ -95,7 +96,7 @@
     r4: '<b>4 · On the phone.</b> Spyware such as Pegasus sees everything before it is encrypted.',
     enElixire: 'IN ELIXIRE', tuEquipo: 'Your device', rele: 'Relay · sees only bytes', suEquipo: 'Their device',
     enElixireTexto: 'What you write is encrypted on your device and only the other device holds the key to open it. If your device is infected, whoever controls it sees your screen: no tool can fix that.',
-    solucionEtiqueta: 'THE SOLUTION', solucionTitulo: 'Verify, don’t trust.',
+    solucionEtiqueta: 'THE SOLUTION', solucionTitulo: 'Only the two of you can read it.',
     s1t: 'Identity by key', porEso1: 'Who is on the other side is not decided by a voice, a face or an email: it is checked with a key.',
     p2t: 'Nobody in the middle unnoticed', p2p: 'On entering, both people see the same four words, committed before the exchange. If someone steps in, they do not match.',
     s3t: 'Encrypted on your device', porEso2: 'What you write and send is encrypted on your device, and only the other device can open it.',
@@ -152,7 +153,7 @@
     verificarEtiqueta: 'VERIFY THIS PAGE', verificarTitulo: 'The code is public.',
     verificarTexto: 'This page is published as-is from a public repository. Every script and the stylesheet carry their SHA-384 fingerprint here, and your browser will not load any that does not match. You can compare those fingerprints with the repository.',
   };
-  const TITULO = { es: 'Elixire · Comprobar, no confiar', en: 'Elixire · Verify, don’t trust' };
+  const TITULO = { es: 'Elixire · Conversaciones privadas poscuánticas', en: 'Elixire · Private post-quantum conversations' };
   const ES = {}; // lo original de la página, para volver al español
   let actual = 'es';
   for (const el of document.querySelectorAll('[data-t]')) { const k = el.dataset.t; if (!(k in ES)) ES[k] = el.innerHTML; }

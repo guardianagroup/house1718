@@ -3,16 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<title>Elixire · Comprobar, no confiar</title>
+<title>Elixire · Conversaciones privadas poscuánticas</title>
 <meta name="description" content="Chat, archivos y videollamada encriptados de extremo a extremo con criptografía poscuántica híbrida. Identidad comprobada por clave. Sin cuenta ni número de teléfono.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Elixire">
+<meta property="og:title" content="Elixire · Conversaciones privadas poscuánticas">
+<meta property="og:description" content="Chat, archivos y videollamada encriptados de extremo a extremo con criptografía poscuántica. Sin cuenta ni número de teléfono.">
+<meta property="og:image" content="https://www.house1718.com/img/elixire.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#05070a">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-22" integrity="sha384-X8UBkGGZqxN7dQpyVkNmiufq709HJQluAObd6Lg1vOqbqj4BqVdf/LTHJh4Bo/tX">
-<script src="js/idioma-inicio.js?v=20261119-22" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-23" integrity="sha384-9HGrt1K0g0uFQk60DZaAvuNmdLNXhiSDJYRDbc9u+K/stLMvKAp4CrnlkhI9Fetw">
+<script src="js/idioma-inicio.js?v=20261119-23" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -38,7 +46,7 @@
 <div class="monolito-css" id="monolito-css" aria-hidden="true"><span class="mitad izq"></span><span class="mitad der"></span><span class="nucleo"></span></div>
 
 <div class="consola" id="consola">
-<button type="button" class="cristal grande espejo" id="empezar"><span data-t="empezar">Empezar prueba</span></button>
+<button type="button" class="cristal grande espejo" id="empezar"><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
 </div>
 
 <section class="panel" id="panel-elige" hidden aria-labelledby="t-elige">
@@ -50,10 +58,12 @@
 </section>
 
 <section class="panel" id="panel-crear" hidden aria-labelledby="t-crear">
-<span class="etiqueta" id="t-crear"><span class="t-pc" data-t="tuCodigo">TU CÓDIGO</span><span class="t-movil" data-t="invitacionLista">TU INVITACIÓN</span></span>
+<span class="etiqueta" id="t-crear"><span class="t-pc" data-t="tuCodigo">TU CÓDIGO</span><span class="t-movil" data-t="invitacionLista">TU INVITACIÓN</span><span class="t-enviada" data-t="invitacionEnviada">INVITACIÓN ENVIADA</span></span>
+<div class="espera-llamada" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
 <p class="codigo-grande" id="codigo">···· ···· ···· ····</p>
 <p class="texto-panel"><span class="t-pc" data-t="daselo">Envíaselo a la otra persona. Caduca en 10 minutos y sirve una sola vez.</span><span class="t-movil" data-t="invitacionTexto">Envíala por WhatsApp. Cuando la otra persona la abra, la videollamada empezará sola. Caduca en 10 minutos.</span></p>
 <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
+<button type="button" class="cristal pequeno" id="cancelar-invitacion" data-volver-elige><span data-t="cancelar">Cancelar</span></button>
 <a class="cristal ancho" id="whatsapp" target="_blank" rel="noopener noreferrer" aria-disabled="true"><span class="t-pc" data-t="whatsapp">Enviar por WhatsApp</span><span class="t-movil" data-t="enviarInvitacion">Enviar la invitación</span></a>
 <div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
 </section>
@@ -69,11 +79,13 @@
 </section>
 
 <section class="panel" id="panel-invitado" hidden aria-labelledby="t-invitado">
-<span class="etiqueta" id="t-invitado" data-t="teInvitan">TE INVITAN A UNA VIDEOLLAMADA</span>
-<p class="texto-panel" data-t="teInvitanTexto">Privada y encriptada de extremo a extremo. Al entrar se encenderán tu cámara y tu micrófono.</p>
+<span class="etiqueta" id="t-invitado" data-t="teInvitan">VIDEOLLAMADA POSCUÁNTICA</span>
+<div class="espera-llamada" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+<p class="texto-panel" data-t="teInvitanTexto">Te han invitado a una videollamada privada, encriptada de extremo a extremo con criptografía poscuántica. Al entrar se encenderán tu cámara y tu micrófono.</p>
+<div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-invitado" data-t="conectando">Conectando…</span></div>
 <p class="error" id="error-invitado" role="alert"></p>
 <button type="button" class="cristal ancho" id="entrar-llamada"><span data-t="entrarLlamada">Entrar a la llamada</span></button>
-<button type="button" class="cristal pequeno" data-cerrar-camara data-t="volver">Volver</button>
+<button type="button" class="cristal pequeno" data-cerrar-camara><span class="t-volver" data-t="volver">Volver</span><span class="t-cancelar" data-t="cancelar">Cancelar</span></button>
 </section>
 
 <section class="panel" id="panel-tengo" hidden aria-labelledby="t-tengo">
@@ -125,7 +137,7 @@
 
 <section class="seccion" id="solucion" aria-labelledby="h-solucion">
 <span class="etiqueta" data-t="solucionEtiqueta">LA SOLUCIÓN</span>
-<h2 id="h-solucion" data-t="solucionTitulo">Comprobar, no confiar.</h2>
+<h2 id="h-solucion" data-t="solucionTitulo">Solo vosotros dos podéis leerla.</h2>
 <ol class="pasos">
 <li><b data-t="s1t">Identidad por clave</b><p data-t="porEso1">Quién está al otro lado no se decide por una voz, una cara o un correo: se comprueba con una clave.</p></li>
 <li><b data-t="p2t">Nadie en medio sin que se note</b><p data-t="p2p">Al entrar, los dos ven las mismas cuatro palabras, comprometidas antes del intercambio. Si alguien se interpone, no coinciden.</p></li>
@@ -176,7 +188,7 @@
 <p data-t="pruebaTexto">Una videollamada de hasta 3 minutos, con el mismo encriptado que el servicio completo.</p>
 <p class="menor" data-t="pruebasTexto">Mientras dure la fase de pruebas, el chat y el envío de archivos no tienen límite.</p>
 </div>
-<button type="button" class="cristal grande" data-empezar><span data-t="empezar">Empezar prueba</span></button>
+<button type="button" class="cristal grande" data-empezar><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
 </section>
 </main>
 
@@ -253,15 +265,15 @@
 </div>
 </div>
 
-<script src="js/idioma.js?v=20261119-22" integrity="sha384-FeVeaKk87K6Z9P7Ni+W4AwajG8CQhbAYci/+3Pw0FI+TH8eyDuaadYgIJgrh1G/Q"></script>
-<script src="js/pq-cnsa.js?v=20261119-22" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-22" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-22" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-22" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261119-22" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-22" integrity="sha384-x207VBsd+JpbN6y4INf57xo/Z4o80Ixk2olhlzbY3+5TcMQRuBKDONtTlw5OmXvq"></script>
-<script type="module" src="js/sala3d.js?v=20261119-22" integrity="sha384-YOxwmD5qVL1VfmmCruW7hNnr6+QqZUOpH/kbKWR/Rbk7tFXC9Chy319JFl6yCHQ+"></script>
-<script src="js/puerta.js?v=20261119-22" integrity="sha384-97tJQ4/Oricg0Z42ToEGIH6rZIuXV8tr/aI+1tei87HAyKLwPuajpSwsr/lreIzz"></script>
-<script src="js/sala.js?v=20261119-22" integrity="sha384-9z/VdNyUDD2wf8MO6QmnsI3yC3d/L1A9DHY0DWb9N98nsAJTp3FJ9HSHb+D/tJ5n"></script>
+<script src="js/idioma.js?v=20261119-23" integrity="sha384-PEB4GyPN2U2ALWyGOZa0MZNWb9DDl6OVWG6ewg92gygBWV3JEG+ZldFJrOIdI2te"></script>
+<script src="js/pq-cnsa.js?v=20261119-23" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-23" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-23" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-23" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-23" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-23" integrity="sha384-A7/wg1zMc6/4KyoGOXKWCy5qjxNXoUuqhghbI5Pc1GR4RP10EpFA6lB3SX733hCR"></script>
+<script type="module" src="js/sala3d.js?v=20261119-23" integrity="sha384-bEkAyQte8ZeMAoVZvgE8wKAszQShzScpVQdfDPB0vqrYEz8LcGwTri+NFTyW0Nhr"></script>
+<script src="js/puerta.js?v=20261119-23" integrity="sha384-tIH7qSmsKfQAS3Kh2HkIAYDHKTKB9Awvc5303VoQAr/O5VwOdZtXClgLS5q0wTy+"></script>
+<script src="js/sala.js?v=20261119-23" integrity="sha384-9z/VdNyUDD2wf8MO6QmnsI3yC3d/L1A9DHY0DWb9N98nsAJTp3FJ9HSHb+D/tJ5n"></script>
 </body>
 </html>
