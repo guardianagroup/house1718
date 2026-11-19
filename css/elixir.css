@@ -113,7 +113,7 @@ html.traduciendo [data-t]{visibility:hidden;animation:muestra-texto 0s 2.5s forw
 .cabecera{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px var(--margen);pointer-events:none}
 .cabecera>*{pointer-events:auto}
 /* al bajar, el velo detrás de la cabecera se oscurece: el texto que pasa por debajo no se mezcla con los botones */
-.cabecera::before{content:'';position:absolute;inset:0 0 -44px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,10,calc(.2 + var(--bajada) * .76)),rgba(5,7,10,calc(var(--bajada) * .78)) 62%,rgba(5,7,10,0))}
+.cabecera::before{content:'';position:absolute;inset:0 0 -44px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,10,calc(var(--bajada) * .96)),rgba(5,7,10,calc(var(--bajada) * .78)) 62%,rgba(5,7,10,0))}
 .marca{font-family:var(--marca);font-weight:500;font-size:15px;letter-spacing:.46em;margin:0;color:var(--texto);text-decoration:none}
 .cabecera-der{display:flex;align-items:center;gap:12px}
 .cabecera .par .seg{height:36px;padding:0 18px;font-size:10.5px;letter-spacing:.22em}
@@ -501,7 +501,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 .salir-llamada{display:none}
 @media (max-width:760px){
   .sala:not([hidden]){display:block!important;height:100dvh!important}
-  .sala .sala-cab,.sala .sala-palabras,.sala .chat,.sala .video-tiempo,.sala .video-reto,.sala #video-capa,
+  .sala .sala-cab,.sala .sala-palabras,.sala .chat,.sala .video-reto,.sala #video-capa,
   .sala #b-micro,.sala #b-camara,.sala #b-reto,.sala #b-chat,.sala .video-velo .etiqueta{display:none!important}
   .sala .sala-cuerpo{display:block}
   .sala .escena-video,.sala.con-video .escena-video,.sala.video-grande .escena-video{position:fixed;inset:0;z-index:40;flex:none;min-height:0;aspect-ratio:auto;border:0;
@@ -537,4 +537,17 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 @media (max-width:760px){
   .sala #llamar,.sala .controles .seg#b-colgar,.sala #entrante .seg{overflow:visible!important}
   .sala .video-texto{position:absolute;left:28px;right:28px;top:40%;transform:translateY(-50%);margin:0 auto!important}
+}
+
+/* arriba, en el centro (dueño, 16:08–16:09: «en la llamada no se ve el tiempo»; «el encriptado de extremo a extremo poscuántico se
+   queda a un lado: ponlo en el medio… que se vea más profesional»): el sello de la llamada y, debajo, el tiempo que queda */
+@media (max-width:760px){
+  .sala .video-cifrado{left:50%;right:auto;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 14px);gap:8px;padding:8px 15px 8px 12px;border-radius:999px;
+    background:rgba(6,9,14,.58);border:1px solid rgba(156,195,228,.3);font:500 12.5px/1.2 var(--ui);letter-spacing:.01em;color:#D7E7F5;white-space:nowrap;text-shadow:none;max-width:calc(100% - 24px)}
+  .sala .video-cifrado svg{width:15px;height:15px;color:#9CC3E4}
+  .sala .video-tiempo,.sala.video-grande .video-tiempo{position:absolute;z-index:3;left:50%;right:auto;bottom:auto;top:calc(env(safe-area-inset-top) + 58px);transform:translateX(-50%);
+    display:flex;align-items:baseline;gap:8px;margin:0;padding:0;border:0;background:none;font:400 19px/1 var(--ui);font-feature-settings:'tnum';letter-spacing:.02em;color:#F4F6F8;text-shadow:0 1px 10px rgba(0,0,0,.85)}
+  .sala .video-tiempo[hidden]{display:none}
+  .sala .video-tiempo small{font:500 10px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:#9CC3E4}
+  .sala #video-reconecta{top:calc(env(safe-area-inset-top) + 92px)}
 }

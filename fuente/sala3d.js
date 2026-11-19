@@ -63,7 +63,9 @@ function arranca() {
   const CAM = { x: 0, y: 1.5, z: 5.4 };
 
   // ---------------- medidas (metros) ----------------
-  const AN = 12, AL = 4.5, FONDO = -5.2, FRENTE = 7.6; // ancho, alto, pared del fondo y pared de delante (detrás de quien mira)
+  // (dueño, 16:06: «el efecto de la pared, súbelo hasta arriba… que no tengamos cabecera ni nada… todo pared»: la sala, más alta;
+  // el techo queda fuera de la imagen y ELIXIRE y el idioma flotan sobre el muro)
+  const AN = 12, AL = 8, FONDO = -5.2, FRENTE = 7.6; // ancho, alto, pared del fondo y pared de delante (detrás de quien mira)
   const LARGO = FRENTE - FONDO, ZM = (FRENTE + FONDO) / 2;
   const PX = 2.4, PY = 1.5; // paneles del encofrado
   const Y_LINEA = 1.5; // la junta de luz, a la altura de los ojos (coincide con la junta entre paneles)
@@ -138,7 +140,7 @@ function arranca() {
   const rincon = (d) => 1 - 0.42 * Math.exp(-Math.max(d, 0) / 0.55);
   // (dueño, 15:57: «quita las líneas, todas; así se verá mejor el holograma»: sin las juntas de luz, el muro solo recibe una luz suave
   // y difusa; la luz de verdad es la del holograma)
-  const perfil = (y) => (0.1 + 0.2 * gau(y, 2.1, 1.25) + 0.05 * gau(y, ZOC + 0.03, 0.25)) * (1 - 0.3 * Math.exp(-(AL - y) / 0.35));
+  const perfil = (y) => 0.13 + 0.17 * gau(y, 2.6, 2.4) + 0.05 * gau(y, ZOC + 0.03, 0.25);
   function luzMuro(x, y, z, cual) {
     if (cual === 'fondo') return (perfil(y) + 0.1 * Math.exp(-(AL - y) / 1.1) + 0.3 * gau(x, 0, 2.1) * gau(y, 2.2, 1.2)) * rincon(AN / 2 - Math.abs(x));
     if (cual === 'frente') return perfil(y) * rincon(AN / 2 - Math.abs(x));
@@ -175,8 +177,9 @@ function arranca() {
 
   // ---------------- el suelo: piedra negra pulida ----------------
   // un espejo y, encima, una capa muy fina de piedra negra con sus juntas (dueño, 14:50: «abajo debe ser efecto espejo»)
-  const espejo = new Reflector(new THREE.PlaneGeometry(AN, LARGO), { clipBias: 0.003, textureWidth: 1, textureHeight: 1, color: 0xb9bfc6, multisample: NIVEL === 2 ? 4 : 0 });
-  espejo.rotation.x = -Math.PI / 2; espejo.position.set(0, 0, ZM); escena.add(espejo);
+  // (dueño, 16:05: «quita el efecto reflejo abajo, así ganamos espacio y hacemos más grande el holograma»: sin espejo; el suelo, piedra
+  // negra mate, en la que solo se ve la luz del holograma. Además, el espejo volvía a dibujar toda la sala en cada cuadro.)
+  void Reflector;
   function texLosas() {
     const N = NIVEL === 2 ? 1024 : 512, k = N / 4.8, [c, g] = lienzo2d(N, N);
     g.fillStyle = 'rgba(8,9,12,.2)'; g.fillRect(0, 0, N, N);
@@ -191,7 +194,7 @@ function arranca() {
     const r = LARGO / (2 * PX); t.repeat.set(AN / (2 * PX), r); t.offset.set(0, Math.ceil(r * 2 - 1e-6) / 2 - r); // juntas alineadas con el fondo
     return t;
   }
-  const piedra = new THREE.Mesh(new THREE.PlaneGeometry(AN, LARGO), NIVEL === 2 ? new THREE.MeshPhysicalMaterial({ map: texLosas(), transparent: true, roughness: 0.4, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.2 }) : new THREE.MeshStandardMaterial({ map: texLosas(), transparent: true, roughness: 0.4, metalness: 0 }));
+  const piedra = new THREE.Mesh(new THREE.PlaneGeometry(AN, LARGO), new THREE.MeshStandardMaterial({ map: texLosas(), color: 0x9aa3ad, roughness: 0.62, metalness: 0 }));
   piedra.rotation.x = -Math.PI / 2; piedra.position.set(0, 0.002, ZM); piedra.receiveShadow = true; escena.add(piedra);
 
   // ---------------- acero ----------------
@@ -224,9 +227,9 @@ function arranca() {
   // ---------------- la luz sobre la roca ----------------
   // (Dueño, 14:40: «quita la lámpara».) Sin luminaria a la vista: la luz cae del techo, como en una sala de museo, y da la sombra
   // de la roca en el suelo; otra, más suave, le saca el relieve por delante.
-  const cenital = new THREE.SpotLight(0xeaf2fb, 70, 0, 0.5, 0.9, 2); cenital.position.set(0.5, AL - 0.05, Z0 + 0.9); cenital.target.position.set(0, 0.4, Z0);
+  const cenital = new THREE.SpotLight(0xeaf2fb, 70, 0, 0.5, 0.9, 2); cenital.position.set(0.5, 4.45, Z0 + 0.9); cenital.target.position.set(0, 0.4, Z0);
   escena.add(cenital, cenital.target);
-  if (NIVEL === 2) { const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, AL - 0.012, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum); }
+  if (NIVEL === 2) { const areaLum = new THREE.RectAreaLight(0xeaf2fb, 1.6, LX, LZ); areaLum.position.set(0, 4.49, Z0); areaLum.lookAt(0, 0, Z0); escena.add(areaLum); }
 
   // ---------------- la roca ----------------
   // Dueño, 14:40 y 14:50 (con una imagen de referencia: «la piedra no se ve real como la que te envié»): una roca natural, oscura y
@@ -461,9 +464,9 @@ function arranca() {
   // foto, el acero pulido refleja sobre todo las luces.
   {
     const brillan = [matLinea, matRanura]; for (const m of brillan) m.color.multiplyScalar(3);
-    for (const m of cuartos) m.visible = false; sello.visible = false; espejo.visible = false;
+    for (const m of cuartos) m.visible = false; sello.visible = false;
     const entorno = pmrem.fromScene(escena, 0, 0.05, 40, { position: new THREE.Vector3(0, Y0, Z0 + 0.7), size: [128, 256, 512][NIVEL] }).texture;
-    for (const m of cuartos) m.visible = true; sello.visible = true; espejo.visible = true;
+    for (const m of cuartos) m.visible = true; sello.visible = true;
     for (const m of brillan) m.color.multiplyScalar(1 / 3);
     for (const [m, k] of [[matAcero, 1]]) { m.envMap = entorno; m.envMapIntensity = k; m.needsUpdate = true; }
   }
@@ -549,15 +552,16 @@ function arranca() {
   function ajusta() {
     const w = lienzo.clientWidth || innerWidth, h = lienzo.clientHeight || innerHeight;
     renderer.setSize(w, h, false); comp.setSize(w, h);
-    const ESP = [0.35, 0.5, 0.85][NIVEL]; espejo.getRenderTarget().setSize(Math.round(w * PR * ESP), Math.round(h * PR * ESP));
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
     // (dueño, 15:42: «así se verá más grande e impresionante en el PC»: en el ordenador, menos ángulo: la roca, más grande)
-    camara.fov = camara.aspect < 0.8 ? 56 : camara.aspect < 1.2 ? 48 : camara.aspect > 2.1 ? 33 : 38;
+    camara.fov = camara.aspect < 0.8 ? 48 : camara.aspect < 1.2 ? 46 : camara.aspect > 2.1 ? 33 : 38;
     // en el móvil de pie (dueño, 15:41: «arriba queda mucho espacio, aprovéchalo»): la roca, más grande y más arriba (la imagen se
     // desplaza como con un objetivo descentrable, sin deformar), y abajo el suelo espejo y el botón; al abrir, se acerca menos
     retrato = camara.aspect < 0.8;
-    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.14 : 0.03)), w, h);
+    // y más cerca: el holograma, a pantalla completa (dueño, 16:05)
+    CAM.z = retrato ? 4.2 : 4.7;
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.07 : 0.02)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;
@@ -748,7 +752,7 @@ function arranca() {
     mira.x += (mira.tx - mira.x) * 0.035; mira.y += (mira.ty - mira.y) * 0.035;
     const d = estado.dolly;
     const dx = quieto ? 0 : Math.sin(ahora * 0.19) * 0.06, dy = quieto ? 0 : Math.cos(ahora * 0.15) * 0.035;
-    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * (retrato ? 1.6 : 2.3));
+    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * (retrato ? 0.5 : 2.0));
     camara.lookAt(0, 1.95 + d * 0.06, Z0 - 0.4);
     if (N) { const a = polvoG.attributes.position; for (let i = 0; i < N; i++) { let y = a.array[i * 3 + 1] + vel[i] * dt * 0.3; if (y > AL - 0.2) y = 0.1; a.array[i * 3 + 1] = y; a.array[i * 3] += Math.sin(ahora * 0.25 + i) * 0.0003; } a.needsUpdate = true; }
     if (!quieto) { grano.uniforms.semilla.value = (ahora * 61.7) % 997; uHolo.t.value = ahora; }

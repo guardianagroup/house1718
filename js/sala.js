@@ -144,6 +144,34 @@
     vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta);
   }
   $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
+  // Los tonos, como en GUARDIANA (dueño, 16:09: al volver a llamar no sonaba nada): quien llama oye el tono de llamada; a quien le
+  // llaman le suena el timbre (y en Android vibra). Con el audio del navegador, que se desbloquea con el primer toque en la página.
+  let ctxT = null, tonoT = null, tonoYa = '';
+  const nodosT = new Set();
+  function ctxTonos() {
+    if (!ctxT) { try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctxT = new AC({ latencyHint: 'interactive' }); } catch (_) { return null; } }
+    if (ctxT.state === 'suspended') ctxT.resume().catch(() => {});
+    return ctxT;
+  }
+  for (const g of ['pointerdown', 'touchend', 'keydown']) document.addEventListener(g, () => { if (document.body.classList.contains('cerrado') || abierta) { const c = ctxTonos(); if (c && !tonoT) c.suspend().catch(() => {}); } }, { capture: true, passive: true });
+  const vibra = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) {} };
+  function paraTono() { clearInterval(tonoT); tonoT = null; tonoYa = ''; for (const n of nodosT) { try { n.stop(); } catch (_) {} } nodosT.clear(); vibra(0); if (ctxT && ctxT.state === 'running') ctxT.suspend().catch(() => {}); }
+  function tono(tipo) {
+    if (tonoYa === tipo) return;
+    paraTono(); const ctx = ctxTonos(); if (!ctx) return; tonoYa = tipo;
+    const suena = (f, ini, dur, vol, cola) => {
+      for (const [k, w, caida] of cola ? [[1, 1, 4.2], [2, 0.35, 7], [3.01, 0.12, 11]] : [[1, 1, 0], [2, 0.12, 0]]) {
+        const os = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + ini;
+        os.type = 'sine'; os.frequency.value = f * k;
+        if (cola) { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol * w, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 4 / caida); dur = 4 / caida; }
+        else { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol * w, t0 + 0.015); g.gain.setValueAtTime(vol * w, t0 + dur - 0.04); g.gain.linearRampToValueAtTime(0, t0 + dur); }
+        os.connect(g).connect(ctx.destination); os.start(t0); os.stop(t0 + dur + 0.05); nodosT.add(os); os.onended = () => nodosT.delete(os);
+      }
+    };
+    const ciclo = tipo === 'saliente' ? () => suena(425, 0, 1.2, 0.16, false)
+      : () => { suena(740, 0, 0, 0.26, true); suena(587, 0.42, 0, 0.26, true); suena(740, 1.1, 0, 0.24, true); suena(587, 1.52, 0, 0.24, true); vibra([350, 150, 350]); };
+    ciclo(); tonoT = setInterval(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); ciclo(); }, tipo === 'saliente' ? 4000 : 2600);
+  }
   function ponGrande(si) { grande = !!si; sala.classList.toggle('video-grande', grande && sala.classList.contains('en-llamada')); const x = $('#b-chat-texto'); x.dataset.t = grande ? 'chat' : 'ampliar'; x.textContent = tr(x.dataset.t); if (grande) $('#b-chat').classList.remove('nuevo'); }
   $('#b-chat').addEventListener('click', () => ponGrande(!grande));
   const mmss = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'); };
@@ -154,6 +182,7 @@
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true;
     ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
+    if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;

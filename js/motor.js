@@ -520,11 +520,94 @@
       obrero.postMessage({ tipo: 'codecs', id: L.tx, mapa, defecto }); obrero.postMessage({ tipo: 'codecs', id: L.rx, mapa, defecto });
     } catch (_) {}
   }
+  // ---------- la calidad (como en GUARDIANA, llamada.js; dueño, 16:02: «aplica la tecnología de GUARDIANA para que la llamada se
+  // adapte a la conexión y pueda verse a máxima calidad, incluso mejor que FaceTime… aplica todo lo necesario para vernos muy bien») --
+  //   · la cámara, a lo más que dé: en el teléfono hasta 1080p y en el ordenador hasta 4K, a 30 imágenes por segundo;
+  //   · los códecs, por calidad y por compatibilidad: entre teléfonos, primero el H.264 «constrained baseline», el que todos saben
+  //     codificar y decodificar (en GUARDIANA, del iPhone al Android la imagen llegaba en negro cuando el iPhone ofrecía H.264 High);
+  //     en el ordenador, VP9; sin AV1 (con la capa poscuántica);
+  //   · la imagen arranca nítida (1,5 Mb/s desde el primer segundo, no 300 kb/s) y sube hasta 8 Mb/s en el teléfono y 20 Mb/s en el
+  //     ordenador; si falta red, se conserva la fluidez y baja la resolución, que vuelve a subir en cuanto hay red;
+  //   · la voz: Opus a 48 kHz, hasta 96 kb/s, con corrección de errores, y va por delante de la imagen cuando la red se aprieta.
+  const TEL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
+  const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = TEL ? 8000000 : 20000000;
   async function medios() {
-    const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-    const VIDEO = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
-    try { return await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: VIDEO }); }
-    catch (_) { return navigator.mediaDevices.getUserMedia({ audio: AUDIO }); }
+    const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
+    const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
+    let st;
+    try { st = await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: VIDEO }); }
+    catch (e) {
+      // si la cámara no da tanto (o algún navegador no admite alguna petición), lo normal
+      try { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } }); }
+      catch (_) { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    }
+    for (const t of st.getVideoTracks()) { try { t.contentHint = 'motion'; } catch (_) {} }
+    return st;
+  }
+  function prefiereCodecs(pc, compatible) {
+    try {
+      const caps = window.RTCRtpReceiver && RTCRtpReceiver.getCapabilities && RTCRtpReceiver.getCapabilities('video'); if (!caps || !caps.codecs) return;
+      const env = window.RTCRtpSender && RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities('video');
+      const tipo = (c) => String(c.mimeType).toLowerCase(), auxiliar = /\/(rtx|red|ulpfec|flexfec)$/i;
+      const envia = env && env.codecs ? new Set(env.codecs.map(tipo)) : null;
+      let lista = caps.codecs;
+      if (envia) { const f = lista.filter((c) => auxiliar.test(c.mimeType) || envia.has(tipo(c))); if (f.some((c) => !auxiliar.test(c.mimeType))) lista = f; }
+      const pesos = compatible ? { 'video/h264': 0, 'video/vp8': 1, 'video/vp9': 2 } : { 'video/vp9': 0, 'video/h264': 1, 'video/vp8': 2 };
+      const perfilH264 = (c) => { const m = /profile-level-id=([0-9a-f]{6})/i.exec(c.sdpFmtpLine || ''); return m ? m[1].toLowerCase() : ''; };
+      const peso = (c) => {
+        const t = tipo(c), base = pesos[t] ?? 4;
+        if (!compatible || t !== 'video/h264') return base * 10;
+        const pl = perfilH264(c), pm1 = /packetization-mode=1/i.test(c.sdpFmtpLine || '');
+        return /^42e0/.test(pl) && pm1 ? 0 : /^42/.test(pl) ? 1 : 10 * pesos['video/vp8'] + 5; // los demás perfiles, detrás de VP8
+      };
+      const orden = lista.filter((c) => !/\/av1$/i.test(c.mimeType)).sort((a, b) => peso(a) - peso(b));
+      for (const tr of pc.getTransceivers()) { const k = (tr.sender.track && tr.sender.track.kind) || (tr.receiver.track && tr.receiver.track.kind); if (k === 'video' && tr.setCodecPreferences) tr.setCodecPreferences(orden); }
+    } catch (e) { console.warn('códecs', e); }
+  }
+  function arranqueVideo(sdp) {
+    try {
+      const pts = [...String(sdp).matchAll(/a=rtpmap:(\d+) (H264|VP8|VP9)\/90000/gi)].map((m) => m[1]);
+      for (const pt of pts) {
+        const re = new RegExp('a=fmtp:' + pt + ' ([^\\r\\n]*)');
+        if (re.test(sdp)) sdp = sdp.replace(re, (l, ps) => (/x-google-start-bitrate/.test(ps) ? l : l + ';x-google-start-bitrate=1500'));
+        else sdp = sdp.replace(new RegExp('(a=rtpmap:' + pt + ' [^\\r\\n]*)'), '$1\r\na=fmtp:' + pt + ' x-google-start-bitrate=1500');
+      }
+    } catch (_) {}
+    return sdp;
+  }
+  function altaFidelidad(sdp) {
+    try {
+      if (!/a=rtpmap:\d+ opus\/48000\/2/i.test(sdp || '')) return arranqueVideo(sdp);
+      const fin = /\r\n$/.test(sdp) ? '\r\n' : '';
+      const partes = String(sdp).replace(/\r\n$/, '').split(/\r\n(?=m=)/);
+      let audio = 0;
+      sdp = partes.map((sec) => {
+        if (!/^m=audio /.test(sec)) return sec;
+        const r = /a=rtpmap:(\d+) opus\/48000\/2/i.exec(sec); audio++;
+        if (!r || audio > 1) return sec;
+        const lineas = sec.split('\r\n'), pt = r[1];
+        const quiero = { maxaveragebitrate: String(MAX_BPS_AUDIO), useinbandfec: '1', usedtx: '0', stereo: '0', 'sprop-stereo': '0', maxplaybackrate: '48000', 'sprop-maxcapturerate': '48000' };
+        const linea = (x) => 'a=fmtp:' + pt + ' ' + Object.entries(x).map(([k, v]) => k + '=' + v).join(';');
+        const i = lineas.findIndex((l) => l.startsWith('a=fmtp:' + pt + ' '));
+        if (i >= 0) { const x = {}; for (const kv of lineas[i].slice(('a=fmtp:' + pt + ' ').length).split(';')) { const j = kv.indexOf('='); const k = (j < 0 ? kv : kv.slice(0, j)).trim(); if (k) x[k] = j < 0 ? '' : kv.slice(j + 1).trim(); } lineas[i] = linea(Object.assign(x, quiero)); }
+        else { const k = lineas.findIndex((l) => l.startsWith('a=rtpmap:' + pt + ' ')); lineas.splice(k + 1, 0, linea(quiero)); }
+        return lineas.join('\r\n');
+      }).join('\r\n') + fin;
+    } catch (_) {}
+    return arranqueVideo(sdp);
+  }
+  // la descripción propia, con la alta fidelidad
+  async function describe(pc, oferta, opc) { const d = oferta ? await pc.createOffer(opc) : await pc.createAnswer(); await pc.setLocalDescription({ type: d.type, sdp: altaFidelidad(d.sdp) }); }
+  async function topes(pc) {
+    for (const snd of pc.getSenders()) {
+      if (!snd.track) continue;
+      try {
+        const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+        if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
+        else { p.encodings[0].maxBitrate = MAX_BPS_VIDEO; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
+        await snd.setParameters(p);
+      } catch (_) {}
+    }
   }
   function conexion() {
     const ice = R && R.ice && R.ice.length ? R.ice : [];
@@ -535,7 +618,7 @@
       if (!L || L.pc !== pc) return;
       const st = pc.connectionState;
       if (st === 'connected') {
-        finRecupera(L);
+        finRecupera(L); topes(pc);
         if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); }
         if (L.estado !== 'hablando') { L.estado = 'hablando'; emite('llamada', estadoLlamada()); }
       } else if (st === 'failed' || st === 'disconnected') {
@@ -567,7 +650,7 @@
       const pc = x.pc;
       try { if (R && R.ice && R.ice.length) pc.setConfiguration({ iceServers: R.ice, iceTransportPolicy: 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }); } catch (_) {}
       if (pc.signalingState === 'have-local-offer') { try { await pc.setLocalDescription({ type: 'rollback' }); } catch (_) {} }
-      await pc.setLocalDescription(await pc.createOffer({ iceRestart: true }));
+      await describe(pc, true, { iceRestart: true });
       await reunido(pc); if (L !== x) return;
       if (S) enviaControl(S, { tipo: 'llamada', que: 'reoferta', id: x.id, sdp: pc.localDescription.sdp });
     } catch (e) { console.warn('reoferta', e); } finally { x.reofertando = false; }
@@ -627,11 +710,11 @@
       await llavesLlamada(s.sesion.medios, L.id, true);
       const pc = L.pc = conexion();
       for (const t of st.getTracks()) pc.addTrack(t, st);
-      ponCapa(pc);
-      await pc.setLocalDescription(await pc.createOffer()); codecs(pc);
+      ponCapa(pc); prefiereCodecs(pc, TEL);
+      await describe(pc, true); codecs(pc);
       await reunido(pc); if (!L || L.pc !== pc) return false;
       L.estado = 'llamando'; emite('llamada', estadoLlamada());
-      enviaControl(s, { tipo: 'llamada', que: 'oferta', id: L.id, sid: L.sid, sdp: pc.localDescription.sdp, video: L.video ? 1 : 0 });
+      enviaControl(s, { tipo: 'llamada', que: 'oferta', id: L.id, sid: L.sid, sdp: pc.localDescription.sdp, video: L.video ? 1 : 0, tel: TEL ? 1 : 0 });
       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
       return true;
     } catch (e) { console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
@@ -647,8 +730,8 @@
       const pc = L.pc = conexion();
       await pc.setRemoteDescription({ type: 'offer', sdp: L.oferta }); ponCapa(pc);
       for (const t of st.getTracks()) pc.addTrack(t, st);
-      ponCapa(pc);
-      await pc.setLocalDescription(await pc.createAnswer()); codecs(pc);
+      ponCapa(pc); prefiereCodecs(pc, TEL || L.telSuyo);
+      await describe(pc, false); codecs(pc);
       await reunido(pc); if (!L || L.pc !== pc) return false;
       L.estado = 'conectando'; emite('llamada', estadoLlamada());
       enviaControl(s, { tipo: 'llamada', que: 'respuesta', id: L.id, sdp: pc.localDescription.sdp });
@@ -661,7 +744,7 @@
       if (L || restante(s) < 5000) { enviaControl(s, { tipo: 'llamada', que: 'ocupado', id }); return; }
       if (!PQM) { enviaControl(s, { tipo: 'llamada', que: 'sin-capa', id }); emite('llamada-aviso', 'sin-capa'); return; }
       if (typeof j.sdp !== 'string' || j.sdp.length > 200000 || !s.sesiones.has(String(j.sid || ''))) return;
-      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid) };
+      L = { id, rol: 'contesta', estado: 'entrante', video: !!j.video, oferta: j.sdp, sid: String(j.sid), telSuyo: j.tel === 1 };
       emite('llamada', estadoLlamada());
       return;
     }
@@ -678,8 +761,8 @@
       const x = L, pc = x.pc;
       try {
         await pc.setRemoteDescription({ type: 'offer', sdp: j.sdp });
-        await pc.setLocalDescription(await pc.createAnswer());
-        await reunido(pc);
+        await describe(pc, false);
+        await reunido(pc); topes(pc);
         if (L === x) enviaControl(s, { tipo: 'llamada', que: 'rerespuesta', id: x.id, sdp: pc.localDescription.sdp });
       } catch (e) { console.warn('reoferta', e); }
       return;

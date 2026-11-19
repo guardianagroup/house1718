@@ -19,8 +19,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: wss://motor.guardianagroup.com wss://motor-am.guardianagroup.com wss://ru.guardianagroup.com https://motor.guardianagroup.com https://motor-am.guardianagroup.com https://ru.guardianagroup.com ws://127.0.0.1:8794 http://127.0.0.1:8794; media-src 'self' blob:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-24" integrity="sha384-2Tr7it6+SqElnU/o5JS1GNZDlT3PfxxUks3T9IXH350YeNsmf3MOjlDqxnZmW6HJ">
-<script src="js/idioma-inicio.js?v=20261119-24" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-25" integrity="sha384-M65RPuuB01Ictxl23qWjdJiwJEvdbOF4fIRgbIDyz78iLDOOHnis1x3DKsd3QsQU">
+<script src="js/idioma-inicio.js?v=20261119-25" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -220,7 +220,7 @@
 <button type="button" class="salir-llamada" id="salir-llamada"><span data-t="salir">Salir</span></button>
 <div class="par" role="group" id="entrante" hidden><button type="button" class="seg" id="aceptar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="aceptar">Aceptar</span></button><button type="button" class="seg" id="rechazar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="rechazar">Rechazar</span></button></div>
 </div>
-<p class="video-cifrado" id="video-cifrado"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-t="cifradaExtremo">Encriptada de extremo a extremo</span></p>
+<p class="video-cifrado" id="video-cifrado"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-t="cifradaExtremo">Encriptado poscuántico de extremo a extremo</span></p>
 <button type="button" class="video-toca" id="video-toca" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg><span data-t="tocaVer">Toca para ver y oír a la otra persona</span></button>
 <p class="video-capa" id="video-capa" hidden><span class="punto" aria-hidden="true"></span><span data-t="capaActiva">Imagen y sonido con capa poscuántica</span></p>
 <p class="video-tiempo" id="video-tiempo" hidden></p>
@@ -268,16 +268,16 @@
 </div>
 </div>
 
-<script src="js/luz.js?v=20261119-24" integrity="sha384-wYIghRbGq1r3ZgyePgLdZQntZUexfKLIRZFpxs2ZR5PMsrdZtIvACpfN/1aQzz/X" defer></script>
-<script src="js/idioma.js?v=20261119-24" integrity="sha384-yWS4tLGJIqHiraw6VoB5RouA+R0FsDSRTcgOrzYH+jZHJyEuia3TU59VJiX8809F"></script>
-<script src="js/pq-cnsa.js?v=20261119-24" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-24" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-24" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-24" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261119-24" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-24" integrity="sha384-A7/wg1zMc6/4KyoGOXKWCy5qjxNXoUuqhghbI5Pc1GR4RP10EpFA6lB3SX733hCR"></script>
-<script type="module" src="js/sala3d.js?v=20261119-24" integrity="sha384-D2sk8jMekgdLCzNdgFSfyElHfjYLXgowd/Q+Xq/DdcAkOVBuqhf+pBZUrXdgTuNj"></script>
-<script src="js/puerta.js?v=20261119-24" integrity="sha384-NPVK/JX2ecSOTk2dVl6NBnlRcAWpuZkPksfKpVeDZGfYDoxJIA+RZ8uNZ9e9Fl2L"></script>
-<script src="js/sala.js?v=20261119-24" integrity="sha384-HioKzoqDAFhp8TU59QArdpdUP7kfuew9JnbIKNvnSiJPKHnQbXudaFpSQ8SEb6Wu"></script>
+<script src="js/luz.js?v=20261119-25" integrity="sha384-wYIghRbGq1r3ZgyePgLdZQntZUexfKLIRZFpxs2ZR5PMsrdZtIvACpfN/1aQzz/X" defer></script>
+<script src="js/idioma.js?v=20261119-25" integrity="sha384-BOPViZA/Li6ZWHpGKJQdwiKmdF7LGanyfS95NpNYvTMEeFQ0Ho5fqijCEFeO8iZv"></script>
+<script src="js/pq-cnsa.js?v=20261119-25" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-25" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-25" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-25" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-25" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-25" integrity="sha384-JvOsQ4vs5PllIi4D/IjARJV+/ApcvqDGKC2XA/i30ILRcE12P9/hLNiRFssYNCrW"></script>
+<script type="module" src="js/sala3d.js?v=20261119-25" integrity="sha384-Cmj6O8B2ch7IGmAikG/0MK9MH1ve853PIIlhv9rCIO/1fHACxupEDktugqSFrIw1"></script>
+<script src="js/puerta.js?v=20261119-25" integrity="sha384-NPVK/JX2ecSOTk2dVl6NBnlRcAWpuZkPksfKpVeDZGfYDoxJIA+RZ8uNZ9e9Fl2L"></script>
+<script src="js/sala.js?v=20261119-25" integrity="sha384-JDYTFwAkjjEgmeK3KeWkBWTpUHSXm4hGmZmn/08OY+3weblYqo2dL5gTZtsWuc2j"></script>
 </body>
 </html>
