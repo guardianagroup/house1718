@@ -8,7 +8,8 @@
 'use strict';
 (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
-  const LUZ = '.seccion h2, .seccion .intro';
+  // (dueño, 19:37: de la mitad de la web hacia abajo también se encienden las palabras, como arriba)
+  const LUZ = '.seccion h2, .seccion .intro, .escena h2, .escena-entradilla, .dato-texto, .parada p, .escena-nota, .ficha dd, .pasos p';
   const APARECE = '.seccion > .etiqueta, .libro > li, .seccion .cadena, .riesgos > p, .seccion .recuadro, .pasos > li, .seccion .tabla, .tecnica > article, .nota-final, .pie-tabla, .seccion > .cristal, .ficha > div, .cifras-grandes > li';
 
   // ---- la entrada: un fundido corto (en las listas, uno detrás de otro) ----
