@@ -629,7 +629,7 @@
   // la prueba del gesto: la orden llega de quien comprueba y se ve grande en el centro (sin mensajes en el chat)
   let gestoT = null;
   M.on('gesto', (g) => {
-    if (!abierta) return;
+    if (!abierta || g.q === 'inicio') return;
     const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
     clearTimeout(gestoT);
     if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }

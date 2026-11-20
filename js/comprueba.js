@@ -431,6 +431,7 @@
       imagen,
     ];
     if (x.giro) senales.push({ k: 'giro', estado: x.giro.estado, v: tr(x.giro.estado === 'si' ? 'v_giroSi' : 'v_giroNo') });
+    if (x.cortes) senales.push({ k: 'cortes', estado: x.cortes >= 2 ? 'no' : 'aviso', v: tr('v_cortesNo') });
     const E = {}; for (const s of senales) E[s.k] = s.estado;
     let tipo, confianza = null, fija = null;
     if (E.camara === 'no') tipo = 'virtual';
@@ -438,6 +439,7 @@
     else if (fo.estado === 'no' && parpadeos === 0 && labios !== 'si') { tipo = 'fija'; fija = 'rigida'; }
     else if (mov < 0.006 && parpadeos === 0 && desv(boca) < 0.004) { tipo = 'fija'; fija = 'quieta'; }
     else if (E.relieve === 'no' && parpadeos === 0) tipo = 'plana';
+    else if (E.cortes === 'no') tipo = 'editado';
     else if (E.labios === 'no') tipo = 'labios';
     else if (E.giro === 'no') tipo = 'sinGiro';
     else {
@@ -456,10 +458,10 @@
   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
   const PESOS = {
     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 },
   };
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
-  const FIJAS = new Set(['camara', 'directo', 'giro']);
+  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes']);
   function probabilidad(r) {
     let L = 0; const k = Math.min(1, ((r.n | 0) || 30) / 30);
     for (const x of r.senales || []) { const w = PESOS[x.k]; if (w && w[x.estado] != null) L += w[x.estado] * (FIJAS.has(x.k) || w[x.estado] <= -3 ? 1 : k); }
@@ -508,7 +510,7 @@
     $('#comprobacion-giro').hidden = !(r.senales && r.senales.length > 2 && !r.senales.some((s) => s.k === 'giro')) || r.tipo === 'virtual';
   }
   function termina() {
-    cancelado = true; enMarcha = false; capa.hidden = true; capa.classList.remove('con-resultado'); triangulos = null; zonasPantalla = null; resultadoCaja.hidden = true;
+    avisaFin(); cancelado = true; enMarcha = false; capa.hidden = true; capa.classList.remove('con-resultado'); triangulos = null; zonasPantalla = null; resultadoCaja.hidden = true;
     sala.classList.remove('comprobando'); $('#comprobacion-estado').classList.remove('giro');
     g.clearRect(0, 0, lienzo.width, lienzo.height); go.clearRect(0, 0, onda.width, onda.height);
   }
@@ -584,8 +586,48 @@
     const vs = video.srcObject, vt = vs && vs.getVideoTracks()[0];
     return !vs || !vt || vt.readyState !== 'live' || video.readyState < 2 || !video.videoWidth;
   }
+  // ---- no comprobar a la vez (dueño, 20:34): quien empieza avisa al otro equipo; si los dos empiezan a la vez, cede quien contestó ----
+  let otroComprueba = 0, avisado = false, avisoT = null;
+  const avisaFin = () => { if (!avisado) return; avisado = false; try { if (M && M.gesto) M.gesto('fin', 0, 0); } catch (_) {} };
+  function ocupado() {
+    let a = document.querySelector('.aviso-comprobando');
+    if (!a) { a = document.createElement('p'); a.className = 'aviso-comprobando'; a.setAttribute('role', 'status'); sala.append(a); }
+    a.textContent = tr('otroComprueba'); a.hidden = false; clearTimeout(avisoT); avisoT = setTimeout(() => { a.hidden = true; }, 4000);
+  }
+  if (M) M.on('gesto', (g) => {
+    if (g.q === 'inicio') {
+      otroComprueba = performance.now() + 25000;
+      const e = M.estadoLlamada ? M.estadoLlamada() : null;
+      if (enMarcha && (!e || e.rol !== 'llama')) { termina(); ocupado(); }
+    } else if (g.q === 'fin') otroComprueba = 0;
+  });
+  // ---- los cortes de edición (vídeos de internet): la imagen entera cambia de golpe, solo en ese momento, y la cara salta de tamaño o
+  // de sitio. Con un corte, resta; con dos o más, resta mucho. ----
+  const fzL = document.createElement('canvas'); fzL.width = 32; fzL.height = 24; const fzG = fzL.getContext('2d', { willReadFrequently: true });
+  function firma() {
+    try { fzG.drawImage(video, 0, 0, 32, 24); } catch (_) { return null; }
+    let d; try { d = fzG.getImageData(0, 0, 32, 24).data; } catch (_) { return null; }
+    const v = new Float32Array(768); let m = 0, s = 0;
+    for (let i = 0; i < 768; i++) { v[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]; m += v[i]; }
+    m /= 768; for (let i = 0; i < 768; i++) { v[i] -= m; s += v[i] * v[i]; } s = Math.sqrt(s / 768) || 1; for (let i = 0; i < 768; i++) v[i] /= s;
+    return v;
+  }
+  function cortes(datos) {
+    let n = 0;
+    for (let i = 1; i < datos.length - 1; i++) {
+      const a = datos[i - 1], b = datos[i], c = datos[i + 1];
+      if (b.cz == null || b.cz < 0.6 || (a.cz != null && a.cz > 0.32) || (c.cz != null && c.cz > 0.32)) continue;
+      if (!a.p || !b.p || a.s || b.s || b.t - a.t > 450) continue;
+      const wa = a.w || 1, wb = b.w || 1, ia = dist(a.p[36], a.p[45]) / wa, ib = dist(b.p[36], b.p[45]) / wb;
+      const ca = [(a.p[36][0] + a.p[45][0]) / 2 / wa, (a.p[36][1] + a.p[45][1]) / 2 / wa], cb = [(b.p[36][0] + b.p[45][0]) / 2 / wb, (b.p[36][1] + b.p[45][1]) / 2 / wb];
+      if (Math.abs(Math.log(ib / ia)) >= 0.1 || Math.hypot(cb[0] - ca[0], cb[1] - ca[1]) >= 0.3 * Math.min(ia, ib)) n++;
+    }
+    return n;
+  }
+
   async function comprueba() {
     if (enMarcha) return;
+    if (otroComprueba > performance.now()) { ocupado(); return; }
     enMarcha = true; cancelado = false; triangulos = null; zonasPantalla = null; previo = null; const mia = ++vuelta;
     capa.hidden = false; resultadoCaja.hidden = true; $('#comprobacion-estado').hidden = false; $('#comprobacion-estado').classList.remove('giro');
     sala.classList.add('comprobando'); ponChips();
@@ -601,7 +643,8 @@
     const telefono = matchMedia('(max-width: 760px)').matches;
     const opc = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 224 : 320, scoreThreshold: 0.3 });
     const opc2 = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 320 : 416, scoreThreshold: 0.25 });
-    const datos = [], piel = [], t0 = performance.now();
+    const datos = [], piel = [], t0 = performance.now(); let firmaPrev = null;
+    if (M && M.gesto) avisado = !!M.gesto('inicio', 0, 0);
     let puntos = null, puntosT = 0, ultT = 0, pul = { estado: 'nd' }, pulT = 0, parp = 0, cerr = false, baseEar = 0, desfase = null, relojMedia = null;
     let caja = null, cajaT = 0, nCon = 0, fallos = 0;
     fam = fuente2D();
@@ -644,7 +687,8 @@
       if (cancelado || mia !== vuelta) break;
       const t = performance.now() - t0, r = ajustaLienzo(), m = aPantalla(r);
       if (p) { puntos = p; puntosT = performance.now(); nCon++; }
-      datos.push({ t, p, e: A ? A.e : 0, w: video.videoWidth, s: seguida ? 1 : 0 });
+      const fi = firma(); let cz = null; if (fi && firmaPrev) { let a = 0; for (let i = 0; i < fi.length; i++) a += Math.abs(fi[i] - firmaPrev[i]); cz = a / fi.length; } firmaPrev = fi;
+      datos.push({ t, p, e: A ? A.e : 0, w: video.videoWidth, s: seguida ? 1 : 0, cz });
       // las señales que ya se ven
       if (p) {
         chip('cara', 'si');
@@ -660,6 +704,7 @@
       dibuja(r, p ? p.map(([x, y]) => [m.ox + x * m.s, m.oy + y * m.s]) : null, avance, t);
     }
     if (usaRVFC && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(idCb); else cancelAnimationFrame(idCb);
+    avisaFin();
     if (cancelado || mia !== vuelta) { if (A) A.ctx.close().catch(() => {}); return; }
     await Promise.race([pf, new Promise((ok) => setTimeout(ok, 1200))]);
     const voz = bandaVoz(A); if (A) A.ctx.close().catch(() => {});
@@ -667,8 +712,9 @@
     enMarcha = false; zonasPantalla = null;
     g.clearRect(0, 0, lienzo.width, lienzo.height);
     const luz = piel.length ? mediana(piel.map((m) => m.y)) : null;
-    const r = analiza(datos, { fuente, pulso: pulso(piel), voz, luz });
-    r._datos = datos; r._extra = { fuente, pulso: r.pulso, voz, luz };
+    const nCortes = cortes(datos);
+    const r = analiza(datos, { fuente, pulso: pulso(piel), voz, luz, cortes: nCortes });
+    r._datos = datos; r._extra = { fuente, pulso: r.pulso, voz, luz, cortes: nCortes };
     if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__comprueba = { muestras: datos.length, cara: nCon, seguidas: datos.filter((d) => d.s).length, ms: Math.round(performance.now() - t0), tipo: r.tipo, forma: r.forma, parpadeos: r.parpadeos, pct: probabilidad(r) };
     resultado(r);
   }

@@ -1304,3 +1304,7 @@ html{overscroll-behavior-y:none}
   .sala .controles .ico-tel{width:24px;height:24px}
   .sala .controles .ico-env{width:23px!important;height:23px!important}
 }
+/* aviso: la otra persona está comprobando (no se puede a la vez) */
+.aviso-comprobando{position:absolute;z-index:40;left:50%;top:calc(env(safe-area-inset-top) + 120px);transform:translateX(-50%);margin:0;width:min(340px,88%);padding:14px 18px;border-radius:18px;
+  background:rgba(5,7,10,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(156,195,228,.35);color:#F4F6F8;font:500 15px/1.4 var(--ui);text-align:center;box-shadow:0 18px 50px -20px rgba(0,0,0,.8)}
+.aviso-comprobando[hidden]{display:none}
