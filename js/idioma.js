@@ -70,7 +70,7 @@
     otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
-    e7C1: 'Detects fake faces', e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Zoom has announced fake-face detection for December 2026 as a paid add-on. Teams and Meet rely on third-party software.',
+    e7C1: 'Detects fake faces', e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Zoom has announced fake-face detection for December 2026 as a paid add-on. Teams and Meet rely on third-party software.',
     lema: 'Private video calls with fake-face detection.',
     navDescubrir: 'Discover', navAcceso: 'Access', empezar: 'Start trial',
     c1v: '$16.6 bn', c1t: 'lost to internet crime in the US in 2024', c1f: 'FBI · IC3 2024',
@@ -222,7 +222,7 @@
     e6F5T: 'Constant rhythm', e6F5: 'Identical packets at a fixed pace: from outside, no one can tell when you speak.',
     e6F6T: 'No addresses', e6F6: 'The call goes through our server: neither of you sees the other’s address.',
     e6F7T: 'Up to 4K', e6F7: '1080p on phones and 4K on computers, adapting to the connection on its own.',
-    e6F8T: 'Verifiable code', e6F8: 'Every script carries its SHA-384 fingerprint: anyone can check the page has not been altered.',
+    e6F8T: 'Open source', e6F8: 'Published under the AGPL-3.0 licence: anyone can review it and check there are no backdoors. Every script carries its SHA-384 fingerprint.',
     e6Limite: 'What no tool can promise, neither can we: if a device is infected, whoever controls it sees what you see.',
     e7Etiqueta: 'AGAINST THE REST', e7Titulo: 'Your apps for daily life. <em class="c-hielo">Elixire for what counts.</em>', e7Texto: 'WhatsApp, Telegram and Signal are fine for everyday use. Elixire is for when you must confirm who is speaking, with no account and no history.',
     e7F1: 'No install, no sign-up', e7F2: 'No phone number needed', e7F4: 'Post-quantum encryption', e7Sin: 'No public deployment', e7F6: 'Spot a fake face in the call', no: 'No',
