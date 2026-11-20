@@ -1425,3 +1425,5 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .malla-sello{position:absolute;left:8px;bottom:8px;z-index:2;font:600 8px/1 var(--ui);letter-spacing:.14em;color:#F4F6F8;background:rgba(6,8,12,.62);padding:4px 6px;border-radius:6px}
 .escaner-barrido{z-index:1}
 @media (min-width:361px) and (max-width:760px){.escaner{grid-template-columns:minmax(0,176px) minmax(0,1fr)!important;gap:12px!important}.senales-escena li{padding:9px 10px!important}}
+.malla .malla-lineas path{stroke-width:.9}
+.malla .esquinas{stroke-width:3.4}
