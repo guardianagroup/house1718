@@ -1368,3 +1368,9 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .comparar .v.parcial{font-size:13px}
 }
 @media (max-width:760px){.comparar thead th{padding:0 3px 10px}}
+/* la comparativa en móviles muy estrechos (iPhone SE, 320 px): los títulos se cortan con guion y, si aun así no cabe, se desliza */
+@media (max-width:760px){.comparar thead th{-webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere}}
+@media (max-width:360px){html table.comparar{display:block!important;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}}
+/* la tarjeta de «Comprobar» en móviles de 320 px: que los valores no se salgan */
+@media (max-width:360px){.senales-escena li{gap:8px}.senales-escena li b,.senales-escena li span{font-size:12.5px}.escaner{max-width:100%}.senales-escena{min-width:0;max-width:100%}}
+@media (max-width:360px){.escaner{grid-template-columns:minmax(0,104px) minmax(0,1fr)!important;gap:10px!important}.senales-escena li{padding:9px 9px!important}}
