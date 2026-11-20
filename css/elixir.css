@@ -1235,3 +1235,55 @@ html{overscroll-behavior-y:none}
   .sala.comprobando .b-girar,.sala.en-chat .b-girar{display:none!important}
 }
 .video-mio.trasera{transform:none!important}
+
+/* ---------- la miniatura del chat, más grande y siempre a la vista, también con el teclado abierto (dueño, 19:12: «que sea más
+   grande… cuando la persona abra el teclado… que no quede oculto arriba… sintonía y orden visual perfecto») ---------- */
+@media (max-width:760px){
+  .sala.en-chat .chat-cab{padding-right:120px}
+  .sala.en-chat .escena-video{top:calc(var(--vv-top,0px) + env(safe-area-inset-top) + 10px)!important;width:96px!important;height:128px!important;border-radius:18px!important;
+    transition:width .25s ease,height .25s ease,top .25s ease,left .28s cubic-bezier(.2,.8,.2,1)}
+  .sala.en-chat .escena-video.movida{top:calc(var(--vv-top,0px) + var(--mini-y))!important}
+  .sala.en-chat.teclado .escena-video{width:66px!important;height:88px!important;border-radius:14px!important}
+  .sala.en-chat.teclado .chat-cab{min-height:calc(env(safe-area-inset-top) + 98px);padding-right:88px}
+}
+
+/* ---------- la llamada en grupo (hasta 4): la imagen de cada persona en su recuadro, con su nombre; «Añadir» arriba ---------- */
+.video-par{display:none}
+.par-nombre{display:none}
+.sala.en-grupo .video-par{display:block;position:absolute;object-fit:cover;background:#05070A;border:0}
+.sala.en-grupo .par-nombre:not([hidden]){display:inline-flex;position:absolute;z-index:3;padding:5px 10px;border-radius:999px;background:rgba(5,7,10,.62);font:500 12.5px/1 var(--ui);color:#F4F6F8;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+/* dos personas más: arriba la principal, abajo la otra */
+.sala.en-grupo[data-grupo="2"] .video-suyo{inset:0 0 50% 0!important;height:50%!important}
+.sala.en-grupo[data-grupo="2"] .video-par[data-i="1"]{left:0;right:0;top:50%;bottom:0;width:100%;height:50%;border-top:2px solid #06080C}
+.sala.en-grupo[data-grupo="2"] #par-principal{left:12px;top:calc(50% - 38px)}
+.sala.en-grupo[data-grupo="2"] .par-nombre[data-i="1"]{left:12px;bottom:calc(env(safe-area-inset-bottom) + 132px)}
+/* tres personas más: arriba la principal; abajo, dos */
+.sala.en-grupo[data-grupo="3"] .video-suyo{inset:0 0 50% 0!important;height:50%!important}
+.sala.en-grupo[data-grupo="3"] .video-par[data-i="1"]{left:0;top:50%;width:50%;height:50%;border-top:2px solid #06080C;border-right:1px solid #06080C}
+.sala.en-grupo[data-grupo="3"] .video-par[data-i="2"]{left:50%;top:50%;width:50%;height:50%;border-top:2px solid #06080C;border-left:1px solid #06080C}
+.sala.en-grupo[data-grupo="3"] #par-principal{left:12px;top:calc(50% - 38px)}
+.sala.en-grupo[data-grupo="3"] .par-nombre[data-i="1"]{left:12px;bottom:calc(env(safe-area-inset-bottom) + 132px)}
+.sala.en-grupo[data-grupo="3"] .par-nombre[data-i="2"]{left:calc(50% + 12px);bottom:calc(env(safe-area-inset-bottom) + 132px)}
+/* en el chat del móvil, la miniatura solo enseña a la persona principal */
+.sala.en-chat .video-par,.sala.en-chat .par-nombre{display:none!important}
+/* «Añadir persona» (una persona con un +), arriba a la derecha, al lado de girar la cámara */
+.b-anadir{display:none}
+@media (max-width:760px){
+  .sala .b-anadir:not([hidden]){display:grid;place-items:center;position:absolute;z-index:4;right:68px;top:calc(env(safe-area-inset-top) + 12px);width:46px;height:46px;padding:0;border-radius:50%;
+    border:1px solid rgba(255,255,255,.2);background:rgba(8,12,18,.5);color:#F4F6F8;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sala .b-anadir svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .sala .b-girar[hidden]~.b-anadir,.sala .b-anadir:has(~ .b-girar[hidden]){right:14px}
+  .sala.comprobando .b-anadir,.sala.en-chat .b-anadir{display:none!important}
+}
+/* (ajustes del grupo: botones redondos a la derecha, debajo de la información de arriba; nombres arriba de cada recuadro; quien habla
+   se enciende; «Añadir persona» del ordenador nunca en el móvil) */
+@media (max-width:760px){
+  .sala #b-anadir-pc{display:none!important}
+  .sala .b-anadir:not([hidden]),.sala .b-girar:not([hidden]){right:14px!important}
+  .sala .b-girar:not([hidden]){top:calc(env(safe-area-inset-top) + 92px)}
+  .sala .b-anadir:not([hidden]){top:calc(env(safe-area-inset-top) + 146px)}
+  .sala .b-girar[hidden]+.video-toca,.sala .b-anadir:has(+ .b-girar[hidden]){top:calc(env(safe-area-inset-top) + 92px)}
+  .sala.en-grupo[data-grupo="2"] .par-nombre[data-i="1"],.sala.en-grupo[data-grupo="3"] .par-nombre[data-i="1"]{bottom:auto;top:calc(50% + 12px)}
+  .sala.en-grupo[data-grupo="3"] .par-nombre[data-i="2"]{bottom:auto;top:calc(50% + 12px)}
+}
+.sala.en-grupo .video-suyo.habla,.sala.en-grupo .video-par.habla{outline:3px solid rgba(92,201,138,.95);outline-offset:-3px}

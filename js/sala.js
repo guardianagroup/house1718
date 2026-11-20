@@ -11,6 +11,8 @@
   // solo en vertical (dueño, 17:09): donde el navegador deja fijar la orientación, se fija; si no, en horizontal sale «Gira el móvil»
   try { if (screen.orientation && screen.orientation.lock && matchMedia('(pointer: coarse)').matches) screen.orientation.lock('portrait').catch(() => {}); } catch (_) {}
   let abierta = false, continuada = false;
+  const idAzar = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const G = () => window.ElixireGrupo || null;
   const hora = (t) => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const tam = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB');
 
@@ -55,6 +57,7 @@
   function pintaMensaje(m) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg ' + m.dir; li.dataset.id = m.id;
+    if (m.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = m.de; li.append(d); }
     li.append(contenido(m.texto)); toastMensaje(m);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
@@ -68,15 +71,15 @@
     e.preventDefault();
     if (grab) { paraNota('enviar'); return; }
     if (revision) { enviaRevision(); return; }
-    const m = M.envia(texto.value); if (!m) return;
+    const id = idAzar(12), g = G(); let m = M.envia(texto.value, id); if (g && g.activo) { const x = g.envia(texto.value, id); if (!m) m = x; } if (!m) return;
     texto.value = ''; ajusta(); pintaVoz(); pintaMensaje(m);
   });
   texto.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#redactor').requestSubmit(); } });
   function ajusta() { texto.style.height = 'auto'; texto.style.height = Math.min(160, texto.scrollHeight + 2) + 'px'; }
-  texto.addEventListener('input', () => { ajusta(); pintaVoz(); if (texto.value.trim()) M.escribe(); });
+  texto.addEventListener('input', () => { ajusta(); pintaVoz(); if (texto.value.trim()) { M.escribe(); const g = G(); if (g && g.activo) g.escribe(); } });
   let escribeT = null;
   M.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
-  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; { const g = G(); if (g && g.activo && m.dir !== 'mia') m.de = tr('persona') + ' 1'; } pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
   M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
 
   // ---------- archivos ----------
@@ -171,7 +174,8 @@
     toast('ubi', { icono: 'pin', titulo: tr('buscandoUbicacion'), ms: 20000 });
     navigator.geolocation.getCurrentPosition((p) => {
       quitaToast('ubi');
-      const m = M.envia('\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6));
+      const txt = '\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6), id = idAzar(12), g = G();
+      let m = M.envia(txt, id); if (g && g.activo) { const x = g.envia(txt, id); if (!m) m = x; }
       if (m) pintaMensaje(m);
     }, () => toast('ubi', { icono: 'pin', titulo: tr('sinUbicacion'), ms: 5000 }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
@@ -215,6 +219,7 @@
     const li = document.createElement('li'); li.dataset.id = a.id;
     if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); lista.append(li); abajo(); return li; }
     li.className = 'msg archivo ' + a.dir + (esFoto(a.mime) ? ' foto' : '');
+    if (a.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = a.de; li.append(d); }
     if (esFoto(a.mime) && previas.get(a.id)) li.append(miniatura(previas.get(a.id), a.nombre));
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
     const t = document.createElement('span'); t.className = 'tam'; t.textContent = tam(a.tam);
@@ -225,7 +230,7 @@
   const fila = (id) => lista.querySelector('li.archivo[data-id="' + CSS.escape(id) + '"],li.nota[data-id="' + CSS.escape(id) + '"]');
   function enviaArchivos(files, previa, dur) {
     for (const f of files) {
-      const r = M.enviaArchivo(f);
+      const idA = idAzar(8), g = G(); let r = M.enviaArchivo(f, idA); if (g && g.activo) { const x = g.enviaArchivo(f, idA); if (!r.ok && x) r = x; }
       if (!r.ok) { sistema(r.por === 'grande' ? 'archivoGrande' : 'archivoNo', '(' + f.name + ')'); if (previa) URL.revokeObjectURL(previa); continue; }
       if (previa && esAudio(f.type, f.name)) notas.set(r.id, { url: previa, dur: dur || 0, mia: true }); else if (previa) previas.set(r.id, previa);
       filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam, mime: f.type, dur });
@@ -242,9 +247,11 @@
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
   M.on('archivo', (a) => filaArchivo(a));
-  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); });
-  M.on('archivo-enviado', (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
-  M.on('archivo-listo', (a) => {
+  const alProgreso = (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
+  M.on('archivo-progreso', alProgreso);
+  const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
+  M.on('archivo-enviado', alEnviado);
+  const alListo = (a) => {
     { const v = archivosVivos.get(a.id) || {}; toastArchivo(Object.assign({ dir: 'suya' }, v, a), 'listo'); archivosVivos.delete(a.id); }
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
@@ -252,8 +259,10 @@
     if (esFoto(a.mime)) li.prepend(miniatura(a.url, a.nombre));
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;
     const s = document.createElement('span'); s.dataset.t = 'descargar'; s.textContent = tr('descargar'); d.append(s); li.append(d); abajo();
-  });
-  M.on('archivo-cancelado', (p) => { const li = fila(p.id); if (li) li.remove(); sistema('archivoCancelado'); });
+  };
+  M.on('archivo-listo', alListo);
+  const alCancelado = (p) => { const li = fila(p.id); if (li) li.remove(); sistema('archivoCancelado'); };
+  M.on('archivo-cancelado', alCancelado);
 
   // ---------- en la llamada del móvil: pasar al chat y volver al vídeo (dueño, 16:57: «la videollamada se debe poder pasar a
   // chat y después a vídeo nuevamente») ----------
@@ -269,6 +278,8 @@
     const h = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
     sala.style.setProperty('--vv-h', Math.round(h) + 'px'); sala.style.setProperty('--vv-top', Math.round(top) + 'px');
     sala.classList.toggle('teclado', innerHeight - h > 120);
+    // la miniatura movida no se queda fuera de la vista al abrir el teclado (dueño, 19:12)
+    if (escena.classList.contains('movida')) { const y = parseFloat(escena.style.getPropertyValue('--mini-y')) || 0, alto = escena.offsetHeight || 96; const max = Math.max(8, h - alto - 96); if (y > max) escena.style.setProperty('--mini-y', Math.round(max) + 'px'); }
   }
   if (vv) { vv.addEventListener('resize', () => { ajustaVista(); if (enChat) abajo(); }); vv.addEventListener('scroll', ajustaVista); }
   function abreChat() {
@@ -607,6 +618,7 @@
     if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
   }
   M.on('llamada', (e) => {
+    { const g = G(); if (e.estado === 'fin' && g && g.quedan()) { g.principalSale(); return; } }
     if (abierta) pintaLlamada(e);
     const E = window.Elixire || {};
     if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
@@ -632,9 +644,9 @@
   });
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
-  $('#b-colgar').addEventListener('click', () => M.colgar());
-  $('#b-micro').addEventListener('click', (e) => M.micro(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
-  $('#b-camara').addEventListener('click', (e) => M.camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
+  $('#b-colgar').addEventListener('click', () => { const g = G(); if (g && g.activo) g.sal(); M.colgar(); });
+  $('#b-micro').addEventListener('click', (e) => { const si = e.currentTarget.getAttribute('aria-pressed') !== 'true'; M.micro(si); const g = G(); if (g) g.micro(si); });
+  $('#b-camara').addEventListener('click', (e) => { const si = e.currentTarget.getAttribute('aria-pressed') !== 'true'; M.camara(si); const g = G(); if (g) g.camara(si); });
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
@@ -682,6 +694,7 @@
   M.on('red', (si) => { if (abierta) ponEstado(si ? 'salaEstado' : 'sinRed', !si); });
   $('#terminar').addEventListener('click', () => M.termina('mio'));
   M.on('fin', (f) => {
+    { const g = G(); if (g && g.quedan() && f.motivo !== 'alarma' && f.motivo !== 'alarma-suya') { g.principalSale(); avisoBreve(tr('grupoSale').replace('{p}', tr('persona') + ' 1')); return; } }
     const enSala = abierta; cierraMovil(); cierra();
     const textos = {
       mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false],
@@ -719,7 +732,7 @@
     navigator.clipboard.writeText(c.textContent.trim()).then(() => toast('copiado', { ok: true, titulo: tr('copiadoMsg'), ms: 1600 })).catch(() => {});
   });
   $('#borra-mi').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (li) quitaFila(li, false); });
-  $('#borra-todos').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (!li || !li.classList.contains('mia')) return; if (M.borra(li.dataset.id)) quitaFila(li, true); else quitaFila(li, false); });
+  $('#borra-todos').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (!li || !li.classList.contains('mia')) return; const g = G(); const ok = M.borra(li.dataset.id); if (g && g.activo) g.borra(li.dataset.id); quitaFila(li, ok || !!(g && g.activo)); });
   M.on('borrado', (id) => { const li = lista.querySelector('li.msg.suya[data-id="' + CSS.escape(id) + '"]'); if (li) quitaFila(li, true, true); quitaToast('a-' + id); quitaToast('m-' + id); });
   function quitaFila(li, paraTodos, suyo) {
     const id = li.dataset.id;
@@ -747,9 +760,10 @@
     const dx = e.clientX - arrastre.x0, dy = e.clientY - arrastre.y0;
     if (!arrastre.mov && Math.hypot(dx, dy) < 7) return;
     arrastre.mov = true; escena.classList.add('movida', 'arrastrando');
-    const W = innerWidth, H = vv ? vv.height : innerHeight;
+    // (la posición, respecto a lo que se ve: con el teclado abierto, el iPhone desplaza la vista)
+    const W = innerWidth, H = vv ? vv.height : innerHeight, vt = vv ? vv.offsetTop : 0;
     escena.style.setProperty('--mini-x', Math.round(Math.max(8, Math.min(W - arrastre.w - 8, arrastre.l + dx))) + 'px');
-    escena.style.setProperty('--mini-y', Math.round(Math.max(8, Math.min(H - arrastre.h - 8, arrastre.t + dy))) + 'px');
+    escena.style.setProperty('--mini-y', Math.round(Math.max(8, Math.min(H - arrastre.h - 8, arrastre.t - vt + dy))) + 'px');
   }, true);
   const sueltaMini = (e) => {
     if (!arrastre || e.pointerId !== arrastre.id) return;
@@ -761,7 +775,19 @@
   escena.addEventListener('pointerup', sueltaMini, true); escena.addEventListener('pointercancel', sueltaMini, true);
 
   // ---------- girar la cámara (dueño, 18:51) ----------
-  $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await M.giraCamara(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
+  $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await M.giraCamara(); const g = G(); if (g && g.activo) await g.reclona(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
+
+  // ---------- para la llamada en grupo (grupo.js): cada persona más, con los mismos avisos y filas que la principal ----------
+  function avisoBreve(t) { if (!abierta) return; if (movil.matches && !enChat) toast('g-' + Date.now(), { icono: 'msj', titulo: t, ms: 4200 }); else { quitaVacio(); const li = document.createElement('li'); li.className = 'msg sistema'; li.textContent = t; lista.append(li); abajo(); } }
+  function engancha(x, etiqueta) {
+    x.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
+    x.on('mensaje', (m) => { if (m.dir !== 'mia') m.de = etiqueta(); $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+    x.on('archivo', (a) => { if (a.dir !== 'mia') a.de = etiqueta(); filaArchivo(a); });
+    x.on('archivo-progreso', alProgreso); x.on('archivo-enviado', alEnviado); x.on('archivo-listo', alListo); x.on('archivo-cancelado', alCancelado);
+    x.on('borrado', (id) => { const li = lista.querySelector('li.msg.suya[data-id="' + CSS.escape(id) + '"]'); if (li) quitaFila(li, true, true); });
+  }
+  function finGrupo() { if (!abierta) return; pintaLlamada({ estado: 'fin', motivo: 'suyo' }); }
+  window.ElixireSala = { engancha, avisoBreve, finGrupo };
 
   // ---------- avisos ----------
   function aviso(etiqueta, titulo, cuerpo, mal, enlace, invitar) {

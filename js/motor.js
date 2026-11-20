@@ -10,10 +10,14 @@
 //   · Archivos: cada uno con su llave AES-256-GCM al azar, que viaja dentro de la sesión; trozos de tamaño fijo.
 //   · Videollamada: WebRTC solo por el servidor de llamadas del relé (ninguno ve la dirección del otro), la negociación dentro de la
 //     sesión, y encima la capa poscuántica de la imagen y el sonido (medios-pq.js), sin rebaja: sin ella, no hay llamada.
+//   · Llamada en grupo (dueño, 18:24: «haz la función de añadir participante a la llamada»; agencia, ronda 98: malla completa,
+//     hasta 4): un motor por cada otra persona. window.ElixireMotor es la conversación de siempre; los demás los crea grupo.js con
+//     window.ElixireMotorNuevo({ medios }) y cada pareja tiene su propia sesión poscuántica y su propia llamada.
 'use strict';
-(() => {
+const creaMotor = (OPC) => {
+  OPC = OPC || {};
   const C = window.GuardianaCripto, B = C && C.B;
-  if (!C || !B || !window.GuardianaRele) return;
+  if (!C || !B || !window.GuardianaRele) return null;
   const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   const q = new URLSearchParams(location.search);
   const TIC_MS = (LOCAL && +q.get('latido')) || 500;
@@ -265,7 +269,7 @@
     return C.cat(cab, ct);
   }
   // fuera del ritmo fijo: el acuerdo de claves, las palabras, las órdenes y la señalización de la llamada
-  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel', 'par', 'traspaso', 'traspaso-ok']);
+  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel', 'par', 'traspaso', 'traspaso-ok', 'grupo']);
   function enviaControl(s, obj) {
     if (!s || s.fin || !s.sesion || !R.abierto || !s.miembros.has(s.suId)) return false;
     if (!APARTE.has(obj.tipo)) { aTic(s, obj); return true; }
@@ -348,6 +352,15 @@
       case 'ack': if (Array.isArray(j.ids)) emite('acuse', j.ids.slice(0, 50).map(String)); return;
       case 'escribe': emite('escribe', !!j.si); return;
       case 'borra': { const id = String(j.id || '').slice(0, 40); if (id) emite('borrado', id); return; }
+      case 'grupo': {
+        // solo lo que se espera, con tamaños fijos: quién soy en el grupo, a quién conectar (con su semilla) y quién se va
+        const g = { que: String(j.que || '').slice(0, 16), id: String(j.id || '').slice(0, 16), n: Math.max(0, Math.min(8, j.n | 0)), nombre: String(j.nombre || '').slice(0, 32) };
+        if (typeof j.semilla === 'string' && /^[A-Za-z0-9_-]{43}$/.test(j.semilla)) g.semilla = j.semilla;
+        if (typeof j.con === 'string') g.con = j.con.slice(0, 16);
+        if (Array.isArray(j.ids)) g.ids = j.ids.slice(0, 8).map((x) => String(x).slice(0, 16));
+        if (j.rol === 'crea' || j.rol === 'entra') g.rol = j.rol;
+        emite('grupo', g); return;
+      }
       case 'palabras': return recibeRevelacion(s, j);
       case 'palabras-ok': s.revelaOk = true; return;
       case 'comprobadas': s.suComprobadas = true; emite('su-comprobacion'); return;
@@ -391,14 +404,24 @@
   }
 
   // ---------- texto ----------
-  function envia(texto) {
+  // (en grupo, el mismo mensaje sale por cada pareja con el mismo identificador: así «Borrar para todos» lo borra en todos)
+  function envia(texto, idFijo) {
     const s = S; texto = String(texto || '').trim();
     if (!s || !s.conectado || s.fin || !texto) return null;
-    const m = { tipo: 'texto', id: C.hex(C.azar(12)), t: Date.now(), texto: texto.slice(0, 20000) };
+    const m = { tipo: 'texto', id: /^[0-9a-f]{16,24}$/.test(idFijo || '') ? idFijo : C.hex(C.azar(12)), t: Date.now(), texto: texto.slice(0, 20000) };
     aTic(s, m);
     return { id: m.id, texto: m.texto, t: m.t, dir: 'mia' };
   }
   // borrar un mensaje o un archivo para los dos (dueño, 18:20): va por la sesión encriptada; la otra pantalla lo quita
+  function enviaGrupo(obj) { const s = S; if (!s || !s.conectado || s.fin || !obj) return false; return enviaControl(s, Object.assign({}, obj, { tipo: 'grupo' })); }
+  // pistas nuevas para esta llamada (al girar la cámara en la principal, el grupo pone copias nuevas en las demás)
+  async function ponPistas(st) {
+    if (!L || !L.pc || !st) return false;
+    for (const sn of L.pc.getSenders()) { const k = sn.track && sn.track.kind, nt = k && st.getTracks().find((t) => t.kind === k); if (nt) { try { await sn.replaceTrack(nt); } catch (_) {} } }
+    const viejo = L.local; L.local = st; micro(L.mic !== false); camara(L.cam !== false);
+    if (viejo && viejo !== st) for (const t of viejo.getTracks()) if (!st.getTracks().includes(t)) t.stop();
+    emite('llamada', estadoLlamada()); return true;
+  }
   function borra(id) { const s = S; if (!s || !s.conectado || s.fin || !id) return false; aTic(s, { tipo: 'borra', id: String(id).slice(0, 40) }); return true; }
   let escribeT = 0;
   function escribe() { const s = S; if (!s || !s.conectado || Date.now() - escribeT < 2500) return; escribeT = Date.now(); s.tic = s.tic.filter((x) => x.tipo !== 'escribe'); aTic(s, { tipo: 'escribe', si: 1 }); }
@@ -409,10 +432,10 @@
   // tamaño (los últimos bytes, rellenos), y cada uno autentica su número y el total: nadie puede cambiarlos, quitarlos ni reordenarlos.
   const TROZO = 48 * 1024, VENTANA = 32, LIMITE = 1024 * 1024 * 1024, ATRASO = 6 * 1024 * 1024;
   const adTrozo = (cab, partes) => C.cat(cab, C.te.encode('ELIXIRE archivo v1\n' + partes));
-  function enviaArchivo(file) {
+  function enviaArchivo(file, idFijo) {
     const s = S; if (!s || !s.conectado || s.fin || !file) return { ok: false, por: 'sin-sesion' };
     if (file.size > LIMITE) return { ok: false, por: 'grande' };
-    const id = C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
+    const id = /^[0-9a-f]{16}$/.test(idFijo || '') && !s.envios.has(idFijo) ? idFijo : C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
     const env = { id, file, llave, partes, enviadas: 0, confirmadas: 0, nombre: String(file.name || 'archivo').slice(0, 200), tam: file.size, mime: String(file.type || '').slice(0, 100), activo: false, fin: false };
     s.envios.set(id, env);
     aTic(s, { tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) });
@@ -550,6 +573,7 @@
   const TEL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
   const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = TEL ? 8000000 : 20000000;
   async function medios() {
+    if (OPC.medios) { try { const st = await OPC.medios(); if (st && st.getTracks().length) return st; } catch (_) {} }
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
     const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
     let st;
@@ -652,13 +676,18 @@
   }
   // la descripción propia, con la alta fidelidad
   async function describe(pc, oferta, opc) { const d = oferta ? await pc.createOffer(opc) : await pc.createAnswer(); await pc.setLocalDescription({ type: d.type, sdp: altaFidelidad(d.sdp) }); }
+  // en grupo, cada persona manda su imagen a cada una de las demás: menos resolución y caudal por pareja para que ningún móvil se
+  // cargue (como hacen Meet, FaceTime o WhatsApp al pasar de dos a varias personas)
+  let topeGrupo = null;
+  function limita(t) { const nuevo = t && t.bps ? { bps: t.bps | 0, escala: Math.max(1, +t.escala || 1), fps: Math.max(10, Math.min(30, t.fps | 0 || 30)) } : null; if (JSON.stringify(nuevo) === JSON.stringify(topeGrupo)) return; topeGrupo = nuevo; if (L && L.pc) topes(L.pc); }
+  async function nivelAudio() { const x = L; if (!x || !x.pc) return 0; try { const st = await x.pc.getStats(); let n = 0; st.forEach((r) => { if (r.type === 'inbound-rtp' && r.kind === 'audio' && typeof r.audioLevel === 'number') n = Math.max(n, r.audioLevel); }); return n; } catch (_) { return 0; } }
   async function topes(pc) {
     for (const snd of pc.getSenders()) {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
         if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
-        else { p.encodings[0].maxBitrate = MAX_BPS_VIDEO; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
+        else { const g = topeGrupo; p.encodings[0].maxBitrate = g ? g.bps : MAX_BPS_VIDEO; p.encodings[0].maxFramerate = g ? g.fps : 30; p.encodings[0].scaleResolutionDownBy = g ? g.escala : 1; p.degradationPreference = g ? 'balanced' : 'maintain-framerate'; }
         await snd.setParameters(p);
       } catch (_) {}
     }
@@ -1059,17 +1088,20 @@
     return { ok: true };
   }
 
-  window.ElixireMotor = {
-    on, prepara, crea, entra, termina, envia, borra, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
+  const API = {
+    on, prepara, crea, entra, termina, envia, borra, escribe, giraCamara, grupo: enviaGrupo, ponPistas, limita, nivelAudio, comprobadas, enviaArchivo, cancelaArchivo,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, fuente, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
-    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
+    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
-  if (LOCAL) window.ElixireMotor._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
-  if (LOCAL) window.ElixireMotor._usa = (ms) => { if (S) S.usado = ms; };
-  if (LOCAL) window.ElixireMotor._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
-  if (LOCAL) window.ElixireMotor._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
-})();
+  if (LOCAL) API._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
+  if (LOCAL) API._usa = (ms) => { if (S) S.usado = ms; };
+  if (LOCAL) API._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
+  if (LOCAL) API._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
+  return API;
+};
+window.ElixireMotor = creaMotor({});
+window.ElixireMotorNuevo = creaMotor;

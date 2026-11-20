@@ -27,8 +27,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-37" integrity="sha384-B8LYs4XlmWG3vkVO6S2MBsdovZGNGpo5WwOEN4huRU1Ksz/hYsv0mTnJXJLWnn24">
-<script src="js/idioma-inicio.js?v=20261119-37" integrity="sha384-YVUxjSAlW/11FcCofxl0bGml//xYe6UhqkFBJdcsOxHTW1U8YKJkJLN0nK+ku7pB"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-37" integrity="sha384-g2Uc+CASpyw3IIquKtbcanqgEjGzhmvmxslz67HgfJRK78bbE4ywlVc164riFKQR">
+<script src="js/idioma-inicio.js?v=20261119-37" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -310,13 +310,15 @@
 <button type="button" class="comprobacion-giro" id="comprobacion-giro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 0 1 13.2-4.9M19.5 12a7.5 7.5 0 0 1-13.2 4.9"/><path d="M18 3.5v4h-4M6 20.5v-4h4"/></svg><span data-t="pruebaGiro">Prueba extra: girar la cabeza</span></button><button type="button" class="comprobacion-cerrar" id="comprobacion-cerrar"><span data-t="entendido">Entendido</span></button>
 </div>
 </div>
+<span class="par-nombre principal" id="par-principal" hidden></span>
+<button type="button" class="b-anadir" id="b-anadir" hidden aria-label="Añadir persona" data-t-aria="anadirPersona"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9.5" cy="8" r="3.6"/><path d="M3 19.5c.6-3.5 3.3-5.6 6.5-5.6s5.9 2.1 6.5 5.6"/><path d="M18.5 8.5v6M15.5 11.5h6"/></svg></button>
 <button type="button" class="b-girar" id="b-girar" hidden aria-label="Girar la cámara" data-t-aria="girarCamara"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.3 11.2a3.4 3.4 0 0 0-6.1-.9M8.7 13.8a3.4 3.4 0 0 0 6.1.9"/><path d="M9.2 8.9v1.6h1.6M14.8 17.1v-1.6h-1.6"/></svg></button>
 <button type="button" class="video-toca" id="video-toca" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg><span data-t="tocaVer">Toca para ver y oír a la otra persona</span></button>
 <p class="video-capa" id="video-capa" hidden><span class="punto" aria-hidden="true"></span><span data-t="capaActiva">Imagen y sonido con capa poscuántica</span></p>
 <p class="video-tiempo" id="video-tiempo" hidden></p>
 <p class="video-capa reconecta" id="video-reconecta" hidden role="status"><span class="punto" aria-hidden="true"></span><span data-t="reconectando">Reconectando la llamada…</span></p>
 <p class="video-reto" id="video-reto" hidden role="status"><span class="etiqueta" id="reto-etiqueta"></span><span class="reto-texto" id="reto-texto"></span></p>
-<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg solo-movil" id="b-chat"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z"/></svg><span id="b-chat-texto" data-t="chat">Chat</span><i class="cuenta" id="chat-cuenta" hidden></i></button><button type="button" class="seg" id="b-comprobar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9.2 10.2h.01M14.8 10.2h.01M9.4 14.6a3.6 3.6 0 0 0 5.2 0"/></svg><span data-t="comprobar">Comprobar</span></button><button type="button" class="seg solo-movil" id="b-enviar" aria-haspopup="menu" aria-controls="menu-enviar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 14.4 20.9a.5.5 0 0 1-.9 0L10.6 13.4 3.1 10.5a.5.5 0 0 1 0-.9z"/><path d="M21 3 10.6 13.4"/></svg><span data-t="enviarCosas">Enviar</span></button><button type="button" class="seg" id="b-colgar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="colgar">Colgar</span></button></div>
+<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg solo-pc" id="b-anadir-pc" hidden data-t="anadirPersona">Añadir persona</button><button type="button" class="seg solo-movil" id="b-chat"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z"/></svg><span id="b-chat-texto" data-t="chat">Chat</span><i class="cuenta" id="chat-cuenta" hidden></i></button><button type="button" class="seg" id="b-comprobar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9.2 10.2h.01M14.8 10.2h.01M9.4 14.6a3.6 3.6 0 0 0 5.2 0"/></svg><span data-t="comprobar">Comprobar</span></button><button type="button" class="seg solo-movil" id="b-enviar" aria-haspopup="menu" aria-controls="menu-enviar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 14.4 20.9a.5.5 0 0 1-.9 0L10.6 13.4 3.1 10.5a.5.5 0 0 1 0-.9z"/><path d="M21 3 10.6 13.4"/></svg><span data-t="enviarCosas">Enviar</span></button><button type="button" class="seg" id="b-colgar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="colgar">Colgar</span></button></div>
 </div>
 <div class="chat" id="chat">
 <div class="chat-cab" id="chat-cab"><button type="button" class="chat-volver" id="chat-volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg><span data-t="video">Vídeo</span></button><div class="chat-cab-txt"><b data-t="chat">Chat</b><small><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="11" width="13" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg><span id="chat-cifrado" data-t="chatCifrado">Encriptado poscuántico</span><span id="chat-tiempo"></span></small></div></div>
@@ -380,18 +382,19 @@
 </div>
 
 <script src="js/luz.js?v=20261119-37" integrity="sha384-cCBwKolsSr1viWAehxfTbil4LQ4MkCY98PEa1ofk8DDYYfudfExE/4hLRae6oBWJ" defer></script>
-<script src="js/idioma.js?v=20261119-37" integrity="sha384-WmnOxz0Yo8xIWcPxdKADtr2+nuTcv5BJ9kaafxWw+972kHpB+4YpvC0puGg1Jx9x"></script>
+<script src="js/idioma.js?v=20261119-37" integrity="sha384-cZQyUUuI6pn2tGpyhUahqCErJhrQvUgzaAJRMPSgOb/1GNzExG8lz0ohK71z4xYz"></script>
 <script src="js/pq-cnsa.js?v=20261119-37" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
 <script src="js/palabras.js?v=20261119-37" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
 <script src="js/cripto.js?v=20261119-37" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
 <script src="js/rele.js?v=20261119-37" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
 <script src="js/qr.js?v=20261119-37" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-37" integrity="sha384-EQ6RnLajXLOponOblhzT34bbOhfnrO5bmdBeqYKrr7L/ClQczwSvKwXYbqGT84vS"></script>
+<script src="js/motor.js?v=20261119-37" integrity="sha384-1H6Xem3a9ERrLJm9eQu65tulNP/xBVOgg6GGeBPwATipG/xSoXh6zYeuUgrhD8ki"></script>
 <script type="module" src="js/sala3d.js?v=20261119-37" integrity="sha384-EaSEW8rBYpjFI1eKJoLjO6eiMU5w9m3HZwVMAY3J4tsBlNvJV/Eb5qJzHohQOJa4"></script>
-<script src="js/puerta.js?v=20261119-37" integrity="sha384-OxQkhhUKRTt8w0zlPcflN4fDyvEBFj8tXC4H+iHPFy1sIQSv23I3xxpuuSwePMCt"></script>
+<script src="js/puerta.js?v=20261119-37" integrity="sha384-8TnMF9NmS/MHkz3Z3ry9uY6mO2FBGM6ot/4d7qXFL7nC0jZAG82+Sl3NundvEUrK"></script>
 <script src="js/comprueba.js?v=20261119-37" integrity="sha384-+s78/yIJegDCcoJiUEdK/leknWYfeSAqcMOjTd5zaH0v0IvoJmyLDtRDxkrkPyQq"></script>
 <script src="js/escenas.js?v=20261119-37" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
-<script src="js/sala.js?v=20261119-37" integrity="sha384-qEoTEZWizohEbsTcFVujr/tZ6OH1s0kgGU3LMvJPFTpm/zm5V6uecompI5/K98rr"></script>
+<script src="js/sala.js?v=20261119-37" integrity="sha384-20Ie8h3PbZwCdKJECHhEAYs+nu385ltuATWPkb2KqUl/2Ar8RJtrKksU8TfIiEU/"></script>
+<script src="js/grupo.js?v=20261119-37" integrity="sha384-66vAnclKf1DGjJWabA7T1XHdgk49r1AKogZnAhIQ7bi7XxEUzbpW0b/m5uW3DL0D"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
 </body>
 </html>

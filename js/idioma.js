@@ -67,7 +67,7 @@
     unPrograma: 'un programa', reglaOro: 'Regla de oro: si te pide dinero, códigos o datos con prisa, cuelga y llámale tú a su número de siempre. Y tú no enseñes tu documento ni repitas frases que te pidan.',
     llamandoT: 'Llamando', conectandoT: 'Conectando',
     mallaRotulo: 'ANÁLISIS FACIAL · 68 PUNTOS',
-    otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
+    otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara', anadirPersona: 'Añadir persona', persona: 'Persona', grupoEntra: '{p} se ha unido a la llamada', grupoSale: '{p} ha salido de la llamada', grupoLleno: 'Como mucho, 4 personas por llamada', grupoInvitado: 'Invitación enviada: entrará en cuanto la abra',
   };
   const EN = {
     navDescubrir: 'Discover', navAcceso: 'Access', empezar: 'Start trial',
@@ -231,7 +231,7 @@
     e9Texto: 'For a board meeting, a contract or a personal conversation that deserves respect. Elixire is a paid service for individuals, practices, clinics and companies. During the trial phase, no limits.',
     probHumano: 'Probability of being human',
     mallaRotulo: 'FACE ANALYSIS · 68 POINTS',
-    otroSalio: 'The other person has left Elixire. To talk again, send them a new invitation.', invitarDeNuevo: 'Invite again', previaFoto: 'Send photo', previaFotos: 'Send photos', previaArchivo: 'Send file', previaArchivos: 'Send files', quitar: 'Remove', parar: 'Stop', borrarTodos: 'Delete for everyone', borrarMi: 'Delete for me', copiarMsg: 'Copy', copiadoMsg: 'Copied', mensajeBorrado: 'You deleted this message', mensajeBorradoSuyo: 'This message was deleted', girarCamara: 'Flip camera',
+    otroSalio: 'The other person has left Elixire. To talk again, send them a new invitation.', invitarDeNuevo: 'Invite again', previaFoto: 'Send photo', previaFotos: 'Send photos', previaArchivo: 'Send file', previaArchivos: 'Send files', quitar: 'Remove', parar: 'Stop', borrarTodos: 'Delete for everyone', borrarMi: 'Delete for me', copiarMsg: 'Copy', copiadoMsg: 'Copied', mensajeBorrado: 'You deleted this message', mensajeBorradoSuyo: 'This message was deleted', girarCamara: 'Flip camera', anadirPersona: 'Add person', persona: 'Person', grupoEntra: '{p} joined the call', grupoSale: '{p} left the call', grupoLleno: 'At most 4 people per call', grupoInvitado: 'Invitation sent: they will join as soon as they open it',
   };
   const TITULO = { es: 'Elixire · Conversaciones privadas poscuánticas', en: 'Elixire · Private post-quantum conversations' };
   const ES = {}; // lo original de la página, para volver al español
