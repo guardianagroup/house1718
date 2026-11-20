@@ -1415,3 +1415,13 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .msg.mia.enviado .hora::after,.sala.en-chat .msg.mia.enviado .hora::after{content:' ✓';letter-spacing:0;padding:0}
 .msg.mia.llego .hora::after,.sala.en-chat .msg.mia.llego .hora::after{content:' ✓✓';letter-spacing:-.34em;padding-right:.34em}
 .msg.mia.leido .hora::after,.sala.en-chat .msg.mia.leido .hora::after{content:' ✓✓';letter-spacing:-.34em;padding-right:.34em;color:#1A66C9;font-weight:700}
+/* «Comprobar», el ejemplo con una cara real (generada con IA) y su malla de 68 puntos encima (dueño, 23:23: «máximo realismo») */
+.malla-caja{aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0B0F15;box-shadow:0 22px 50px -24px rgba(0,0,0,.85),0 0 0 1px rgba(156,195,228,.18)}
+.malla-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.72) brightness(.8) contrast(1.06)}
+.malla-caja .malla{position:absolute;inset:0;width:100%;height:100%}
+.malla-caja::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 52%,transparent 52%,rgba(6,8,12,.72) 100%)}
+.malla .malla-lineas path{fill:none;stroke:rgba(156,195,228,.6);stroke-width:1.3}
+.malla .esquinas{fill:none;stroke:#9CC3E4;stroke-width:5;stroke-linecap:round;opacity:.9}
+.malla-sello{position:absolute;left:8px;bottom:8px;z-index:2;font:600 8px/1 var(--ui);letter-spacing:.14em;color:#F4F6F8;background:rgba(6,8,12,.62);padding:4px 6px;border-radius:6px}
+.escaner-barrido{z-index:1}
+@media (min-width:361px) and (max-width:760px){.escaner{grid-template-columns:minmax(0,176px) minmax(0,1fr)!important;gap:12px!important}.senales-escena li{padding:9px 10px!important}}

@@ -59,23 +59,16 @@
   // ---- la escena de «Comprobar»: una malla de 68 puntos que se dibuja sola (la misma que se ve en la llamada) ----
   const malla = document.getElementById('malla-escena');
   if (malla && window.ElixireComprueba && window.ElixireComprueba.delaunay) {
-    const P = [];
-    for (let i = 0; i <= 16; i++) { const a = Math.PI * (i / 16); P.push([100 - Math.cos(a) * 62, 96 + Math.sin(a) * 78]); }
-    for (let i = 0; i < 5; i++) P.push([53 + i * 9, 62 - 4 * Math.sin(Math.PI * i / 4)]);
-    for (let i = 0; i < 5; i++) P.push([111 + i * 9, 58 + 4 * Math.sin(Math.PI * i / 4)]);
-    for (let i = 0; i < 4; i++) P.push([100, 73 + i * 10]);
-    for (let i = 0; i < 5; i++) P.push([88 + i * 6, 113 + (i === 2 ? 2 : 0)]);
-    const ojo = (cx) => [[cx - 11, 80], [cx - 6, 76], [cx + 1, 76], [cx + 6, 80], [cx + 1, 83], [cx - 6, 83]];
-    P.push(...ojo(78), ...ojo(122));
-    for (let i = 0; i < 12; i++) { const a = 2 * Math.PI * i / 12; P.push([100 - 20 * Math.cos(a), 134 + 8 * Math.sin(a)]); }
-    for (let i = 0; i < 8; i++) { const a = 2 * Math.PI * i / 8; P.push([100 - 12 * Math.cos(a), 134 + 3 * Math.sin(a)]); }
+    // los 68 puntos de una cara real (generada con IA, de dominio público), calculados con el mismo detector que usa «Comprobar»
+    const P = [[104.1,294.2],[106.7,348.3],[114.1,398.5],[122.4,442.6],[138.9,491.3],[168.4,528.1],[206.1,553],[253.1,576.2],[316.2,591],[375.6,577],[408.7,555.7],[435.1,534],[458.7,496],[475.4,449.1],[483.1,404.9],[490.8,358.7],[493.1,309],[168.5,254.5],[194.8,238.2],[226.8,233.8],[254.7,236.4],[279.4,245.5],[375.9,247.6],[398.4,240.4],[422.4,237.4],[451,242.7],[468.1,258.3],[326.9,300.8],[328.9,332.9],[331.4,363.1],[330.6,391.1],[292.5,410.5],[307.8,415.5],[325.4,419],[343,414.5],[355.9,412.6],[206.3,293.8],[226.4,289],[250.1,289.1],[269.5,299.8],[252.1,307.4],[226.5,304.8],[370.1,301.5],[392.6,291.3],[417.8,291.6],[430.5,300.8],[414.2,309.8],[390.4,307.7],[247.2,473.7],[276.6,462.3],[309.8,454.1],[324.9,457.3],[339.5,453.7],[368.9,464.4],[391.4,475.3],[366.5,488.8],[346.4,496.6],[322.9,499.1],[301.2,496.8],[277.1,489.3],[251.2,474],[300.7,471],[323.5,471.4],[344.1,471.9],[385.6,473.9],[344.9,474.8],[323.8,476],[302.5,475.3]];
     const T = window.ElixireComprueba.delaunay(P), NS = 'http://www.w3.org/2000/svg';
     const g1 = document.createElementNS(NS, 'g'); g1.setAttribute('class', 'malla-lineas');
     let d = ''; for (const [a, b, c] of T) d += 'M' + P[a] + 'L' + P[b] + 'L' + P[c] + 'Z';
     const camino = document.createElementNS(NS, 'path'); camino.setAttribute('d', d); g1.append(camino);
     const g2 = document.createElementNS(NS, 'g'); g2.setAttribute('class', 'malla-puntos');
-    P.forEach(([x, y], i) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 1.6); c.style.setProperty('--i', i); g2.append(c); });
-    malla.append(g1, g2);
+    P.forEach(([x, y], i) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 3.4); c.style.setProperty('--i', i); g2.append(c); });
+    const g3 = document.createElementNS(NS, 'path'); g3.setAttribute('class', 'esquinas'); g3.setAttribute('d', 'M58,172V124H106 M491,124H539V172 M539,573V621H491 M106,621H58V573');
+    malla.append(g1, g2, g3);
   }
 })();
 
