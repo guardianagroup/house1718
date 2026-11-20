@@ -1427,3 +1427,8 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 @media (min-width:361px) and (max-width:760px){.escaner{grid-template-columns:minmax(0,176px) minmax(0,1fr)!important;gap:12px!important}.senales-escena li{padding:9px 10px!important}}
 .malla .malla-lineas path{stroke-width:.9}
 .malla .esquinas{stroke-width:3.4}
+/* la malla sobre la cara, bien marcada (dueño, 23:32: «las líneas blancas deben salir más marcadas») */
+.malla-caja .malla .malla-lineas path{stroke:rgba(242,249,255,.9);stroke-width:2.1}
+.malla-caja .malla .malla-puntos circle{fill:#FFFFFF;opacity:.95;animation:none;r:3.1px}
+.malla-caja .malla{filter:drop-shadow(0 0 1.6px rgba(150,200,245,.95))}
+.malla-caja .malla-foto{filter:saturate(.65) brightness(.7) contrast(1.08)}
