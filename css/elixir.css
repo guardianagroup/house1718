@@ -1432,3 +1432,13 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .malla-caja .malla .malla-puntos circle{fill:#FFFFFF;opacity:.95;animation:none;r:3.1px}
 .malla-caja .malla{filter:drop-shadow(0 0 1.6px rgba(150,200,245,.95))}
 .malla-caja .malla-foto{filter:saturate(.65) brightness(.7) contrast(1.08)}
+/* la malla de la cara, más suave y viva (dueño, 23:42: «un poco más suaves y con algo de movimiento en el análisis»): las líneas fluyen
+   como si se estuvieran calculando, respiran, los puntos parpadean y la malla sigue la cara con un leve vaivén */
+.malla-caja .malla .malla-lineas path{stroke:rgba(236,246,255,.62);stroke-width:1.5;stroke-dasharray:10 5;animation:mallaFluye 2.8s linear infinite,mallaRespira 3.6s ease-in-out infinite}
+.malla-caja .malla .malla-puntos circle{fill:#FFFFFF;r:2.8px;opacity:.85;animation:mallaPunto 2.4s ease-in-out infinite;animation-delay:calc(var(--i) * -37ms)}
+.malla-caja .malla{filter:drop-shadow(0 0 1.2px rgba(150,200,245,.7));animation:mallaSigue 4.2s ease-in-out infinite;transform-origin:50% 55%}
+@keyframes mallaFluye{to{stroke-dashoffset:-30}}
+@keyframes mallaRespira{0%,100%{stroke-opacity:.55}50%{stroke-opacity:.9}}
+@keyframes mallaPunto{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes mallaSigue{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(.5%,-.4%) scale(1.006)}60%{transform:translate(-.4%,.4%) scale(.996)}}
+@media (prefers-reduced-motion:reduce){.malla-caja .malla,.malla-caja .malla *{animation:none!important}}
