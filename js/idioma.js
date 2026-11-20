@@ -70,6 +70,13 @@
     otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
+    faqEtiqueta: 'QUESTIONS', faqTitulo: 'What people usually ask us.', ventasTexto: 'For your company or firm?', ventasEnlace: 'Talk to sales',
+    faq1P: 'Do I need to install anything or create an account?', faq1R: 'No. It works in the browser on your phone or computer, with an invitation link. If you like, you can add Elixire to your home screen like an app.',
+    faq2P: 'Is anything from the conversation stored?', faq2R: 'No. The conversation only exists on your two screens and is erased when you close it. The server relays encrypted data it cannot read.',
+    faq3P: 'How do I know I am talking to the real person?', faq3R: 'With “Check”. Elixire analyses their face on your own device and, if something is off, guides you step by step: gestures, three random words and the keyword you agreed in person.',
+    faq4P: 'What does “post-quantum” mean?', faq4R: 'That, on top of classical cryptography, we use ML-KEM, the standard designed so that what someone captures today stays protected against tomorrow\'s quantum computers.',
+    faq5P: 'Does it work on iPhone and Android?', faq5R: 'Yes, in Safari and Chrome, on phones and computers. In Brave calls usually work, but its protections can prevent “Check”.',
+    faq6P: 'How much does it cost?', faq6R: 'Nothing during the trial phase. Afterwards it will be a paid service for individuals, law firms, clinics and companies. Write to us and we will prepare a proposal.',
     e7C1: 'Detects fake faces', e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Zoom has announced fake-face detection for December 2026 as a paid add-on. Teams and Meet rely on third-party software. Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with fake-face detection.',
     navDescubrir: 'Discover', navAcceso: 'Access', empezar: 'Start trial',

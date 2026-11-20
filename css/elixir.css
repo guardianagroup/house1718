@@ -1384,3 +1384,15 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 /* el diagnóstico del resultado (pruebas con móviles reales) */
 .comprobacion-resultado .diag{margin:10px 0 0;padding:10px 12px;max-width:100%;max-height:40vh;overflow:auto;white-space:pre-wrap;word-break:break-word;font:500 11px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#C9D6E3;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;text-align:left}
 .comprobacion-resultado .diag[hidden]{display:none}
+/* preguntas frecuentes (profesionalizar): desplegables sobrios, con el mismo cristal que el resto */
+.preguntas .faq{display:flex;flex-direction:column;gap:10px;width:min(760px,100%);margin:28px auto 0;text-align:left}
+.preguntas details{border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.03);padding:0 18px;transition:background .25s,border-color .25s}
+.preguntas details[open]{background:rgba(156,195,228,.06);border-color:rgba(156,195,228,.28)}
+.preguntas summary{list-style:none;cursor:pointer;padding:18px 34px 18px 0;position:relative;font:500 16.5px/1.4 var(--ui);color:#F4F6F8;-webkit-tap-highlight-color:transparent}
+.preguntas summary::-webkit-details-marker{display:none}
+.preguntas summary::after{content:'+';position:absolute;right:2px;top:50%;transform:translateY(-50%);font:300 24px/1 var(--ui);color:#9CC3E4;transition:transform .25s}
+.preguntas details[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+.preguntas details p{margin:0 0 18px;color:#C9D6E3;font:400 15.5px/1.55 var(--ui)}
+.cierre .ventas{margin:20px 0 0;font:400 15px/1.5 var(--ui);color:#9FB2C4;text-align:center}
+.cierre .ventas a{color:#9CC3E4;text-decoration:none;border-bottom:1px solid rgba(156,195,228,.45);margin-left:8px}
+@media (max-width:760px){.preguntas summary{font-size:16px}.preguntas details p{font-size:15px}}
