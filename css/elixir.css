@@ -1245,3 +1245,8 @@ html{overscroll-behavior-y:none}
   .sala.en-chat.teclado .escena-video{width:66px!important;height:88px!important;border-radius:14px!important}
   .sala.en-chat.teclado .chat-cab{min-height:calc(env(safe-area-inset-top) + 98px);padding-right:88px}
 }
+
+/* ---------- como app en la pantalla de inicio (sin barras del navegador), el botón de la portada, más abajo (dueño, 19:28) ---------- */
+@media (max-width:760px) and (display-mode:standalone){
+  .consola{bottom:max(calc(env(safe-area-inset-bottom) - 6px),10px)}
+}
