@@ -82,7 +82,13 @@
 // ---- al bajar: el botón de la portada se va y la cabecera gana fondo (dueño, 23:10: el botón se montaba sobre «ELIXIRE») ----
 (() => {
   const raiz = document.documentElement; let pend = false;
-  const mira = () => { pend = false; raiz.classList.toggle('bajado', scrollY > innerHeight * 0.22); };
+  // la roca se despide al bajar (dueño, 23:14: «que no se vea de fondo la piedra… transición profesional»): entre el 10 % y el 75 % de la
+  // primera pantalla se funde con el negro y se aleja un poco; al subir, vuelve
+  const mira = () => {
+    pend = false; const t = scrollY / innerHeight; raiz.classList.toggle('bajado', t > 0.22);
+    let x = Math.max(0, Math.min(1, (t - 0.1) / 0.65)); x = x * x * (3 - 2 * x);
+    raiz.style.setProperty('--salida', x.toFixed(3)); raiz.classList.toggle('sin-roca', x >= 0.999);
+  };
   addEventListener('scroll', () => { if (!pend) { pend = true; requestAnimationFrame(mira); } }, { passive: true });
   mira();
 })();

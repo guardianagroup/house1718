@@ -1404,3 +1404,7 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .bajado .consola{opacity:0!important;pointer-events:none}
 .cabecera{transition:background .35s ease}
 .bajado .cabecera{background:linear-gradient(180deg,rgba(6,8,12,.92) 0%,rgba(6,8,12,.7) 60%,rgba(6,8,12,0) 100%)}
+/* la roca se funde con el negro al bajar y deja las secciones sobre fondo limpio */
+.lienzo3d{opacity:calc(1 - var(--salida,0));transform:scale(calc(1 + var(--salida,0) * .06));transform-origin:50% 42%;will-change:opacity,transform}
+.sin-roca .lienzo3d{visibility:hidden}
+.monolito-css{opacity:calc(1 - var(--salida,0))}
