@@ -431,6 +431,7 @@
       imagen,
     ];
     if (x.giro) senales.push({ k: 'giro', estado: x.giro.estado, v: tr(x.giro.estado === 'si' ? 'v_giroSi' : 'v_giroNo') });
+    if (x.clave === 'si') senales.push({ k: 'clave', estado: 'si', v: tr('v_claveSi') });
     if (x.palabras === 'si') senales.push({ k: 'palabras', estado: 'si', v: tr('v_palabrasSi') });
     if (x.reflejo && x.reflejo.estado === 'si') senales.push({ k: 'reflejo', estado: 'si', v: tr('v_reflejoSi') });
     if (x.cortes) senales.push({ k: 'cortes', estado: x.cortes >= 2 ? 'no' : 'aviso', v: tr('v_cortesNo') });
@@ -460,10 +461,10 @@
   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
   const PESOS = {
     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 }, reflejo: { si: 1.0 }, palabras: { si: 1.0 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 }, reflejo: { si: 1.0 }, palabras: { si: 1.0 }, clave: { si: 1.5 },
   };
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
-  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes', 'reflejo', 'palabras']);
+  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes', 'reflejo', 'palabras', 'clave']);
   function probabilidad(r) {
     // dueño (20:51): si detecta una foto, 0 %. Muy quieta sin más (puede ser alguien muy quieto) pasa a la prueba del gesto; si
     // tampoco la hace, es una foto: 0 %
@@ -493,14 +494,40 @@
     r.probabilidad = p;
   }
 
+  // ---- el modo de diagnóstico (punto 1: pruebas con móviles reales): con «?diag» en la dirección, o manteniendo pulsado el porcentaje
+  // 2 segundos, el resultado enseña todas las señales y los datos de la prueba, para mandar una captura y ajustar la detección ----
+  let diagOn = /[?&]diag\b/.test(location.search);
+  function pintaDiag(r) {
+    let pre = resultadoCaja.querySelector('.diag');
+    if (!diagOn) { if (pre) pre.hidden = true; return; }
+    if (!pre) { pre = document.createElement('pre'); pre.className = 'diag'; resultadoCaja.append(pre); }
+    const x = r._extra || {}, gd = r._gesto || {}, f2 = (v) => (typeof v === 'number' ? v.toFixed(3) : '-');
+    const lin = [
+      'tipo ' + r.tipo + (r.fija ? '/' + r.fija : '') + ' · ' + probabilidad(r) + '% · caras ' + (r.n | 0),
+      'parpadeos ' + (r.parpadeos | 0) + ' · gestos ' + (r.forma ? r.forma.estado + ' p90=' + f2(r.forma.p90) : '-') + ' · relieve ' + (r.relieve ? r.relieve.estado : '-'),
+      'pulso ' + (r.pulso ? r.pulso.estado : '-') + ' · labios ' + (r.labios == null ? '-' : r.labios) + ' · luz ' + (x.luz != null ? Math.round(x.luz) : '-') + ' · cortes ' + (x.cortes | 0),
+      'cámara ' + (x.fuente ? JSON.stringify(x.fuente).slice(0, 60) : '-'),
+    ];
+    if (gd.pasos) lin.push('gesto ' + gd.pasos.map((pp) => pp.q + (pp.hecho ? '✓' : '✗') + (pp.d != null ? ' ' + pp.d : '') + ' ' + pp.ms + 'ms').join(' · '));
+    if (gd.reflejo) lin.push('reflejo ' + gd.reflejo.estado + (gd.reflejo.dif != null ? ' dif=' + gd.reflejo.dif + ' ruido=' + gd.reflejo.ruido : ''));
+    if (gd.pasos) lin.push('palabras ' + (gd.palabras || '-') + ' · clave ' + (gd.clave || '-'));
+    lin.push((r.senales || []).map((z) => z.k + ':' + z.estado).join(' '));
+    pre.textContent = lin.join('\n'); pre.hidden = false;
+  }
+  (() => {
+    const el = $('#comprobacion-prob'); if (!el) return; let t = null;
+    el.addEventListener('pointerdown', () => { clearTimeout(t); t = setTimeout(() => { diagOn = !diagOn; vibra(); if (previo) resultado(previo); }, 1600); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => clearTimeout(t));
+  })();
+
   // ---- el resultado ----
   const resultadoCaja = $('#comprobacion-resultado');
   function resultado(r) {
     previo = r; capa.classList.add('con-resultado');
-    resultadoCaja.className = 'comprobacion-resultado solo-prob ' + r.tipo; pintaProbabilidad(r);
+    resultadoCaja.className = 'comprobacion-resultado ' + (diagOn ? '' : 'solo-prob ') + r.tipo; pintaProbabilidad(r); pintaDiag(r);
     const gi = (r.senales || []).find((x) => x.k === 'giro'), mo = $('#comprobacion-motivo');
     if (mo) { const foto = (r.tipo === 'fija' || r.tipo === 'plana') && probabilidad(r) === 0;
-    const k = foto ? 'motivo_foto' : gi ? (gi.estado === 'si' ? 'motivo_giroSi' : 'motivo_sinGiro') : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
+    const k = foto ? 'motivo_foto' : gi ? (gi.estado === 'si' ? 'motivo_giroSi' : r._gesto && r._gesto.clave === 'no' ? 'motivo_claveNo' : 'motivo_sinGiro') : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
     $('#comprobacion-estado').hidden = true; resultadoCaja.hidden = false; resultadoCaja.scrollTop = 0;
     $('#comprobacion-titulo').textContent = tr('comprobacion_' + r.tipo);
     let texto = tr('comprobacion_' + r.tipo + 'Texto');
@@ -739,16 +766,18 @@
   // persona, paso a paso, y a ella también le sale en su pantalla: girar la cabeza a un lado, taparse la cara con la mano y girar al
   // otro lado. Un vídeo grabado, una foto, un muñeco o un avatar no lo hacen cuando se les pide. Si no lo hace: posible falso.
   const PASO_MS = 6500;
-  function preguntaDijo(mia) {
+  function pregunta(mia, ops) {
     return new Promise((ok) => {
       let pb = capa.querySelector('.pide-botones');
-      if (!pb) { pb = document.createElement('div'); pb.className = 'pide-botones'; for (const c of ['pide-si', 'pide-no']) { const b = document.createElement('button'); b.type = 'button'; b.className = c; pb.append(b); } capa.append(pb); }
-      const [si, no] = pb.querySelectorAll('button'); si.textContent = tr('pide_dijoSi'); no.textContent = tr('pide_dijoNo'); pb.hidden = false;
-      let t = null, vig = null; const fin = (v) => { clearTimeout(t); clearInterval(vig); pb.hidden = true; si.onclick = no.onclick = null; ok(v); };
-      si.onclick = () => fin('si'); no.onclick = () => fin('no');
-      t = setTimeout(() => fin('nd'), 25000); vig = setInterval(() => { if (cancelado || mia !== vuelta) fin('nd'); }, 300);
+      if (!pb) { pb = document.createElement('div'); pb.className = 'pide-botones'; capa.append(pb); }
+      pb.textContent = ''; let t = null, vig = null;
+      const fin = (v) => { clearTimeout(t); clearInterval(vig); pb.hidden = true; pb.textContent = ''; ok(v); };
+      for (const [v, k, c] of ops) { const b = document.createElement('button'); b.type = 'button'; b.className = c; b.textContent = tr(k); b.onclick = () => fin(v); pb.append(b); }
+      pb.hidden = false; t = setTimeout(() => fin('nd'), 25000); vig = setInterval(() => { if (cancelado || mia !== vuelta) fin('nd'); }, 300);
     });
   }
+  const preguntaDijo = (mia) => pregunta(mia, [['si', 'pide_dijoSi', 'pide-si'], ['no', 'pide_dijoNo', 'pide-no']]);
+
   async function pruebaGesto(auto) {
     if (enMarcha || !previo || !previo._datos) return;
     const base = previo; enMarcha = true; cancelado = false; triangulos = null; const mia = ++vuelta;
@@ -760,7 +789,7 @@
     const opc = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 224 : 320, scoreThreshold: 0.35 });
     const a0s = base._datos.filter((d) => d.p).map((d) => afin(d.p)).filter(Boolean).map((x) => x[0]);
     let a0 = a0s.length ? mediana(a0s) : null, signo = 0, hechos = 0;
-    const az = new Uint32Array(1); crypto.getRandomValues(az); const lado = az[0] & 1 ? 'izq' : 'der';
+    const az = new Uint32Array(1); crypto.getRandomValues(az); const lado = az[0] & 1 ? 'izq' : 'der', diagPasos = [];
     const pasos = [lado, 'mano', lado === 'izq' ? 'der' : 'izq'];
     if (M && M.gesto) avisado = !!M.gesto('inicio', 0, 0);
     // el reflejo (dueño, 20:55): su pantalla se ilumina un instante en magenta y en cian (en orden al azar); en una cara de verdad esa
@@ -804,6 +833,7 @@
         dibujaOnda(null, null, false, q === 'mano' ? null : { d, hecho });
         await new Promise((ok) => requestAnimationFrame(ok));
       }
+      diagPasos.push({ q, hecho, d: q === 'mano' ? null : Math.round(d * 1000) / 1000, ms: Math.round(performance.now() - t0) });
       if (!hecho) break;
       hechos++; vibra(); est.textContent = tr('pide_hecho'); await new Promise((ok) => setTimeout(ok, 700));
     }
@@ -815,11 +845,20 @@
       try { if (M && M.gesto) M.gesto('voz', 0, 0, w); } catch (_) {}
       palabras = await preguntaDijo(mia);
     }
+    // la palabra clave de la empresa (punto 2): una frase acordada en persona. Una cara hecha con IA puede imitar a alguien, pero no
+    // sabe esa frase. Quien comprueba la oye y dice si es correcta.
+    let clave = 'nd';
+    if (palabras === 'si' && !cancelado && mia === vuelta) {
+      est.textContent = tr('pide_clave');
+      try { if (M && M.gesto) M.gesto('clave', 0, 0); } catch (_) {}
+      clave = await pregunta(mia, [['si', 'pide_claveSi', 'pide-si'], ['no', 'pide_claveNo', 'pide-no'], ['nd', 'pide_claveNd', 'pide-nd']]);
+    }
     avisaFin();
     if (cancelado || mia !== vuelta) return;
     enMarcha = false; caja.classList.remove('giro'); g.clearRect(0, 0, lienzo.width, lienzo.height);
-    const giro = { estado: hechos === pasos.length && palabras !== 'no' ? 'si' : 'no', hechos, palabras };
-    const r = analiza(base._datos, Object.assign({}, base._extra, { giro, reflejo, palabras }));
+    const giro = { estado: hechos === pasos.length && palabras !== 'no' && clave !== 'no' ? 'si' : 'no', hechos, palabras, clave };
+    const r = analiza(base._datos, Object.assign({}, base._extra, { giro, reflejo, palabras, clave }));
+    r._gesto = { pasos: diagPasos, reflejo, palabras, clave };
     if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__gesto = { giro, reflejo, muestras: col.length };
     r._datos = base._datos; r._extra = base._extra;
     resultado(r);

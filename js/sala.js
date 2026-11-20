@@ -652,7 +652,7 @@
     et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
     tx.textContent = tr('gesto_' + g.q) + (g.q === 'voz' && g.w ? ' «' + g.w + '»' : ''); caja.hidden = false;
     try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
-    gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, g.q === 'voz' ? 20000 : 6000);
+    gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, g.q === 'voz' || g.q === 'clave' ? 20000 : 6000);
   });
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
   $('#llamar').addEventListener('click', () => {
