@@ -27,8 +27,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-46" integrity="sha384-tTy/CWEQmXyteg1sfi8bs20RBuiyw3cvvPTw1I3ZxISSLYCEe/8cZR2RtXSILNRl">
-<script src="js/idioma-inicio.js?v=20261119-46" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-47" integrity="sha384-CCVMx30IemS9LipuVEidZUTMakqBnvFyayPvPZbmKBVFGLKZYfon+6aBg4eFaopp">
+<script src="js/idioma-inicio.js?v=20261119-47" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -301,13 +301,13 @@
 <div class="comprobacion-resultado" id="comprobacion-resultado" role="status" hidden>
 <span class="comprobacion-icono" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path class="si" d="M8.8 12.2l2.2 2.2 4.4-4.6"/><path class="no" d="M12 8v5M12 16.2h.01"/></svg></span>
 <div class="probabilidad" id="comprobacion-prob" aria-hidden="true"><svg class="anillo" viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle class="anillo-valor" id="comprobacion-anillo" cx="60" cy="60" r="52" pathLength="100"/></svg><b id="comprobacion-pct">—</b></div>
-<span class="prob-etiqueta" id="comprobacion-etiqueta" data-t="probHumano">Probabilidad de ser humano</span>
+<span class="prob-etiqueta" id="comprobacion-etiqueta" data-t="probHumano">Probabilidad de ser humano</span><p class="prob-motivo" id="comprobacion-motivo" hidden></p>
 <b id="comprobacion-titulo"></b>
 <p id="comprobacion-texto"></p>
 <span class="comprobacion-confianza" id="comprobacion-confianza" hidden></span>
 <ul class="comprobacion-senales" id="comprobacion-senales"></ul>
 <small data-t="comprobacionNota">Lo analiza solo tu equipo: no se envía ni se guarda nada y la otra persona no ve nada (su navegador solo indica el tipo de cámara). Ayuda mucho, pero no es infalible.</small>
-<button type="button" class="comprobacion-giro" id="comprobacion-giro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 0 1 13.2-4.9M19.5 12a7.5 7.5 0 0 1-13.2 4.9"/><path d="M18 3.5v4h-4M6 20.5v-4h4"/></svg><span data-t="pruebaGiro">Prueba extra: girar la cabeza</span></button><button type="button" class="comprobacion-cerrar" id="comprobacion-cerrar"><span data-t="entendido">Entendido</span></button>
+<button type="button" class="comprobacion-giro" id="comprobacion-giro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 0 1 13.2-4.9M19.5 12a7.5 7.5 0 0 1-13.2 4.9"/><path d="M18 3.5v4h-4M6 20.5v-4h4"/></svg><span data-t="repetirComprobacion">Repetir comprobación</span></button><button type="button" class="comprobacion-cerrar" id="comprobacion-cerrar"><span data-t="entendido">Entendido</span></button>
 </div>
 </div>
 <button type="button" class="b-girar" id="b-girar" hidden aria-label="Girar la cámara" data-t-aria="girarCamara"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.3 11.2a3.4 3.4 0 0 0-6.1-.9M8.7 13.8a3.4 3.4 0 0 0 6.1.9"/><path d="M9.2 8.9v1.6h1.6M14.8 17.1v-1.6h-1.6"/></svg></button>
@@ -379,20 +379,20 @@
 </div>
 </div>
 
-<script src="js/luz.js?v=20261119-46" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
-<script src="js/idioma.js?v=20261119-46" integrity="sha384-WmnOxz0Yo8xIWcPxdKADtr2+nuTcv5BJ9kaafxWw+972kHpB+4YpvC0puGg1Jx9x"></script>
-<script src="js/pq-cnsa.js?v=20261119-46" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-46" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-46" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-46" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261119-46" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-46" integrity="sha384-EQ6RnLajXLOponOblhzT34bbOhfnrO5bmdBeqYKrr7L/ClQczwSvKwXYbqGT84vS"></script>
-<script type="module" src="js/sala3d.js?v=20261119-46" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
-<script src="js/holo.js?v=20261119-46" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
-<script src="js/puerta.js?v=20261119-46" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
-<script src="js/comprueba.js?v=20261119-46" integrity="sha384-+s78/yIJegDCcoJiUEdK/leknWYfeSAqcMOjTd5zaH0v0IvoJmyLDtRDxkrkPyQq"></script>
-<script src="js/escenas.js?v=20261119-46" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
-<script src="js/sala.js?v=20261119-46" integrity="sha384-qEoTEZWizohEbsTcFVujr/tZ6OH1s0kgGU3LMvJPFTpm/zm5V6uecompI5/K98rr"></script>
+<script src="js/luz.js?v=20261119-47" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
+<script src="js/idioma.js?v=20261119-47" integrity="sha384-kbomM3cJsNwWSPOupV07lfivncKbmiv+T3f32XXYelaQHgdgwc5zzZRdeKxqOxGH"></script>
+<script src="js/pq-cnsa.js?v=20261119-47" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-47" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-47" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-47" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-47" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-47" integrity="sha384-c4fyaCXpXk3zbNHbnewqdH6skBd6Isr3/xLjHLDw2hrs9vx3eHuf0csFJmt+LBCL"></script>
+<script type="module" src="js/sala3d.js?v=20261119-47" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
+<script src="js/holo.js?v=20261119-47" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+<script src="js/puerta.js?v=20261119-47" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
+<script src="js/comprueba.js?v=20261119-47" integrity="sha384-O15vYzuxM7LkYtxSBmS7aXpXKogk7U12GsSEBIhEWrEqURM8EbJ/Xd3AomLVTUQO"></script>
+<script src="js/escenas.js?v=20261119-47" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
+<script src="js/sala.js?v=20261119-47" integrity="sha384-nEKs3kssYtdFeXmQ6QCjJmcSmyND5k3FpjSFcUm/QUuJBA+zKIzGqpn2AriZIpTw"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
 </body>
 </html>

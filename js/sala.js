@@ -624,6 +624,19 @@
     sistema(r.mio ? 'retoSistemaMio' : 'retoSistemaSuyo', '«' + tx.textContent + '»');
   });
   $('#b-reto').addEventListener('click', () => M.reto());
+  // la prueba del gesto: la orden llega de quien comprueba y se ve grande en el centro (sin mensajes en el chat)
+  let gestoT = null;
+  M.on('gesto', (g) => {
+    if (!abierta) return;
+    const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
+    clearTimeout(gestoT);
+    if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }
+    caja.classList.add('gesto'); caja.dataset.q = g.q;
+    et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
+    tx.textContent = tr('gesto_' + g.q); caja.hidden = false;
+    try { if (g.q !== 'frente' && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
+    gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, 6000);
+  });
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
   $('#llamar').addEventListener('click', () => {
     if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return;
