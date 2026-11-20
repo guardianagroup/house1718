@@ -176,11 +176,11 @@
     const texto = textoInvitacion(invitacion.s);
     const compartida = comparte(texto);
     M.prepara();
-    await abreInvitacion(semilla, texto, false);
+    await abreInvitacion(semilla, texto, false, true);
     const ok = await compartida;
     if (abierta === 'crear' && invitacion) ponEnviada(ok);
   }
-  async function abreInvitacion(semilla, texto, retomada) {
+  async function abreInvitacion(semilla, texto, retomada, sinPanel) {
     if (!M || ocupado || (abierta && abierta !== 'elige')) return;
     ocupado = true;
     try {
@@ -197,7 +197,7 @@
       const x = await r;
       if (!x.ok) { olvidaInvitacion(); ponError('elige', x.por); muestra('elige'); return; }
       if (!invitacion) return;
-      muestra('crear', $('#cancelar-invitacion'));
+      if (sinPanel) abierta = 'crear'; else muestra('crear', $('#cancelar-invitacion'));
       vigilaInvitacion();
     } finally { ocupado = false; }
   }
@@ -206,6 +206,7 @@
     // sin enviar (se cerró «Compartir»), en el móvil no hay pantalla intermedia: de vuelta a la portada (dueño, 19:22: «eso bórralo, es
     // innecesario, es mejor volver a la página principal»)
     if (!ok && enMovil()) { paraReloj(); olvidaInvitacion(); suena(false); cierra(); return; }
+    if ($('#panel-crear').hidden) muestra('crear', $('#cancelar-invitacion'));
     $('#panel-crear').classList.toggle('enviada', !!ok);
     if (!/llega|alguien|caducad/.test($('#estado-crear').dataset.t || '')) { ponEstado(ok ? 'esperandoInicio' : 'esperandoLlamada'); titulo('#panel-crear', 'llamandoT'); if (ok && !(M && M.conectada)) suena(true); }
   }
@@ -404,7 +405,7 @@
     if (window.ElixireTonos) window.ElixireTonos.prepara();
     if (M.activa) { window.Elixire.reinvitando = true; M.termina('reinvita'); }
     abierta = 'elige'; ocupado = false; document.body.classList.add('cerrado');
-    abreInvitacion(semilla, texto, false).then(() => compartida).then((ok) => { if (abierta === 'crear' && invitacion) ponEnviada(ok); });
+    abreInvitacion(semilla, texto, false, true).then(() => compartida).then((ok) => { if (abierta === 'crear' && invitacion) ponEnviada(ok); });
   }
   window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, reinvita, ocultaPaneles, abierta: () => abierta, textoInvitacion, comparte });
   if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
