@@ -1442,3 +1442,5 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 @keyframes mallaPunto{0%,100%{opacity:.4}50%{opacity:1}}
 @keyframes mallaSigue{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(.5%,-.4%) scale(1.006)}60%{transform:translate(-.4%,.4%) scale(.996)}}
 @media (prefers-reduced-motion:reduce){.malla-caja .malla,.malla-caja .malla *{animation:none!important}}
+/* «Comprobar», retirado de momento (dueño, 20 nov 07:55: «quita la comprobación hasta que esté mejor hecha») */
+html body .sala .controles .seg#b-comprobar,html body #b-comprobar{display:none!important}
