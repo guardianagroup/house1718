@@ -346,6 +346,7 @@
         return;
       }
       case 'ack': if (Array.isArray(j.ids)) emite('acuse', j.ids.slice(0, 50).map(String)); return;
+      case 'leido': if (Array.isArray(j.ids)) emite('leido', j.ids.slice(0, 50).map((x) => String(x).slice(0, 40))); return;
       case 'escribe': emite('escribe', !!j.si); return;
       case 'borra': { const id = String(j.id || '').slice(0, 40); if (id) emite('borrado', id); return; }
       case 'palabras': return recibeRevelacion(s, j);
@@ -399,6 +400,8 @@
     return { id: m.id, texto: m.texto, t: m.t, dir: 'mia' };
   }
   // borrar un mensaje o un archivo para los dos (dueño, 18:20): va por la sesión encriptada; la otra pantalla lo quita
+  // confirmación de lectura (dueño, 23:20): quien recibe avisa de qué mensajes ha visto con el chat delante
+  function leidos(ids) { const s = S; if (!s || !s.conectado || s.fin || !Array.isArray(ids) || !ids.length) return false; return enviaControl(s, { tipo: 'leido', ids: ids.slice(0, 50).map((x) => String(x).slice(0, 40)) }); }
   function borra(id) { const s = S; if (!s || !s.conectado || s.fin || !id) return false; aTic(s, { tipo: 'borra', id: String(id).slice(0, 40) }); return true; }
   let escribeT = 0;
   function escribe() { const s = S; if (!s || !s.conectado || Date.now() - escribeT < 2500) return; escribeT = Date.now(); s.tic = s.tic.filter((x) => x.tipo !== 'escribe'); aTic(s, { tipo: 'escribe', si: 1 }); }
@@ -1067,7 +1070,7 @@
   }
 
   window.ElixireMotor = {
-    on, prepara, crea, entra, termina, envia, borra, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
+    on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, gesto, fuente, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },

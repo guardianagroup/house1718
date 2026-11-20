@@ -47,14 +47,14 @@
   function contenido(texto) {
     const f = document.createDocumentFragment(), u = UBICACION.exec(texto || '');
     if (!u) { f.append(document.createTextNode(texto)); return f; }
-    const b = document.createElement('b'); b.textContent = '\u{1F4CD} ' + tr('ubicacion');
+    const b = document.createElement('b'); b.className = 'ubic'; b.textContent = '\u{1F4CD} ' + tr('ubicacion');
     const a = document.createElement('a'); a.className = 'cristal mapa'; a.href = 'https://www.google.com/maps?q=' + u[2] + ',' + u[3]; a.target = '_blank'; a.rel = 'noopener noreferrer';
     const s = document.createElement('span'); s.dataset.t = 'abrirMapa'; s.textContent = tr('abrirMapa'); a.append(s);
     f.append(b, a); return f;
   }
   function pintaMensaje(m) {
     quitaVacio();
-    const li = document.createElement('li'); li.className = 'msg ' + m.dir; li.dataset.id = m.id;
+    const li = document.createElement('li'); li.className = 'msg ' + m.dir + (m.dir === 'mia' ? ' enviado' : ''); li.dataset.id = m.id;
     li.append(contenido(m.texto)); toastMensaje(m);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
@@ -77,6 +77,27 @@
   let escribeT = null;
   M.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
   M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+  // ✓ enviado · ✓✓ entregado · ✓✓ azul leído (dueño, 23:20: «como otras apps»). Se da por leído lo que llega con el chat delante
+  // (en el móvil, con el chat abierto; en el ordenador el chat siempre está a la vista) y la página visible.
+  let leeT = null;
+  function marcaLeidos() {
+    clearTimeout(leeT); leeT = setTimeout(() => {
+      if (document.visibilityState !== 'visible' || !abierta || (movil.matches && !enChat)) return;
+      const ids = [...lista.querySelectorAll('li.msg.suya[data-id]:not(.leida)')].map((li) => { li.classList.add('leida'); return li.dataset.id; });
+      if (ids.length && M.leidos) M.leidos(ids);
+    }, 300);
+  }
+  new MutationObserver(marcaLeidos).observe(lista, { childList: true });
+  document.addEventListener('visibilitychange', marcaLeidos);
+  M.on('leido', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego', 'leido'); } });
+  // salir a otra app sin colgar (dueño, 23:21): la imagen de la otra persona pasa sola a una ventana flotante (imagen en imagen) donde el
+  // navegador lo permite (Safari en iPhone y, con el aviso de la sesión de medios, Chrome). Tu cámara la pausa el propio móvil mientras
+  // estás fuera; al volver, todo sigue.
+  (() => {
+    const vs = $('#video-suyo'); if (!vs) return;
+    try { vs.autoPictureInPicture = true; vs.setAttribute('autopictureinpicture', ''); } catch (_) {}
+    try { if (navigator.mediaSession && document.pictureInPictureEnabled) navigator.mediaSession.setActionHandler('enterpictureinpicture', () => { if (vs.srcObject && !document.pictureInPictureElement) vs.requestPictureInPicture().catch(() => {}); }); } catch (_) {}
+  })();
   M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
 
   // ---------- archivos ----------
@@ -274,7 +295,7 @@
   function abreChat() {
     if (!movil.matches || enChat || !abierta) return;
     if (window.ElixireComprueba && window.ElixireComprueba.cierra) window.ElixireComprueba.cierra();
-    enChat = true; sinLeer = 0; pintaCuenta(); menuEnviar.hidden = true; avisos.textContent = '';
+    enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
     sala.classList.add('en-chat'); ajustaVista(); quitaVacio(); if (!lista.children.length) { const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v); }
     $('#chat-tiempo').textContent = ultimo.t0 ? mmss(Date.now() - ultimo.t0) : '';
     requestAnimationFrame(abajo);

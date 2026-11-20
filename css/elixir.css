@@ -1408,3 +1408,10 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .lienzo3d{opacity:calc(1 - var(--salida,0));transform:scale(calc(1 + var(--salida,0) * .06));transform-origin:50% 42%;will-change:opacity,transform}
 .sin-roca .lienzo3d{visibility:hidden}
 .monolito-css{opacity:calc(1 - var(--salida,0))}
+/* la ubicación: el título en su línea y «Abrir el mapa» debajo, con aire (dueño, 23:20: «apiñado») */
+.msg .ubic{display:block;margin:0 0 2px}
+.msg .mapa{display:flex;width:max-content;margin:10px 0 4px}
+/* confirmaciones como en otras apps: ✓ enviado · ✓✓ entregado · ✓✓ azul leído */
+.msg.mia.enviado .hora::after,.sala.en-chat .msg.mia.enviado .hora::after{content:' ✓';letter-spacing:0;padding:0}
+.msg.mia.llego .hora::after,.sala.en-chat .msg.mia.llego .hora::after{content:' ✓✓';letter-spacing:-.34em;padding-right:.34em}
+.msg.mia.leido .hora::after,.sala.en-chat .msg.mia.leido .hora::after{content:' ✓✓';letter-spacing:-.34em;padding-right:.34em;color:#1A66C9;font-weight:700}
