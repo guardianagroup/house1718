@@ -187,8 +187,8 @@
     try { pg.drawImage(video, cx, cy, cw, ch, 0, 0, PIEL, PIEL); } catch (_) { return null; }
     let img; try { img = pg.getImageData(0, 0, PIEL, PIEL).data; } catch (_) { return null; }
     const kx = PIEL / cw, ky = PIEL / ch, z = [];
-    let ys = 0, ny = 0;
-    for (let i = 0; i < img.length; i += 16) { ys += 0.299 * img[i] + 0.587 * img[i + 1] + 0.114 * img[i + 2]; ny++; }
+    let ys = 0, ny = 0, rs = 0, gs = 0, bs = 0;
+    for (let i = 0; i < img.length; i += 16) { ys += 0.299 * img[i] + 0.587 * img[i + 1] + 0.114 * img[i + 2]; rs += img[i]; gs += img[i + 1]; bs += img[i + 2]; ny++; }
     for (const [ax, ay, bx, by] of zonas(p)) {
       const zx0 = Math.max(0, Math.floor((Math.min(ax, bx) - cx) * kx)), zx1 = Math.min(PIEL, Math.ceil((Math.max(ax, bx) - cx) * kx));
       const zy0 = Math.max(0, Math.floor((Math.min(ay, by) - cy) * ky)), zy1 = Math.min(PIEL, Math.ceil((Math.max(ay, by) - cy) * ky));
@@ -201,7 +201,7 @@
       }
       z.push(n >= 20 ? [r / n, gg / n, b / n] : null);
     }
-    return { t, z, y: ny ? ys / ny : 0 };
+    return { t, z, y: ny ? ys / ny : 0, rgb: ny ? [rs / ny, gs / ny, bs / ny] : null };
   }
   // la señal de cada zona, a 30 imágenes por segundo exactas (la llegada de imágenes no es regular)
   const FS = 30;
@@ -431,6 +431,7 @@
       imagen,
     ];
     if (x.giro) senales.push({ k: 'giro', estado: x.giro.estado, v: tr(x.giro.estado === 'si' ? 'v_giroSi' : 'v_giroNo') });
+    if (x.reflejo && x.reflejo.estado === 'si') senales.push({ k: 'reflejo', estado: 'si', v: tr('v_reflejoSi') });
     if (x.cortes) senales.push({ k: 'cortes', estado: x.cortes >= 2 ? 'no' : 'aviso', v: tr('v_cortesNo') });
     const E = {}; for (const s of senales) E[s.k] = s.estado;
     let tipo, confianza = null, fija = null;
@@ -458,10 +459,10 @@
   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
   const PESOS = {
     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 }, reflejo: { si: 1.0 },
   };
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
-  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes']);
+  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes', 'reflejo']);
   function probabilidad(r) {
     // dueño (20:51): si detecta una foto, 0 %. Muy quieta sin más (puede ser alguien muy quieto) pasa a la prueba del gesto; si
     // tampoco la hace, es una foto: 0 %
@@ -751,6 +752,27 @@
     const az = new Uint32Array(1); crypto.getRandomValues(az); const lado = az[0] & 1 ? 'izq' : 'der';
     const pasos = [lado, 'mano', lado === 'izq' ? 'der' : 'izq'];
     if (M && M.gesto) avisado = !!M.gesto('inicio', 0, 0);
+    // el reflejo (dueño, 20:55): su pantalla se ilumina un instante en magenta y en cian (en orden al azar); en una cara de verdad esa
+    // luz se refleja (el rojo frente al verde sube con el magenta y baja con el cian). Solo suma: a pleno sol casi no se nota.
+    const col = [];
+    const muestraLuz = async (ms, et) => {
+      const t1 = performance.now();
+      while (!cancelado && mia === vuelta && performance.now() - t1 < ms) {
+        let res = null; try { res = await fa.detectSingleFace(video, opc).withFaceLandmarks(); } catch (_) {}
+        if (res) {
+          const p = res.landmarks.positions.map((x) => [x.x, x.y]), mm = muestraPiel(p, performance.now());
+          if (mm && mm.rgb) { const [R, G, B] = mm.rgb; col.push({ et, t: performance.now() - t1, rg: (R - G) / (R + G + B || 1) }); }
+          const rr = ajustaLienzo(), m = aPantalla(rr); dibuja(rr, p.map(([x, y]) => [m.ox + x * m.s, m.oy + y * m.s]), 0, 0);
+        }
+        await new Promise((ok) => requestAnimationFrame(ok));
+      }
+    };
+    est.textContent = tr('pide_luz');
+    await muestraLuz(700, 'base');
+    for (const c of (az[0] & 2 ? [0, 1] : [1, 0])) { try { if (M && M.gesto) M.gesto('luz', c, 0); } catch (_) {} await muestraLuz(1500, c); }
+    const ven = (c) => col.filter((x) => x.et === c && x.t >= 250 && x.t <= 1400).map((x) => x.rg), wm = ven(0), wc = ven(1), wb = col.filter((x) => x.et === 'base').map((x) => x.rg);
+    let reflejo = { estado: 'nd' };
+    if (wm.length >= 4 && wc.length >= 4 && wb.length >= 3) { const dif = mediana(wm) - mediana(wc), ruido = desv(wb); reflejo = { estado: dif >= Math.max(0.006, 2.5 * ruido) ? 'si' : 'nd', dif: Math.round(dif * 1e4) / 1e4, ruido: Math.round(ruido * 1e4) / 1e4 }; }
     for (let k = 0; k < pasos.length && !cancelado && mia === vuelta; k++) {
       const q = pasos[k]; est.textContent = (auto && k === 0 ? tr('pide_aviso') + ' ' : '') + tr('pide_' + q);
       try { if (M && M.gesto) M.gesto(q, k + 1, 3); } catch (_) {}
@@ -778,7 +800,8 @@
     if (cancelado || mia !== vuelta) return;
     enMarcha = false; caja.classList.remove('giro'); g.clearRect(0, 0, lienzo.width, lienzo.height);
     const giro = { estado: hechos === pasos.length ? 'si' : 'no', hechos };
-    const r = analiza(base._datos, Object.assign({}, base._extra, { giro }));
+    const r = analiza(base._datos, Object.assign({}, base._extra, { giro, reflejo }));
+    if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__gesto = { giro, reflejo, muestras: col.length };
     r._datos = base._datos; r._extra = base._extra;
     resultado(r);
   }

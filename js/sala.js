@@ -634,9 +634,11 @@
     clearTimeout(gestoT);
     if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }
     caja.classList.add('gesto'); caja.dataset.q = g.q;
+    // el destello de color: su luz se refleja en una cara de verdad (quien comprueba lo mide en el vídeo)
+    if (g.q === 'luz') { let fl = document.querySelector('.gesto-luz'); if (!fl) { fl = document.createElement('div'); fl.className = 'gesto-luz'; caja.parentElement.append(fl); } fl.style.setProperty('--c', g.n ? '#00FFFF' : '#FF00FF'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 800); }
     et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
     tx.textContent = tr('gesto_' + g.q); caja.hidden = false;
-    try { if (g.q !== 'frente' && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
+    try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
     gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, 6000);
   });
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)

@@ -1313,3 +1313,6 @@ html{overscroll-behavior-y:none}
 /* la prueba del gesto: lo que hay que pedirle, más ancho y legible arriba */
 #comprobacion-estado.giro{width:min(380px,calc(100% - 28px));max-width:none}
 #comprobacion-estado.giro #comprobacion-estado-texto{font-size:16px;line-height:1.35}
+/* el destello de color de la prueba del gesto: su luz se refleja en una cara de verdad */
+.gesto-luz{position:fixed;inset:0;z-index:29;pointer-events:none;opacity:0;background:var(--c,#fff);transition:opacity .1s linear}
+.gesto-luz.on{opacity:1}

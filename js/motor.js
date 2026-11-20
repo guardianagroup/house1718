@@ -864,7 +864,7 @@
     }
     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
-    if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)) }); }
+    if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)) }); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
@@ -917,7 +917,7 @@
   // La prueba del gesto de «Comprobar» (dueño, 19:56–20:07): quien comprueba pide en la pantalla de la otra persona que gire la cabeza
   // a un lado, al otro y que se tape la cara, en orden al azar. Aquí solo viaja la orden; lo que se ve lo analiza quien comprueba.
   function gesto(q, n, de) {
-    if (!L || L.estado !== 'hablando' || !S || !/^(izq|der|mano|frente|fin|inicio)$/.test(q)) return false;
+    if (!L || L.estado !== 'hablando' || !S || !/^(izq|der|mano|frente|fin|inicio|luz)$/.test(q)) return false;
     return enviaControl(S, { tipo: 'llamada', que: 'gesto', id: L.id, q, n: n | 0, de: de | 0 });
   }
   function reto() {
