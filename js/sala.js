@@ -625,6 +625,19 @@
     caja.hidden = false; clearTimeout(retoT); retoT = setTimeout(() => { caja.hidden = true; }, 12000);
     sistema(r.mio ? 'retoSistemaMio' : 'retoSistemaSuyo', '«' + tx.textContent + '»');
   });
+  // poca luz (dueño, 21:05): si mi imagen se ve muy oscura, me aviso en mi pantalla para que la otra persona me vea bien (y para que
+  // «Comprobar» funcione). Cada 2 s, una versión diminuta de mi cámara; dos veces seguidas muy oscura: el aviso (como mucho uno por minuto).
+  const luzL = document.createElement('canvas'); luzL.width = 24; luzL.height = 18; const luzG = luzL.getContext('2d', { willReadFrequently: true });
+  let luzN = 0, luzUlt = 0;
+  setInterval(() => {
+    if (!abierta || document.hidden) return;
+    const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando' || e.cam === false) { luzN = 0; return; }
+    const v = $('#video-mio'); if (!v || !v.videoWidth || v.readyState < 2) return;
+    let d; try { luzG.drawImage(v, 0, 0, 24, 18); d = luzG.getImageData(0, 0, 24, 18).data; } catch (_) { return; }
+    let s = 0; for (let i = 0; i < d.length; i += 4) s += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    luzN = s / (d.length / 4) < 42 ? luzN + 1 : 0;
+    if (luzN >= 2 && Date.now() - luzUlt > 60000) { luzUlt = Date.now(); if (movil.matches) toast('luz', { icono: 'foto', titulo: tr('pocaLuzT'), sub: tr('pocaLuz'), ms: 8000 }); else sistema('pocaLuz'); }
+  }, 2000);
   $('#b-reto').addEventListener('click', () => M.reto());
   // la prueba del gesto: la orden llega de quien comprueba y se ve grande en el centro (sin mensajes en el chat)
   let gestoT = null;
