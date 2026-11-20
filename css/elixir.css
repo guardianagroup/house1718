@@ -1444,3 +1444,16 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 @media (prefers-reduced-motion:reduce){.malla-caja .malla,.malla-caja .malla *{animation:none!important}}
 /* «Comprobar», retirado de momento (dueño, 20 nov 07:55: «quita la comprobación hasta que esté mejor hecha») */
 html body .sala .controles .seg#b-comprobar,html body #b-comprobar{display:none!important}
+/* ---------- el botón principal, rediseñado (dueño, 20 nov 08:04: «rediseña el texto del botón para que se vea más grande y profesional,
+   incluso el botón entero»): cápsula de nácar con relieve, la cámara en un sello negro y el texto, más grande, en la letra de la marca ---------- */
+.cristal.grande.vivo{height:64px;padding:0 22px 0 66px;background:linear-gradient(180deg,#FFFFFF 0%,#EEF4FA 48%,#C9DEF1 100%);border:1px solid rgba(255,255,255,.95);color:#06080C;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -14px 22px -12px rgba(110,152,196,.5),0 0 0 1px rgba(156,195,228,.3),0 18px 40px -16px rgba(156,195,228,.8),0 0 56px rgba(156,195,228,.2);
+  animation:respiraNacar 3.6s ease-in-out infinite}
+.cristal.grande.vivo>span{font:600 clamp(11px,3.6vw,14px)/1 var(--marca);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.cristal.grande.vivo .ico-boton{position:absolute;left:10px;top:50%;width:44px;height:44px;margin:0!important;padding:11px;transform:translateY(-50%);border-radius:50%;
+  background:#06080C;stroke:#F4F6F8;stroke-width:1.8;box-shadow:0 3px 10px rgba(6,8,12,.3),inset 0 0 0 1px rgba(255,255,255,.08)}
+.cristal.grande.vivo:hover,.cristal.grande.vivo:focus-visible{color:#06080C}
+@keyframes respiraNacar{50%{box-shadow:inset 0 1px 0 #fff,inset 0 -14px 22px -12px rgba(110,152,196,.5),0 0 0 1px rgba(156,195,228,.5),0 20px 50px -16px rgba(156,195,228,.95),0 0 84px rgba(156,195,228,.36)}}
+@media (max-width:360px){.cristal.grande.vivo{padding:0 14px 0 62px}.cristal.grande.vivo>span{letter-spacing:.05em}}
+@media (min-width:761px){.cristal.grande.vivo{height:60px;padding:0 36px 0 70px}.cristal.grande.vivo>span{font-size:14px}}
+@media (prefers-reduced-motion:reduce){.cristal.grande.vivo{animation:none}}
