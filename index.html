@@ -27,8 +27,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261119-55" integrity="sha384-hq7Z4J472+u2qmiWy8Nu62X9gF4NVseNNDHgUkwYJw0Wr9SEYeSZB1zK/Ou/kMon">
-<script src="js/idioma-inicio.js?v=20261119-55" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261119-56" integrity="sha384-eyD8nsFhGCOE/6+5/fm0T26wiQwQkPGdYHbK8MZ4bKSwo1c+6b4ztMescBRF6jc4">
+<script src="js/idioma-inicio.js?v=20261119-56" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -54,7 +54,7 @@
 <div class="monolito-css" id="monolito-css" aria-hidden="true"><span class="mitad izq"></span><span class="mitad der"></span><span class="nucleo"></span></div>
 
 <div class="consola" id="consola">
-<button type="button" class="cristal grande espejo vivo" id="empezar"><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
+<p class="lema" data-t="lema">Videollamadas privadas con detección de caras falsas.</p><button type="button" class="cristal grande espejo vivo" id="empezar"><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
 </div>
 
 <section class="panel" id="panel-elige" hidden aria-labelledby="t-elige">
@@ -91,7 +91,7 @@
 <span class="etiqueta" id="t-invitado" data-t="teInvitan">VIDEOLLAMADA POSCUÁNTICA</span>
 <div class="espera-llamada" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
 <b class="llamando" aria-live="polite"><span data-t="llamandoT">Llamando</span><i></i><i></i><i></i></b>
-<p class="texto-panel" data-t="teInvitanTexto">Te han invitado a una videollamada privada, encriptada de extremo a extremo con criptografía poscuántica. Al entrar se encenderán tu cámara y tu micrófono.</p>
+<p class="texto-panel" data-t="teInvitanTexto">Te han invitado a una videollamada privada con encriptado poscuántico de extremo a extremo. Al entrar se encenderán tu cámara y tu micrófono.</p>
 <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-invitado" data-t="conectando">Conectando…</span></div>
 <p class="error" id="error-invitado" role="alert"></p>
 <button type="button" class="cristal ancho" id="entrar-llamada"><span data-t="entrarLlamada">Entrar a la llamada</span></button>
@@ -114,7 +114,7 @@
 <div class="escena-texto">
 <span class="etiqueta" data-desde="0" data-t="e1Etiqueta">LA NUEVA AMENAZA</span>
 <h2 id="h-riesgo" data-desde="0" data-t="e1Titulo">Ya no rompen el encriptado. <em class="c-coral">Suplantan caras.</em></h2>
-<p class="escena-entradilla" data-desde="1" data-t="e1Texto">Hong Kong, 2024. Un empleado entra en una videollamada con su director financiero y varios compañeros. Todos eran falsos, creados con inteligencia artificial.</p>
+<p class="escena-entradilla" data-desde="1" data-t="e1Texto">Hong Kong, 2024. Un empleado de Arup entra en una videollamada con su director financiero y varios colegas. Ninguno era real: todos estaban hechos con IA.</p>
 </div>
 <div class="escena-visual">
 <figure class="llamada-falsa" data-desde="1" data-hasta="2" aria-hidden="true">
@@ -147,7 +147,7 @@
 <div class="escena-texto">
 <span class="etiqueta" data-desde="0" data-t="e3Etiqueta">CÓMO TE ESCUCHAN</span>
 <h2 id="h-escucha" data-desde="0" data-t="e3Titulo">Una llamada normal se puede <em class="c-ambar">escuchar</em> por el camino.</h2>
-<p class="escena-entradilla" data-desde="0" data-t="e3Texto">La llamada telefónica de siempre solo va encriptada entre tu teléfono y la antena. Después cruza redes que nadie de los dos controla.</p>
+<p class="escena-entradilla" data-desde="0" data-t="e3Texto">Una llamada de teléfono solo va encriptada hasta la antena. Después cruza redes que ninguno de los dos controla.</p>
 </div>
 <ol class="ruta" aria-label="El camino de una llamada">
 <li class="parada"><span data-t="e3N0">Tu teléfono</span></li>
@@ -171,10 +171,10 @@
 <span class="tunel-equipo"><i></i><b data-t="e4Su">Su equipo</b><em class="tunel-claro" data-desde="3" data-t="e4Msg">Firmamos mañana a las 10</em></span>
 </figure>
 <ul class="puntos" data-desde="3">
-<li><b data-t="e4P1T">Encriptado en tu equipo.</b> <span data-t="e4P1">Sale encriptado y solo el otro equipo tiene la clave.</span></li>
-<li><b data-t="e4P2T">Sin cuenta ni número.</b> <span data-t="e4P2">Nada que te identifique, nada que se pueda filtrar.</span></li>
-<li><b data-t="e4P3T">Nada guardado.</b> <span data-t="e4P3">La conversación vive en las dos pestañas y desaparece al cerrar.</span></li>
-<li><b data-t="e4P4T">Nadie en medio.</b> <span data-t="e4P4">En el ordenador, cuatro palabras que solo coinciden si no hay nadie entre vosotros.</span></li>
+<li><b data-t="e4P1T">Encriptado en tu equipo.</b> <span data-t="e4P1">Sale de tu equipo encriptado y solo el otro equipo puede abrirlo.</span></li>
+<li><b data-t="e4P2T">Sin cuenta ni número.</b> <span data-t="e4P2">Nada que te identifique. Nada que se pueda filtrar.</span></li>
+<li><b data-t="e4P3T">Nada guardado.</b> <span data-t="e4P3">La conversación solo existe en vuestras dos pantallas y desaparece al cerrar.</span></li>
+<li><b data-t="e4P4T">Nadie en medio.</b> <span data-t="e4P4">En el ordenador, cuatro palabras que solo coinciden si nadie se ha interpuesto.</span></li>
 </ul>
 </div>
 </section>
@@ -184,7 +184,7 @@
 <div class="escena-texto">
 <span class="etiqueta" data-desde="0" data-t="e5Etiqueta">COMPROBAR</span>
 <h2 id="h-comprobar" data-desde="0" data-t="e5Titulo">No basta con <em class="c-hielo">parecer real</em>.</h2>
-<p class="escena-entradilla" data-desde="0" data-t="e5Texto">Durante la videollamada, Elixire busca en tu propio equipo las huellas que deja una cara falsa. Sin enviar nada. La otra persona no ve nada.</p>
+<p class="escena-entradilla" data-desde="0" data-t="e5Texto">Durante la videollamada, Elixire analiza la cara de la otra persona en tu propio equipo. Si algo no cuadra, te dice qué pedirle para confirmarlo.</p>
 </div>
 <figure class="escaner" aria-hidden="true">
 <span class="malla-caja"><svg class="malla" id="malla-escena" viewBox="20 20 160 180"></svg><span class="escaner-barrido"></span></span>
@@ -196,14 +196,14 @@
 </ul>
 <span class="escaner-resultado" data-desde="5"><span class="mini-anillo" aria-hidden="true"><svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle class="anillo-valor" cx="60" cy="60" r="52" pathLength="100"/></svg></span><b><span data-cuenta="97">97</span> %</b><span data-t="probHumano">Probabilidad de ser humano</span></span>
 </figure>
-<p class="escena-nota" data-desde="5" data-t="e5Nota">Detecta cámaras virtuales, caras sin relieve, vídeos grabados y labios que no van con la voz. Ninguna prueba es infalible: si te piden dinero con prisa, cuelga y llama tú.</p>
+<p class="escena-nota" data-desde="5" data-t="e5Nota">Detecta cámaras virtuales, fotos, vídeos grabados y caras sin relieve. Ninguna prueba es infalible: si te piden dinero con prisa, cuelga y llama tú.</p>
 </div>
 </section>
 
 <section class="seccion escena-libre" id="tecnologia" aria-labelledby="h-tecnologia">
 <span class="etiqueta" data-t="e6Etiqueta">LA TECNOLOGÍA</span>
 <h2 id="h-tecnologia" data-t="e6Titulo">Dos candados. <em class="c-hielo">Una conversación.</em></h2>
-<p class="intro" data-t="e6Texto">Encriptado poscuántico híbrido, en tu navegador: para leer una conversación habría que romper a la vez la criptografía de siempre y la poscuántica.</p>
+<p class="intro" data-t="e6Texto">Encriptado poscuántico híbrido, en tu navegador: para leer una conversación habría que romper a la vez la criptografía clásica y la poscuántica.</p>
 <dl class="ficha">
 <div><dt>ML-KEM-1024 + ECDH P-384</dt><dd data-t="e6F1">Acuerdo de claves poscuántico híbrido, con el nivel más alto de la norma.</dd></div>
 <div><dt>ML-DSA-87 + ECDSA P-384</dt><dd data-t="e6F2">Firmas poscuánticas sobre cada acuerdo de claves.</dd></div>
@@ -220,7 +220,7 @@
 <section class="seccion escena-libre" id="frente" aria-labelledby="h-frente">
 <span class="etiqueta" data-t="e7Etiqueta">FRENTE A LOS DEMÁS</span>
 <h2 id="h-frente" data-t="e7Titulo">Vuestras apps, para el día a día. <em class="c-hielo">Elixire, para lo decisivo.</em></h2>
-<p class="intro" data-t="e7Texto">WhatsApp, Telegram y Signal resuelven bien lo de cada día. Elixire nace para las conversaciones en las que importa confirmar quién habla, y que no deben dejar cuenta ni historial.</p>
+<p class="intro" data-t="e7Texto">WhatsApp, Telegram y Signal sirven para el día a día. Elixire es para cuando hay que confirmar quién habla, sin cuenta ni historial.</p>
 <div class="tabla" role="region" aria-labelledby="h-frente" tabindex="0">
 <table>
 <thead><tr><th scope="col"></th><th scope="col">WhatsApp</th><th scope="col">Telegram</th><th scope="col">Signal</th><th scope="col" class="nuestro">Elixire</th></tr></thead>
@@ -250,7 +250,7 @@
 <section class="seccion cierre" id="acceso" aria-labelledby="h-acceso">
 <span class="etiqueta" data-t="accesoEtiqueta">ACCESO</span>
 <h2 id="h-acceso" data-t="e9Titulo">Si importa, <em class="c-ambar">hablad aquí</em>.</h2>
-<p class="intro" data-t="e9Texto">Para un consejo de administración, un contrato o una conversación personal que merece respeto. Elixire es un servicio de pago para personas, despachos, clínicas y empresas. Durante la fase de pruebas, sin límite.</p>
+<p class="intro" data-t="e9Texto">Para una junta, una operación, un contrato o una conversación personal que no debe salir de ahí. Servicio de pago para particulares, despachos, clínicas y empresas. Durante la fase de pruebas, sin límite.</p>
 <button type="button" class="cristal grande vivo" data-empezar><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
 </section>
 </main>
@@ -379,20 +379,20 @@
 </div>
 </div>
 
-<script src="js/luz.js?v=20261119-55" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
-<script src="js/idioma.js?v=20261119-55" integrity="sha384-ovmUjRb4M9bx6l6CViVpieBRHW7q422+7i4I98/toEiNa6DfQMHofSOIiIPRtwUJ"></script>
-<script src="js/pq-cnsa.js?v=20261119-55" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261119-55" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261119-55" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261119-55" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261119-55" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261119-55" integrity="sha384-3zQKqV8VqMzNtf9oM7zikpKRdxe6GBgDc1lX4Q7ds/598+Qkd0/iVSGLc7hsCj7K"></script>
-<script type="module" src="js/sala3d.js?v=20261119-55" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
-<script src="js/holo.js?v=20261119-55" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
-<script src="js/puerta.js?v=20261119-55" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
-<script src="js/comprueba.js?v=20261119-55" integrity="sha384-7/6HKqONO9gQqIcQ/o0dfcfrGUGGiDMI1M5f+xZkQBv58c3dP3fcXu99ywLnigap"></script>
-<script src="js/escenas.js?v=20261119-55" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
-<script src="js/sala.js?v=20261119-55" integrity="sha384-kmxdAFxWXO129XspPWUDvLwjFlRJ3sKUFHKO7GdO3bYC6DFDwKl8h4ONIFBsH5+M"></script>
+<script src="js/luz.js?v=20261119-56" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
+<script src="js/idioma.js?v=20261119-56" integrity="sha384-CrVznA4vXGDczKNP+Aw7TEj0qn2OgwaJIywlYGubFW4TAdPgHxXiX4wLGd1FAUe1"></script>
+<script src="js/pq-cnsa.js?v=20261119-56" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261119-56" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261119-56" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261119-56" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261119-56" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261119-56" integrity="sha384-3zQKqV8VqMzNtf9oM7zikpKRdxe6GBgDc1lX4Q7ds/598+Qkd0/iVSGLc7hsCj7K"></script>
+<script type="module" src="js/sala3d.js?v=20261119-56" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
+<script src="js/holo.js?v=20261119-56" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+<script src="js/puerta.js?v=20261119-56" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
+<script src="js/comprueba.js?v=20261119-56" integrity="sha384-7/6HKqONO9gQqIcQ/o0dfcfrGUGGiDMI1M5f+xZkQBv58c3dP3fcXu99ywLnigap"></script>
+<script src="js/escenas.js?v=20261119-56" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
+<script src="js/sala.js?v=20261119-56" integrity="sha384-kmxdAFxWXO129XspPWUDvLwjFlRJ3sKUFHKO7GdO3bYC6DFDwKl8h4ONIFBsH5+M"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
 </body>
 </html>

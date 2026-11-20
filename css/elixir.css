@@ -1322,3 +1322,6 @@ html{overscroll-behavior-y:none}
 .pide-botones button{flex:1 1 0;height:50px;border-radius:999px;border:0;font:600 15px/1 var(--ui);cursor:pointer;box-shadow:0 14px 36px -14px rgba(0,0,0,.8)}
 .pide-botones .pide-si{background:#5CC98A;color:#05070A}
 .pide-botones .pide-no{background:#E07A6C;color:#05070A}
+/* el lema de la portada (dueño, 21:07: «que se entienda en 3 segundos»): qué es Elixire, encima del botón */
+.consola .lema{margin:0;font:400 16px/1.45 var(--ui);color:#C9D6E3;text-align:center;letter-spacing:.01em;max-width:30ch;text-wrap:balance}
+@media (max-width:760px){.consola .lema{font-size:15px;margin:0 0 14px}}
