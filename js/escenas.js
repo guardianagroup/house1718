@@ -78,3 +78,11 @@
     malla.append(g1, g2);
   }
 })();
+
+// ---- al bajar: el botón de la portada se va y la cabecera gana fondo (dueño, 23:10: el botón se montaba sobre «ELIXIRE») ----
+(() => {
+  const raiz = document.documentElement; let pend = false;
+  const mira = () => { pend = false; raiz.classList.toggle('bajado', scrollY > innerHeight * 0.22); };
+  addEventListener('scroll', () => { if (!pend) { pend = true; requestAnimationFrame(mira); } }, { passive: true });
+  mira();
+})();

@@ -1396,3 +1396,11 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .cierre .ventas{margin:20px 0 0;font:400 15px/1.5 var(--ui);color:#9FB2C4;text-align:center}
 .cierre .ventas a{color:#9CC3E4;text-decoration:none;border-bottom:1px solid rgba(156,195,228,.45);margin-left:8px}
 @media (max-width:760px){.preguntas summary{font-size:16px}.preguntas details p{font-size:15px}}
+/* las escenas, más ágiles (dueño, 23:10: «tarda mucho en salir lo siguiente»): unos 35 % de pantalla de recorrido por paso, no 70 % */
+.escenas-vivas .escena[data-pasos="4"]{height:240svh}
+.escenas-vivas .escena[data-pasos="5"]{height:280svh}
+.escenas-vivas .escena[data-pasos="6"]{height:320svh}
+/* al bajar, el botón de la portada se desvanece (no se monta sobre la marca) y la cabecera gana un fondo suave para leerse bien */
+.bajado .consola{opacity:0!important;pointer-events:none}
+.cabecera{transition:background .35s ease}
+.bajado .cabecera{background:linear-gradient(180deg,rgba(6,8,12,.92) 0%,rgba(6,8,12,.7) 60%,rgba(6,8,12,0) 100%)}
