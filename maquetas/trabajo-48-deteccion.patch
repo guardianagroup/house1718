@@ -1,0 +1,370 @@
+diff --git a/css/elixir.css b/css/elixir.css
+index 19dfc93..22aab4a 100644
+--- a/css/elixir.css
++++ b/css/elixir.css
+@@ -1290,3 +1290,6 @@ html{overscroll-behavior-y:none}
+ .sala .video-reto.gesto:not([hidden]){display:flex!important;z-index:30;width:min(360px,88%);padding:24px 22px 26px;border-radius:24px;
+   background:rgba(5,7,10,.66);-webkit-backdrop-filter:blur(14px) saturate(130%);backdrop-filter:blur(14px) saturate(130%);border:1px solid rgba(156,195,228,.32);box-shadow:0 24px 60px -24px rgba(0,0,0,.8)}
+ .sala .video-reto.gesto .etiqueta{font:500 11px/1.3 var(--ui);letter-spacing:.2em;color:#9CC3E4}
++/* el destello de color de la prueba: su luz se refleja en una cara de verdad */
++.gesto-luz{position:fixed;inset:0;z-index:29;pointer-events:none;opacity:0;background:var(--c,#fff);transition:opacity .1s linear}
++.gesto-luz.on{opacity:1}
+diff --git a/index.html b/index.html
+index 813066e..72ab47c 100644
+--- a/index.html
++++ b/index.html
+@@ -27,8 +27,8 @@
+ <link rel="apple-touch-icon" href="img/app/icono-180.png">
+ <link rel="manifest" href="manifest.webmanifest">
+ <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
+-<link rel="stylesheet" href="css/elixir.css?v=20261119-47" integrity="sha384-CCVMx30IemS9LipuVEidZUTMakqBnvFyayPvPZbmKBVFGLKZYfon+6aBg4eFaopp">
+-<script src="js/idioma-inicio.js?v=20261119-47" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
++<link rel="stylesheet" href="css/elixir.css?v=20261119-48" integrity="sha384-qToa2n1B29A9gu5DA7PntVoYc2H//jUiHTos5WgBm2CX0qatmglY7RVA6YPDK6ZC">
++<script src="js/idioma-inicio.js?v=20261119-48" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
+ </head>
+ <body>
+ <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
+@@ -379,20 +379,20 @@
+ </div>
+ </div>
+ 
+-<script src="js/luz.js?v=20261119-47" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
+-<script src="js/idioma.js?v=20261119-47" integrity="sha384-kbomM3cJsNwWSPOupV07lfivncKbmiv+T3f32XXYelaQHgdgwc5zzZRdeKxqOxGH"></script>
+-<script src="js/pq-cnsa.js?v=20261119-47" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+-<script src="js/palabras.js?v=20261119-47" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+-<script src="js/cripto.js?v=20261119-47" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+-<script src="js/rele.js?v=20261119-47" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+-<script src="js/qr.js?v=20261119-47" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+-<script src="js/motor.js?v=20261119-47" integrity="sha384-c4fyaCXpXk3zbNHbnewqdH6skBd6Isr3/xLjHLDw2hrs9vx3eHuf0csFJmt+LBCL"></script>
+-<script type="module" src="js/sala3d.js?v=20261119-47" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
+-<script src="js/holo.js?v=20261119-47" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+-<script src="js/puerta.js?v=20261119-47" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
+-<script src="js/comprueba.js?v=20261119-47" integrity="sha384-O15vYzuxM7LkYtxSBmS7aXpXKogk7U12GsSEBIhEWrEqURM8EbJ/Xd3AomLVTUQO"></script>
+-<script src="js/escenas.js?v=20261119-47" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
+-<script src="js/sala.js?v=20261119-47" integrity="sha384-nEKs3kssYtdFeXmQ6QCjJmcSmyND5k3FpjSFcUm/QUuJBA+zKIzGqpn2AriZIpTw"></script>
++<script src="js/luz.js?v=20261119-48" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
++<script src="js/idioma.js?v=20261119-48" integrity="sha384-0uWYcjxGaVpO7SUqGvJ0MiA/Qh06vTR196MmL97npaJ00eSRIUJcnhwFyJbLAa+C"></script>
++<script src="js/pq-cnsa.js?v=20261119-48" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
++<script src="js/palabras.js?v=20261119-48" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
++<script src="js/cripto.js?v=20261119-48" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
++<script src="js/rele.js?v=20261119-48" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
++<script src="js/qr.js?v=20261119-48" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
++<script src="js/motor.js?v=20261119-48" integrity="sha384-2zgLc2V1A+EHA6yAYFfJKzM3TgeZnVgpAKmubShLZhMPuBnAuFNV46f7T+gpwA0t"></script>
++<script type="module" src="js/sala3d.js?v=20261119-48" integrity="sha384-BO/jAueEN2TDB/gCZWPrHYiwc0ZjjEhbuGFKO+z5REjyIxQYxjeyVsSFSqA66JdF"></script>
++<script src="js/holo.js?v=20261119-48" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
++<script src="js/puerta.js?v=20261119-48" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
++<script src="js/comprueba.js?v=20261119-48" integrity="sha384-WmJIsmf08vcgHbI2poaOa/I7aPzasXSxXC8AbUcCG8nkuLsTkJIzK78pRSHhOJua"></script>
++<script src="js/escenas.js?v=20261119-48" integrity="sha384-6wu2kYL1DwuLLdOdHDaEVGYqSMMZ2LWACExPkx+63v+bxPr7muHWHo8aQtxNQCY8"></script>
++<script src="js/sala.js?v=20261119-48" integrity="sha384-GYEan3V9FKG8zywzY9CcqeD6/42KgVoNo/1f3VXxisyk2/DLMCY2kc3h/XbmWmeI"></script>
+ <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
+ </body>
+ </html>
+diff --git a/js/comprueba.js b/js/comprueba.js
+index 29fcf27..507e8b6 100644
+--- a/js/comprueba.js
++++ b/js/comprueba.js
+@@ -27,7 +27,7 @@
+   // Dueño, 18:26: «si la persona se mueve, ya se cancela. No quiero que se cancele… quiero que analicen los movimientos, si son
+   // naturales». Ya no hay un tiempo fijo que corta: 9 s como mínimo y, si la cara se pierde al moverse, se sigue (con la última
+   // caja, ver siguePuntos) y se alarga hasta tener muestras suficientes (16 s como mucho). El movimiento cuenta a favor si es natural.
+-  const DUR = 12000, DUR_MAX = 17000, MUESTRAS = 45, DUR_GIRO = 10000;
++  const DUR = 13200, DUR_MAX = 18000, MUESTRAS = 45, DUR_GIRO = 10000;
+   // tres palabras al azar para la prueba extra: un vídeo grabado no puede decirlas
+   const PALABRAS = { es: ['luna', 'siete', 'café', 'río', 'verde', 'mesa', 'nube', 'tren', 'sol', 'mar', 'pan', 'flor', 'casa', 'tigre', 'azul', 'nueve', 'limón', 'playa', 'reloj', 'fuego', 'árbol', 'cielo', 'perro', 'gato', 'libro', 'monte', 'rojo', 'cinco', 'miel', 'barco'], en: ['moon', 'seven', 'coffee', 'river', 'green', 'table', 'cloud', 'train', 'sun', 'sea', 'bread', 'flower', 'house', 'tiger', 'blue', 'nine', 'lemon', 'beach', 'clock', 'fire', 'tree', 'sky', 'dog', 'cat', 'book', 'hill', 'red', 'five', 'honey', 'boat'] };
+   function tresPalabras() { const l = PALABRAS[enIngles() ? 'en' : 'es'], r = new Uint32Array(3); crypto.getRandomValues(r); const out = []; for (let i = 0; i < 3; i++) { let w = l[r[i] % l.length]; let k = 1; while (out.includes(w)) w = l[(r[i] + k++) % l.length]; out.push(w); } return out.join(', '); }
+@@ -187,8 +187,8 @@
+     try { pg.drawImage(video, cx, cy, cw, ch, 0, 0, PIEL, PIEL); } catch (_) { return null; }
+     let img; try { img = pg.getImageData(0, 0, PIEL, PIEL).data; } catch (_) { return null; }
+     const kx = PIEL / cw, ky = PIEL / ch, z = [];
+-    let ys = 0, ny = 0;
+-    for (let i = 0; i < img.length; i += 16) { ys += 0.299 * img[i] + 0.587 * img[i + 1] + 0.114 * img[i + 2]; ny++; }
++    let ys = 0, ny = 0, rs = 0, gs = 0, bs = 0;
++    for (let i = 0; i < img.length; i += 16) { ys += 0.299 * img[i] + 0.587 * img[i + 1] + 0.114 * img[i + 2]; rs += img[i]; gs += img[i + 1]; bs += img[i + 2]; ny++; }
+     for (const [ax, ay, bx, by] of zonas(p)) {
+       const zx0 = Math.max(0, Math.floor((Math.min(ax, bx) - cx) * kx)), zx1 = Math.min(PIEL, Math.ceil((Math.max(ax, bx) - cx) * kx));
+       const zy0 = Math.max(0, Math.floor((Math.min(ay, by) - cy) * ky)), zy1 = Math.min(PIEL, Math.ceil((Math.max(ay, by) - cy) * ky));
+@@ -201,7 +201,7 @@
+       }
+       z.push(n >= 20 ? [r / n, gg / n, b / n] : null);
+     }
+-    return { t, z, y: ny ? ys / ny : 0 };
++    return { t, z, y: ny ? ys / ny : 0, rgb: ny ? [rs / ny, gs / ny, bs / ny] : null };
+   }
+   // la señal de cada zona, a 30 imágenes por segundo exactas (la llegada de imágenes no es regular)
+   const FS = 30;
+@@ -431,6 +431,9 @@
+       imagen,
+     ];
+     if (x.giro) senales.push({ k: 'giro', estado: x.giro.estado, v: tr(x.giro.estado === 'si' ? 'v_giroSi' : 'v_giroNo') });
++    if (x.reflejo && x.reflejo.estado === 'si') senales.push({ k: 'reflejo', estado: 'si', v: tr('v_reflejoSi') });
++    if (x.cortes) senales.push({ k: 'cortes', estado: 'no', v: tr('v_cortesNo') });
++    if (x.gesto && x.gesto.lento) senales.push({ k: 'reaccion', estado: 'aviso', v: tr('v_reaccionLenta') });
+     if (x.gesto && x.gesto.estado !== 'nd') senales.unshift({ k: 'gesto', estado: x.gesto.estado, v: tr(x.gesto.estado === 'si' ? 'v_gestoSi' : 'v_gestoNo') });
+     const E = {}; for (const s of senales) E[s.k] = s.estado;
+     let tipo, confianza = null, fija = null;
+@@ -439,11 +442,12 @@
+     else if (fo.estado === 'no' && parpadeos === 0 && labios !== 'si') { tipo = 'fija'; fija = 'rigida'; }
+     else if (mov < 0.006 && parpadeos === 0 && desv(boca) < 0.004) { tipo = 'fija'; fija = 'quieta'; }
+     else if (E.relieve === 'no' && parpadeos === 0) tipo = 'plana';
++    else if (E.cortes === 'no' && E.gesto !== 'si') tipo = 'editado';
+     else if (E.gesto === 'no') tipo = 'sinGesto';
+     else if (E.labios === 'no') tipo = 'labios';
+     else if (E.giro === 'no') tipo = 'sinGiro';
+     else {
+-      const pos2 = ['parpadeo', 'movimiento', 'forma', 'relieve', 'pulso', 'labios', 'camara', 'giro', 'gesto'].filter((k) => E[k] === 'si').length;
++      const pos2 = ['parpadeo', 'movimiento', 'forma', 'relieve', 'pulso', 'labios', 'camara', 'giro', 'gesto', 'reflejo'].filter((k) => E[k] === 'si').length;
+       const avisos = senales.filter((s) => s.estado === 'aviso').length;
+       tipo = pos2 >= 3 && avisos <= 1 && E.camara !== 'aviso' && E.relieve !== 'no' ? 'real' : 'dudoso';
+       if (tipo === 'real') confianza = pos2 >= 5 || E.giro === 'si' || E.gesto === 'si' ? 'alta' : 'media';
+@@ -458,14 +462,14 @@
+   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
+   const PESOS = {
+     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
+-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 }, gesto: { si: 2.0 },
++    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 }, gesto: { si: 2.0 }, reflejo: { si: 1.0 }, cortes: { no: -3.5 }, reaccion: { aviso: -1.0 },
+   };
+   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
+-  const FIJAS = new Set(['camara', 'directo', 'giro', 'gesto']);
++  const FIJAS = new Set(['camara', 'directo', 'giro', 'gesto', 'reflejo', 'cortes', 'reaccion']);
+   function probabilidad(r) {
+     const gs = (r.senales || []).find((s) => s.k === 'gesto');
+     // dueño (20:03–20:04): una foto, un muñeco o quien no hace la prueba del gesto: 0 %
+-    if (r.tipo === 'fija' || r.tipo === 'plana' || r.tipo === 'sinGesto' || (gs && gs.estado === 'no')) return 0;
++    if (r.tipo === 'fija' || r.tipo === 'plana' || r.tipo === 'sinGesto' || r.tipo === 'editado' || (gs && gs.estado === 'no')) return 0;
+     let L = 0; const k = Math.min(1, ((r.n | 0) || 30) / 30);
+     for (const x of r.senales || []) { const w = PESOS[x.k]; if (w && w[x.estado] != null) L += w[x.estado] * (FIJAS.has(x.k) || w[x.estado] <= -3 ? 1 : k); }
+     // imagen congelada: casi seguro que no es nadie en directo; moverse como un bloque sin un solo gesto: muy probablemente una
+@@ -495,7 +499,7 @@
+     previo = r; capa.classList.add('con-resultado');
+     resultadoCaja.className = 'comprobacion-resultado solo-prob ' + r.tipo; pintaProbabilidad(r);
+     // el motivo, en una línea, cuando sale 0 % o cuando obedeció la prueba del gesto
+-    const mo = $('#comprobacion-motivo'); if (mo) { const k = ['sinGesto', 'fija', 'plana'].includes(r.tipo) ? 'motivo_' + r.tipo : r.tipo === 'real' && (r.senales || []).some((s) => s.k === 'gesto' && s.estado === 'si') ? 'motivo_real' : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
++    const mo = $('#comprobacion-motivo'); if (mo) { const k = ['sinGesto', 'fija', 'plana', 'editado'].includes(r.tipo) ? 'motivo_' + r.tipo : r.tipo === 'real' && (r.senales || []).some((s) => s.k === 'gesto' && s.estado === 'si') ? 'motivo_real' : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
+     $('#comprobacion-estado').hidden = true; resultadoCaja.hidden = false; resultadoCaja.scrollTop = 0;
+     $('#comprobacion-titulo').textContent = tr('comprobacion_' + r.tipo);
+     let texto = tr('comprobacion_' + r.tipo + 'Texto');
+@@ -597,15 +601,16 @@
+   // obedecer en el momento, y las caras hechas con IA suelen romperse al taparlas con la mano. Si no lo hace: 0 %.
+   let gestoTimers = [];
+   function planGesto() {
+-    const r = new Uint32Array(1); crypto.getRandomValues(r);
++    const r = new Uint32Array(2); crypto.getRandomValues(r);
+     const orden = [['izq', 'mano', 'der'], ['der', 'mano', 'izq'], ['izq', 'der', 'mano'], ['der', 'izq', 'mano'], ['mano', 'izq', 'der'], ['mano', 'der', 'izq']][r[0] % 6];
+-    const plan = []; let t = 2400;
++    // primero, dos destellos de color en su pantalla (magenta y cian, en orden al azar); luego, los tres gestos
++    const luz = r[1] & 1 ? [0, 1] : [1, 0], plan = [{ q: 'luz', n: luz[0], t: 700 }, { q: 'luz', n: luz[1], t: 2100 }]; let t = 3600;
+     orden.forEach((q, i) => { plan.push({ q, n: i + 1, t }); t += 2500; plan.push({ q: i < 2 ? 'frente' : 'fin', n: 0, t }); t += 900; });
+     return plan;
+   }
+   function paraGesto(fin) { for (const x of gestoTimers) clearTimeout(x); gestoTimers = []; if (fin && M && M.gesto) M.gesto('fin', 0, 0); }
+   function evaluaGesto(datos, envios) {
+-    const pide = envios.filter((e) => e.ok && e.q !== 'frente' && e.q !== 'fin');
++    const pide = envios.filter((e) => e.ok && e.q !== 'frente' && e.q !== 'fin' && e.q !== 'luz');
+     if (pide.length < 3) return { estado: 'nd' };
+     const ys = datos.filter((d) => d.p && !d.s).map((d) => { const ab = afin(d.p); return ab ? { t: d.t, a: ab[0] } : null; }).filter(Boolean);
+     const V0 = 300, V1 = 2700, manoE = pide.find((e) => e.q === 'mano');
+@@ -631,7 +636,46 @@
+     }
+     // el lado lo marca el primer giro (la imagen puede llegar en espejo): cada giro tiene que ir a su lado, uno al contrario que el otro
+     const giroOk = giros.length === 2 && giros.every((g) => g.claro) && Math.sign(giros[0].d) * giros[0].dir === Math.sign(giros[1].d) * giros[1].dir;
+-    return { estado: giroOk && mano ? 'si' : 'no', giros, mano, faltaFuera: Math.round(faltaFuera * 100) / 100 };
++    // muy lento en los dos giros (más de 2 s): más propio de un avatar que alguien mueve a mano o de una IA que tarda en responder
++    const lento = giros.length === 2 && giros.every((g) => g.reac != null && g.reac > 2000);
++    return { estado: giroOk && mano ? 'si' : 'no', giros, mano, lento, faltaFuera: Math.round(faltaFuera * 100) / 100 };
++  }
++
++  // ---- el reflejo (agencia, ronda 98): dos destellos en su pantalla, magenta y cian; en una cara de verdad, el rojo frente al verde
++  // sube con el magenta y baja con el cian. Un vídeo grabado o una cara hecha con IA no lo reflejan igual. Solo suma: hay que
++  // calibrarlo con móviles de verdad (a pleno sol casi no se nota).
++  function evaluaLuz(piel, envios, t0) {
++    const m = envios.find((e) => e.ok && e.q === 'luz' && e.n === 0), c = envios.find((e) => e.ok && e.q === 'luz' && e.n === 1);
++    const g1 = envios.find((e) => e.ok && e.q !== 'luz'); if (!m || !c) return { estado: 'nd' };
++    const s = piel.filter((x) => x.rgb).map((x) => { const [R, G, B] = x.rgb; return { t: x.t - t0, rg: (R - G) / (R + G + B || 1) }; });
++    const dentro = (x, e) => x.t >= e.t + 250 && x.t <= e.t + 1400;
++    const wm = s.filter((x) => dentro(x, m)).map((x) => x.rg), wc = s.filter((x) => dentro(x, c)).map((x) => x.rg);
++    const fuera = s.filter((x) => x.t < (g1 ? g1.t : 3600) && !dentro(x, m) && !dentro(x, c)).map((x) => x.rg);
++    if (wm.length < 5 || wc.length < 5 || fuera.length < 5) return { estado: 'nd' };
++    const dif = mediana(wm) - mediana(wc), ruido = desv(fuera);
++    return { estado: dif >= Math.max(0.006, 2.5 * ruido) ? 'si' : 'nd', dif: Math.round(dif * 1e4) / 1e4, ruido: Math.round(ruido * 1e4) / 1e4 };
++  }
++  // ---- los cortes de edición: la imagen entera cambia de golpe (y solo en ese momento) y la cara salta de tamaño o de sitio ----
++  const fzL = document.createElement('canvas'); fzL.width = 32; fzL.height = 24; const fzG = fzL.getContext('2d', { willReadFrequently: true });
++  function firma() {
++    try { fzG.drawImage(video, 0, 0, 32, 24); } catch (_) { return null; }
++    let d; try { d = fzG.getImageData(0, 0, 32, 24).data; } catch (_) { return null; }
++    const v = new Float32Array(768); let m = 0, s = 0;
++    for (let i = 0; i < 768; i++) { v[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]; m += v[i]; }
++    m /= 768; for (let i = 0; i < 768; i++) { v[i] -= m; s += v[i] * v[i]; } s = Math.sqrt(s / 768) || 1; for (let i = 0; i < 768; i++) v[i] /= s;
++    return v;
++  }
++  function cortes(datos) {
++    let n = 0;
++    for (let i = 1; i < datos.length - 1; i++) {
++      const a = datos[i - 1], b = datos[i], c = datos[i + 1];
++      if (b.cz == null || b.cz < 0.6 || (a.cz != null && a.cz > 0.32) || (c.cz != null && c.cz > 0.32)) continue;
++      if (!a.p || !b.p || a.s || b.s || b.t - a.t > 450) continue;
++      const wa = a.w || 1, wb = b.w || 1, ia = dist(a.p[36], a.p[45]) / wa, ib = dist(b.p[36], b.p[45]) / wb;
++      const ca = [(a.p[36][0] + a.p[45][0]) / 2 / wa, (a.p[36][1] + a.p[45][1]) / 2 / wa], cb = [(b.p[36][0] + b.p[45][0]) / 2 / wb, (b.p[36][1] + b.p[45][1]) / 2 / wb];
++      if (Math.abs(Math.log(ib / ia)) >= 0.1 || Math.hypot(cb[0] - ca[0], cb[1] - ca[1]) >= 0.3 * Math.min(ia, ib)) n++;
++    }
++    return n;
+   }
+ 
+   async function comprueba() {
+@@ -652,8 +696,11 @@
+     const opc = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 224 : 320, scoreThreshold: 0.3 });
+     const opc2 = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 320 : 416, scoreThreshold: 0.25 });
+     const datos = [], piel = [], t0 = performance.now();
+-    const envios = []; paraGesto(false);
+-    gestoTimers = planGesto().map((ps) => setTimeout(() => { if (cancelado || mia !== vuelta) return; const ok = !!(M && M.gesto && M.gesto(ps.q, ps.n, 3)); envios.push({ q: ps.q, t: performance.now() - t0, ok }); }, ps.t));
++    const envios = []; let firmaPrev = null; paraGesto(false);
++    // cada paso, a su distancia del anterior (si el teléfono va lento y un paso sale tarde, los siguientes esperan lo suyo)
++    const plan = planGesto(); let kp = 0;
++    const paso = () => { if (cancelado || mia !== vuelta || kp >= plan.length) return; const ps = plan[kp++]; const ok = !!(M && M.gesto && M.gesto(ps.q, ps.n, 3)); envios.push({ q: ps.q, n: ps.n, t: performance.now() - t0, ok }); if (kp < plan.length) gestoTimers = [setTimeout(paso, plan[kp].t - ps.t)]; };
++    gestoTimers = [setTimeout(paso, plan[0].t)];
+     let puntos = null, puntosT = 0, ultT = 0, pul = { estado: 'nd' }, pulT = 0, parp = 0, cerr = false, baseEar = 0, desfase = null, relojMedia = null;
+     let caja = null, cajaT = 0, nCon = 0, fallos = 0;
+     fam = fuente2D();
+@@ -683,7 +730,7 @@
+     let ultDet = 0;
+     while (!cancelado && mia === vuelta) {
+       const ya = performance.now() - t0;
+-      if (ya >= DUR_MAX || (ya >= DUR && (nCon >= MUESTRAS || (nCon === 0 && ya >= DUR + 2000)))) break;
++      if (ya >= DUR_MAX || (ya >= DUR && (nCon === 0 || envios.some((e) => e.q === 'fin')) && (nCon >= MUESTRAS || (nCon === 0 && ya >= DUR + 2000)))) break;
+       const espera = 110 - (performance.now() - ultDet); if (espera > 0) await new Promise((ok) => setTimeout(ok, espera));
+       ultDet = performance.now();
+       let res = null; try { res = await fa.detectSingleFace(video, opc).withFaceLandmarks(); } catch (_) {}
+@@ -696,7 +743,8 @@
+       if (cancelado || mia !== vuelta) break;
+       const t = performance.now() - t0, r = ajustaLienzo(), m = aPantalla(r);
+       if (p) { puntos = p; puntosT = performance.now(); nCon++; }
+-      datos.push({ t, p, e: A ? A.e : 0, w: video.videoWidth, s: seguida ? 1 : 0 });
++      const fi = firma(); let cz = null; if (fi && firmaPrev) { let a = 0; for (let i = 0; i < fi.length; i++) a += Math.abs(fi[i] - firmaPrev[i]); cz = a / fi.length; } firmaPrev = fi;
++      datos.push({ t, p, e: A ? A.e : 0, w: video.videoWidth, s: seguida ? 1 : 0, cz });
+       // las señales que ya se ven
+       if (p) {
+         chip('cara', 'si');
+@@ -720,10 +768,10 @@
+     enMarcha = false; zonasPantalla = null;
+     g.clearRect(0, 0, lienzo.width, lienzo.height);
+     const luz = piel.length ? mediana(piel.map((m) => m.y)) : null;
+-    const gesto = evaluaGesto(datos, envios);
+-    const r = analiza(datos, { fuente, pulso: pulso(piel), voz, luz, gesto });
+-    r._datos = datos; r._extra = { fuente, pulso: r.pulso, voz, luz, gesto };
+-    if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__comprueba = { muestras: datos.length, cara: nCon, seguidas: datos.filter((d) => d.s).length, ms: Math.round(performance.now() - t0), tipo: r.tipo, forma: r.forma, parpadeos: r.parpadeos, pct: probabilidad(r), gesto };
++    const gesto = evaluaGesto(datos, envios), reflejo = evaluaLuz(piel, envios, t0), nCortes = cortes(datos);
++    const r = analiza(datos, { fuente, pulso: pulso(piel), voz, luz, gesto, reflejo, cortes: nCortes });
++    r._datos = datos; r._extra = { fuente, pulso: r.pulso, voz, luz, gesto, reflejo, cortes: nCortes };
++    if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__comprueba = { muestras: datos.length, cara: nCon, seguidas: datos.filter((d) => d.s).length, ms: Math.round(performance.now() - t0), tipo: r.tipo, forma: r.forma, parpadeos: r.parpadeos, pct: probabilidad(r), gesto, reflejo, cortes: nCortes, envios };
+     resultado(r);
+   }
+ 
+diff --git a/js/idioma.js b/js/idioma.js
+index d28d395..22cebbb 100644
+--- a/js/idioma.js
++++ b/js/idioma.js
+@@ -59,7 +59,7 @@
+     v_congelada: 'Congelada', v_enDirecto: 'Sí', v_parpadeos: '{n} veces', v_noParpadeo: 'No se vio', v_natural: 'Natural', v_poco: 'Muy poco', v_relieveSi: 'Sí', v_relieveNo: 'Plano', v_sinDatos: 'Sin datos claros',
+     v_pulsoSi: 'Detectado', v_pulsoNo: 'No se distingue', v_noHablo: 'No habló', v_labiosSi: 'Coinciden', v_labiosNo: 'No coinciden',
+     v_voz_completa: 'Completa', v_voz_media: 'Hasta {k} kHz', v_voz_ancha: 'Hasta {k} kHz (Bluetooth o teléfono)', v_voz_estrecha: 'Hasta {k} kHz (teléfono)', v_voz_corte12: 'Corte seco a {k} kHz',
+-    v_oscura: 'Muy oscura', v_lejos: 'Muy lejos', v_buena: 'Buena', v_giroSi: 'Respondió', v_giroNo: 'No giró', senal_gesto: 'Prueba del gesto', v_gestoSi: 'Obedeció al momento', v_gestoNo: 'No obedeció', gestoEtiqueta: 'COMPROBACIÓN DE SEGURIDAD', gesto_izq: 'Gira la cabeza a tu izquierda', gesto_der: 'Gira la cabeza a tu derecha', gesto_mano: 'Tápate la cara con la mano un momento', gesto_frente: 'Mira a la cámara', repetirComprobacion: 'Repetir comprobación', motivo_sinGesto: 'No obedeció cuando le pedimos girar la cabeza y taparse la cara.', motivo_fija: 'La imagen no se mueve como una persona: parece una foto o un muñeco.', motivo_plana: 'La cara no tiene relieve: parece una imagen plana.', motivo_real: 'Obedeció al momento la prueba del gesto.', comprobacion_sinGesto: 'No superó la prueba del gesto', comprobacion_sinGestoTexto: 'Le pedimos en su pantalla que girara la cabeza y se tapara la cara, y no lo hizo en el momento. Un vídeo grabado, una foto o un muñeco no pueden obedecer, y una cara hecha con IA suele romperse al taparla. No atiendas peticiones de dinero ni de datos.', confianza_alta: 'Confianza alta', confianza_media: 'Confianza media',
++    v_oscura: 'Muy oscura', v_lejos: 'Muy lejos', v_buena: 'Buena', v_giroSi: 'Respondió', v_giroNo: 'No giró', senal_gesto: 'Prueba del gesto', v_gestoSi: 'Obedeció al momento', v_gestoNo: 'No obedeció', gestoEtiqueta: 'COMPROBACIÓN DE SEGURIDAD', gesto_izq: 'Gira la cabeza a tu izquierda', gesto_der: 'Gira la cabeza a tu derecha', gesto_mano: 'Tápate la cara con la mano un momento', gesto_frente: 'Mira a la cámara', repetirComprobacion: 'Repetir comprobación', motivo_sinGesto: 'No obedeció cuando le pedimos girar la cabeza y taparse la cara.', motivo_fija: 'La imagen no se mueve como una persona: parece una foto o un muñeco.', motivo_plana: 'La cara no tiene relieve: parece una imagen plana.', motivo_real: 'Obedeció al momento la prueba del gesto.', gesto_luz: 'Mira a la pantalla', senal_reflejo: 'Reflejo de la pantalla', v_reflejoSi: 'La luz se refleja en su cara', senal_cortes: 'Cortes de edición', v_cortesNo: 'Cortes de vídeo montado', senal_reaccion: 'Tiempo de reacción', v_reaccionLenta: 'Muy lento', comprobacion_editado: 'Parece un vídeo editado', comprobacion_editadoTexto: 'Se ven cortes como los de un vídeo montado y no superó la prueba del gesto. No atiendas peticiones de dinero ni de datos.', motivo_editado: 'Tiene cortes de edición: parece un vídeo grabado.', comprobacion_sinGesto: 'No superó la prueba del gesto', comprobacion_sinGestoTexto: 'Le pedimos en su pantalla que girara la cabeza y se tapara la cara, y no lo hizo en el momento. Un vídeo grabado, una foto o un muñeco no pueden obedecer, y una cara hecha con IA suele romperse al taparla. No atiendas peticiones de dinero ni de datos.', confianza_alta: 'Confianza alta', confianza_media: 'Confianza media',
+     comprobacion_virtual: 'Usa una cámara virtual', comprobacion_virtualTexto: 'Su imagen no sale de una cámara: pasa por un programa{n}. Es lo que se usa para poner otra cara en directo. Desconfía de cualquier petición importante.',
+     comprobacion_plana: 'Posible foto animada', comprobacion_planaTexto: 'La cara se mueve sin relieve, como una imagen plana animada. Desconfía de cualquier petición importante.',
+     comprobacion_sinVideo: 'No muestra la cara', comprobacion_sinVideoTexto: 'Tiene la cámara apagada o no llega imagen. Sin ver la cara no se puede comprobar: pídele que la encienda.',
+@@ -183,7 +183,7 @@
+     v_congelada: 'Frozen', v_enDirecto: 'Yes', v_parpadeos: '{n} times', v_noParpadeo: 'Not seen', v_natural: 'Natural', v_poco: 'Very little', v_relieveSi: 'Yes', v_relieveNo: 'Flat', v_sinDatos: 'No clear data',
+     v_pulsoSi: 'Detected', v_pulsoNo: 'Not distinguishable', v_noHablo: 'Did not speak', v_labiosSi: 'Match', v_labiosNo: 'Do not match',
+     v_voz_completa: 'Full', v_voz_media: 'Up to {k} kHz', v_voz_ancha: 'Up to {k} kHz (Bluetooth or phone)', v_voz_estrecha: 'Up to {k} kHz (phone)', v_voz_corte12: 'Sharp cut at {k} kHz',
+-    v_oscura: 'Very dark', v_lejos: 'Very far', v_buena: 'Good', v_giroSi: 'Responded', v_giroNo: 'Did not turn', senal_gesto: 'Gesture check', v_gestoSi: 'Obeyed on the spot', v_gestoNo: 'Did not obey', gestoEtiqueta: 'SECURITY CHECK', gesto_izq: 'Turn your head to your left', gesto_der: 'Turn your head to your right', gesto_mano: 'Cover your face with your hand for a moment', gesto_frente: 'Look at the camera', repetirComprobacion: 'Check again', motivo_sinGesto: 'They did not obey when asked to turn their head and cover their face.', motivo_fija: 'The image does not move like a person: it looks like a photo or a doll.', motivo_plana: 'The face has no depth: it looks like a flat image.', motivo_real: 'Obeyed the gesture check on the spot.', comprobacion_sinGesto: 'Failed the gesture check', comprobacion_sinGestoTexto: 'We asked them on their screen to turn their head and cover their face, and they did not do it on the spot. A recorded video, a photo or a doll cannot obey, and an AI-made face usually breaks when covered. Do not act on requests for money or data.', confianza_alta: 'High confidence', confianza_media: 'Medium confidence',
++    v_oscura: 'Very dark', v_lejos: 'Very far', v_buena: 'Good', v_giroSi: 'Responded', v_giroNo: 'Did not turn', senal_gesto: 'Gesture check', v_gestoSi: 'Obeyed on the spot', v_gestoNo: 'Did not obey', gestoEtiqueta: 'SECURITY CHECK', gesto_izq: 'Turn your head to your left', gesto_der: 'Turn your head to your right', gesto_mano: 'Cover your face with your hand for a moment', gesto_frente: 'Look at the camera', repetirComprobacion: 'Check again', motivo_sinGesto: 'They did not obey when asked to turn their head and cover their face.', motivo_fija: 'The image does not move like a person: it looks like a photo or a doll.', motivo_plana: 'The face has no depth: it looks like a flat image.', motivo_real: 'Obeyed the gesture check on the spot.', gesto_luz: 'Look at the screen', senal_reflejo: 'Screen reflection', v_reflejoSi: 'The light reflects on their face', senal_cortes: 'Edit cuts', v_cortesNo: 'Cuts like an edited video', senal_reaccion: 'Reaction time', v_reaccionLenta: 'Very slow', comprobacion_editado: 'Looks like an edited video', comprobacion_editadoTexto: 'There are cuts like in an edited video and the gesture check failed. Do not act on requests for money or data.', motivo_editado: 'It has edit cuts: it looks like a recorded video.', comprobacion_sinGesto: 'Failed the gesture check', comprobacion_sinGestoTexto: 'We asked them on their screen to turn their head and cover their face, and they did not do it on the spot. A recorded video, a photo or a doll cannot obey, and an AI-made face usually breaks when covered. Do not act on requests for money or data.', confianza_alta: 'High confidence', confianza_media: 'Medium confidence',
+     comprobacion_virtual: 'Uses a virtual camera', comprobacion_virtualTexto: 'Their image does not come from a camera: it goes through software{n}. That is what is used to put another face on live. Be wary of any important request.',
+     comprobacion_plana: 'Possibly an animated photo', comprobacion_planaTexto: 'The face moves without depth, like an animated flat image. Be wary of any important request.',
+     comprobacion_sinVideo: 'Not showing their face', comprobacion_sinVideoTexto: 'Their camera is off or no image arrives. Without seeing the face it cannot be checked: ask them to turn it on.',
+diff --git a/js/motor.js b/js/motor.js
+index 7b455ae..4326069 100644
+--- a/js/motor.js
++++ b/js/motor.js
+@@ -676,7 +676,7 @@
+         if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); vigilaCalidad(L); }
+         if (L.estado !== 'hablando') { L.estado = 'hablando'; emite('llamada', estadoLlamada()); }
+       } else if (st === 'failed' || st === 'disconnected') {
+-        if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') colgar('fallo');
++        if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') { L.diag = pc.__relay ? 'ICE' : 'ICE-0'; colgar('fallo'); }
+       }
+     });
+     return pc;
+@@ -747,8 +747,8 @@
+     let hecho = false, gracia = null;
+     const fin = () => { if (hecho) return; hecho = true; pc.removeEventListener('icegatheringstatechange', f); pc.removeEventListener('icecandidate', g); clearTimeout(gracia); res(); };
+     const f = () => { if (pc.iceGatheringState === 'complete') fin(); };
+-    const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '') && !gracia) gracia = setTimeout(fin, 300); };
+-    pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 3000);
++    const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '')) { pc.__relay = (pc.__relay || 0) + 1; if (!gracia) gracia = setTimeout(fin, 500); } };
++    pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 8000);
+   });
+   function puedeLlamar() {
+     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return 'sin-medios';
+@@ -777,7 +777,7 @@
+       if (L.sinCapa) emite('llamada-aviso', 'sin-capa-mia');
+       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
+       return true;
+-    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
++    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); x.diag = 'E:' + String((e && e.name) || 'Error').slice(0, 24) + (m && m !== 'undefined' ? ' ' + m.slice(0, 40) : ''); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
+   }
+   async function contestar() {
+     const s = S; if (!L || L.estado !== 'entrante' || !s) return false;
+@@ -864,7 +864,7 @@
+     }
+     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
+     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
+-    if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)) }); }
++    if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|luz)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)) }); }
+     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
+     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
+     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
+@@ -908,7 +908,7 @@
+     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
+     // la prueba: hasta 3 minutos hablados por conversación
+     if (S && x.t0) S.usado = (S.usado || 0) + (Date.now() - x.t0);
+-    emite('llamada', { estado: 'fin', motivo: motivo || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
++    emite('llamada', { estado: 'fin', motivo: motivo || '', diag: x.diag || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
+   }
+   // Prueba de vida (agencia, ronda 96, f): un reto al azar que la otra persona tiene que hacer en directo, en cámara. Va por la sesión
+   // encriptada, así que lo pide el equipo verificado con las cuatro palabras. Ayuda a detectar un vídeo grabado o una suplantación
+@@ -917,7 +917,7 @@
+   // La prueba del gesto de «Comprobar» (dueño, 19:56–20:07): quien comprueba pide en la pantalla de la otra persona que gire la cabeza
+   // a un lado, al otro y que se tape la cara, en orden al azar. Aquí solo viaja la orden; lo que se ve lo analiza quien comprueba.
+   function gesto(q, n, de) {
+-    if (!L || L.estado !== 'hablando' || !S || !/^(izq|der|mano|frente|fin)$/.test(q)) return false;
++    if (!L || L.estado !== 'hablando' || !S || !/^(izq|der|mano|frente|fin|luz)$/.test(q)) return false;
+     return enviaControl(S, { tipo: 'llamada', que: 'gesto', id: L.id, q, n: n | 0, de: de | 0 });
+   }
+   function reto() {
+diff --git a/js/sala.js b/js/sala.js
+index f0d05c8..2f59efc 100644
+--- a/js/sala.js
++++ b/js/sala.js
+@@ -603,6 +603,8 @@
+       if (k && abierta) sistema(k);
+       // en el móvil, lo que ha pasado, en el centro; y el verde: «Volver a llamar»
+       if (m) { if (k) pon(k); if (!e.prueba) rotuloLlamar('volverLlamar'); }
++      // el código técnico del fallo, pequeño, para saber la causa (red, servidor de llamadas o teléfono)
++      if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
+     }
+     if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
+   }
+@@ -632,9 +634,11 @@
+     clearTimeout(gestoT);
+     if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }
+     caja.classList.add('gesto'); caja.dataset.q = g.q;
+-    et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
++    // el destello de color: su luz se refleja en una cara de verdad (quien comprueba lo mide en el vídeo)
++    if (g.q === 'luz') { let fl = document.querySelector('.gesto-luz'); if (!fl) { fl = document.createElement('div'); fl.className = 'gesto-luz'; caja.parentElement.append(fl); } fl.style.setProperty('--c', g.n ? '#00FFFF' : '#FF00FF'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 800); }
++    et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de && g.q !== 'luz' ? ' · ' + g.n + '/' + g.de : '');
+     tx.textContent = tr('gesto_' + g.q); caja.hidden = false;
+-    try { if (g.q !== 'frente' && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
++    try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
+     gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, 6000);
+   });
+   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
