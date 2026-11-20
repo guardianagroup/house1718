@@ -1,6 +1,11 @@
 // Elixire · antes de pintar nada: el idioma de partida es el inglés (dueño, 19 nov 2026, 13:09), salvo que la persona haya
 // elegido el español con el botón ES. Mientras idioma.js traduce, los textos no se pintan, para que no parpadee el español.
 (function () {
+  // al abrir (también al volver a la pestaña o recargar en el iPhone), la página empieza arriba del todo, en su sitio (dueño, 19:18:
+  // «al abrir en iPhone la web aparece más arriba y debo tocar la pantalla y arrastrar… que aparezca en su sitio automáticamente»)
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+  var arriba = function () { if (!location.hash || /^#(e|c|g|l)=/.test(location.hash)) { try { window.scrollTo(0, 0); } catch (e) {} } };
+  window.addEventListener('pageshow', arriba); window.addEventListener('load', function () { arriba(); setTimeout(arriba, 60); });
   var g = null; try { g = localStorage.getItem('elixire-lengua'); } catch (e) {}
   // la invitación por WhatsApp lleva el idioma de quien la manda («#c=…&l=es»), si la persona no ha elegido otro
   var m = /[#&]l=(es|en)\b/.exec(location.hash || '');

@@ -1235,3 +1235,13 @@ html{overscroll-behavior-y:none}
   .sala.comprobando .b-girar,.sala.en-chat .b-girar{display:none!important}
 }
 .video-mio.trasera{transform:none!important}
+
+/* ---------- la miniatura del chat, más grande y siempre a la vista, también con el teclado abierto (dueño, 19:12) ---------- */
+@media (max-width:760px){
+  .sala.en-chat .chat-cab{padding-right:120px}
+  .sala.en-chat .escena-video{top:calc(var(--vv-top,0px) + env(safe-area-inset-top) + 10px)!important;width:96px!important;height:128px!important;border-radius:18px!important;
+    transition:width .25s ease,height .25s ease,top .25s ease,left .28s cubic-bezier(.2,.8,.2,1)}
+  .sala.en-chat .escena-video.movida{top:calc(var(--vv-top,0px) + var(--mini-y))!important}
+  .sala.en-chat.teclado .escena-video{width:66px!important;height:88px!important;border-radius:14px!important}
+  .sala.en-chat.teclado .chat-cab{min-height:calc(env(safe-area-inset-top) + 98px);padding-right:88px}
+}

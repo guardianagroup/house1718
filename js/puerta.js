@@ -33,7 +33,7 @@
   const paneles = () => [...document.querySelectorAll('.panel')];
   function muestra(cual, focoEn) {
     for (const p of paneles()) {
-      if (p.id === 'panel-' + cual) { p.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => p.classList.add('visible'))); }
+      if (p.id === 'panel-' + cual) { p.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { if (!p.hidden) p.classList.add('visible'); })); }
       else { p.classList.remove('visible'); p.hidden = true; }
     }
     abierta = cual;
@@ -203,6 +203,9 @@
   }
   function ponEnviada(ok) {
     if (abierta !== 'crear') return;
+    // sin enviar (se cerró «Compartir»), en el móvil no hay pantalla intermedia: de vuelta a la portada (dueño, 19:22: «eso bórralo, es
+    // innecesario, es mejor volver a la página principal»)
+    if (!ok && enMovil()) { paraReloj(); olvidaInvitacion(); suena(false); cierra(); return; }
     $('#panel-crear').classList.toggle('enviada', !!ok);
     if (!/llega|alguien|caducad/.test($('#estado-crear').dataset.t || '')) { ponEstado(ok ? 'esperandoInicio' : 'esperandoLlamada'); titulo('#panel-crear', 'llamandoT'); if (ok && !(M && M.conectada)) suena(true); }
   }
@@ -403,7 +406,7 @@
     abierta = 'elige'; ocupado = false; document.body.classList.add('cerrado');
     abreInvitacion(semilla, texto, false).then(() => compartida).then((ok) => { if (abierta === 'crear' && invitacion) ponEnviada(ok); });
   }
-  window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, reinvita, ocultaPaneles, abierta: () => abierta });
+  window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, reinvita, ocultaPaneles, abierta: () => abierta, textoInvitacion, comparte });
   if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   // la invitación que se estaba esperando, si el teléfono recargó la página (al volver de WhatsApp): se retoma sola
