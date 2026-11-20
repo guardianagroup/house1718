@@ -347,6 +347,7 @@
       }
       case 'ack': if (Array.isArray(j.ids)) emite('acuse', j.ids.slice(0, 50).map(String)); return;
       case 'escribe': emite('escribe', !!j.si); return;
+      case 'borra': { const id = String(j.id || '').slice(0, 40); if (id) emite('borrado', id); return; }
       case 'palabras': return recibeRevelacion(s, j);
       case 'palabras-ok': s.revelaOk = true; return;
       case 'comprobadas': s.suComprobadas = true; emite('su-comprobacion'); return;
@@ -397,6 +398,8 @@
     aTic(s, m);
     return { id: m.id, texto: m.texto, t: m.t, dir: 'mia' };
   }
+  // borrar un mensaje o un archivo para los dos (dueño, 18:20): va por la sesión encriptada; la otra pantalla lo quita
+  function borra(id) { const s = S; if (!s || !s.conectado || s.fin || !id) return false; aTic(s, { tipo: 'borra', id: String(id).slice(0, 40) }); return true; }
   let escribeT = 0;
   function escribe() { const s = S; if (!s || !s.conectado || Date.now() - escribeT < 2500) return; escribeT = Date.now(); s.tic = s.tic.filter((x) => x.tipo !== 'escribe'); aTic(s, { tipo: 'escribe', si: 1 }); }
   function comprobadas() { const s = S; if (!s || !s.conectado) return; s.comprobadas = true; enviaControl(s, { tipo: 'comprobadas' }); }
@@ -499,7 +502,7 @@
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: L.local || null, remoto: L.remoto || null } : { estado: 'libre' });
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -918,6 +921,28 @@
     const x = { i, w, mio: true }; emite('reto', x); return x;
   }
   function rechazar() { if (L && L.estado === 'entrante') { const id = L.id; L = null; if (S) enviaControl(S, { tipo: 'llamada', que: 'rechaza', id }); emite('llamada', { estado: 'fin', motivo: 'rechazada' }); } }
+  // ---- girar la cámara: la de delante o la de atrás (dueño, 18:51: «falta el botón de girar la cámara»). La pista nueva entra en el
+  // mismo emisor (replaceTrack): la capa poscuántica y el encriptado siguen igual. En el iPhone solo puede haber una cámara abierta:
+  // se apaga la actual antes de pedir la otra y, si la otra no se puede abrir, se vuelve a la de antes. ----
+  let girando = false;
+  async function giraCamara() {
+    if (girando || !L || !L.local || !L.pc || !navigator.mediaDevices) return false;
+    const vieja = L.local.getVideoTracks()[0]; if (!vieja) return false;
+    girando = true;
+    const ahora = L.mira || ((vieja.getSettings && vieja.getSettings().facingMode) || 'user'), otra = ahora === 'environment' ? 'user' : 'environment';
+    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: TEL ? 1920 : 1280 }, height: { ideal: TEL ? 1080 : 720 }, frameRate: { ideal: 30, max: 30 } } });
+    try {
+      vieja.stop();
+      let st = null; try { st = await pide(otra, true); } catch (_) { try { st = await pide(otra, false); } catch (_) { st = null; } }
+      let modo = otra; if (!st) { modo = ahora; st = await pide(ahora, false); }
+      const nueva = st.getVideoTracks()[0]; try { nueva.contentHint = 'motion'; } catch (_) {}
+      nueva.enabled = L.cam !== false;
+      const s = L.pc.getSenders().find((x) => x.track === vieja) || L.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
+      if (s) await s.replaceTrack(nueva);
+      L.local.removeTrack(vieja); L.local.addTrack(nueva); L.mira = modo;
+      emite('llamada', estadoLlamada()); return modo === otra;
+    } catch (_) { emite('llamada', estadoLlamada()); return false; } finally { girando = false; }
+  }
   function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
   function camara(si) { if (!L || !L.local) return; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
 
@@ -1035,10 +1060,10 @@
   }
 
   window.ElixireMotor = {
-    on, prepara, crea, entra, termina, envia, escribe, comprobadas, enviaArchivo, cancelaArchivo,
+    on, prepara, crea, entra, termina, envia, borra, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, fuente, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
-    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get conectada() { return !!(S && S.conectado && !S.canal); },
+    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };

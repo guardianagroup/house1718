@@ -391,7 +391,19 @@
     else { $('#monolito-css').classList.remove('abierto'); $('#consola').classList.remove('fuera'); }
     abierta = null; document.body.classList.remove('cerrado');
   }
-  window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, ocultaPaneles, abierta: () => abierta });
+  // «Invitar de nuevo» (dueño, 18:17): la otra persona ha salido de Elixire. En el mismo toque, el menú Compartir con una invitación
+  // nueva (el teléfono lo exige en el toque); la sala vieja se cierra sin aviso y la roca sigue abierta con «Llamando…».
+  function reinvita() {
+    if (!M) return;
+    const semilla = crypto.getRandomValues(new Uint8Array(32));
+    invitacion = { s: b64u(semilla), t0: Date.now() }; guardaInvitacion();
+    const texto = textoInvitacion(invitacion.s), compartida = comparte(texto);
+    if (window.ElixireTonos) window.ElixireTonos.prepara();
+    if (M.activa) { window.Elixire.reinvitando = true; M.termina('reinvita'); }
+    abierta = 'elige'; ocupado = false; document.body.classList.add('cerrado');
+    abreInvitacion(semilla, texto, false).then(() => compartida).then((ok) => { if (abierta === 'crear' && invitacion) ponEnviada(ok); });
+  }
+  window.Elixire = Object.assign(window.Elixire || {}, { abre, cierra, vuelve, reinvita, ocultaPaneles, abierta: () => abierta });
   if (semillaMovil) { const va = () => setTimeout(abreMovil, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   if (codigoEnlace) { const va = () => setTimeout(abreConCodigo, 400); if (document.readyState === 'complete') va(); else addEventListener('load', va); }
   // la invitación que se estaba esperando, si el teléfono recargó la página (al volver de WhatsApp): se retoma sola

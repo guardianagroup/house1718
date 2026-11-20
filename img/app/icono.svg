@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="fondo" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#16263A"/><stop offset=".55" stop-color="#0B121C"/><stop offset="1" stop-color="#05070A"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#9CC3E4" stop-opacity=".42"/><stop offset="1" stop-color="#9CC3E4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="f1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCEBF8"/><stop offset="1" stop-color="#8FB6D8"/></linearGradient>
+    <linearGradient id="f2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6FBFF"/><stop offset="1" stop-color="#B3D2EC"/></linearGradient>
+    <linearGradient id="f3" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#6E93B6"/><stop offset="1" stop-color="#22354A"/></linearGradient>
+    <linearGradient id="f4" x1="1" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#9BBEDD"/><stop offset="1" stop-color="#365370"/></linearGradient>
+    <filter id="brillo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#fondo)"/>
+  <ellipse cx="512" cy="500" rx="300" ry="380" fill="url(#halo)"/>
+  <ellipse cx="512" cy="842" rx="210" ry="40" fill="none" stroke="#9CC3E4" stroke-opacity=".55" stroke-width="10" filter="url(#brillo)"/>
+  <ellipse cx="512" cy="842" rx="210" ry="40" fill="none" stroke="#CFE3F4" stroke-opacity=".5" stroke-width="3" stroke-dasharray="26 16"/>
+  <g>
+    <polygon points="512,168 378,346 524,478" fill="url(#f1)"/>
+    <polygon points="512,168 648,336 524,478" fill="url(#f2)"/>
+    <polygon points="378,346 524,478 512,838 398,756" fill="url(#f3)"/>
+    <polygon points="648,336 624,748 512,838 524,478" fill="url(#f4)"/>
+    <path d="M512 168 L524 478 L512 838 M378 346 L524 478 L648 336" fill="none" stroke="#FFFFFF" stroke-opacity=".38" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="512,168 648,336 624,748 512,838 398,756 378,346" fill="none" stroke="#EAF4FD" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+</svg>

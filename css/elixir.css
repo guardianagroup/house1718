@@ -1055,3 +1055,183 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
 @keyframes respiraBoton{50%{box-shadow:0 0 0 1px rgba(156,195,228,.55),0 14px 52px -8px rgba(156,195,228,.95),0 0 96px rgba(156,195,228,.48)}}
 @keyframes barreBoton{0%,62%{left:-60%}100%{left:130%}}
 @media (prefers-reduced-motion:reduce){.cristal.vivo,.cristal.vivo::after{animation:none}}
+
+/* ---------- «Comprobar» mientras analiza: un recuadro pequeño arriba, y la cara a la vista con su escáner (dueño, 18:15: «ese recuadro
+   deberías hacerlo más pequeño y ponerlo arriba para que yo pueda ver cómo se hace el escáner de la cara») ---------- */
+.comprobacion-estado:not([hidden]){top:calc(env(safe-area-inset-top) + 10px);bottom:auto;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 20px));min-width:0;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"titulo cancelar" "barra barra" "onda onda" "vivo vivo";align-items:center;gap:7px 10px;
+  padding:10px 10px 10px 14px;border-radius:16px;background:rgba(8,12,18,.84);border:1px solid rgba(156,195,228,.3);text-align:left}
+.comprobacion-estado .etiqueta{display:none}
+.comprobacion-estado b{grid-area:titulo;display:flex;align-items:center;gap:8px;font:600 14px/1.3 var(--ui)}
+.comprobacion-estado b::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:#5CC98A;box-shadow:0 0 10px rgba(92,201,138,.9);animation:latidoRec 1s ease-in-out infinite}
+.comprobacion-barra{grid-area:barra;width:auto}
+.comprobacion-onda{grid-area:onda;height:34px}
+.comprobacion-vivo{grid-area:vivo;justify-content:flex-start;gap:5px}
+.comprobacion-vivo li{height:21px;padding:0 8px;gap:5px;font-size:10.5px}
+.comprobacion-vivo li::before{width:5px;height:5px}
+.comprobacion-cancelar{grid-area:cancelar;padding:6px 8px;font-size:12.5px;color:#C9D6E3}
+.comprobacion-estado.giro b{font-size:14.5px}
+.sala.comprobando .video-cifrado,.sala.comprobando .video-detalle,.sala.comprobando .video-tiempo,.sala.comprobando .avisos-llamada{opacity:0;pointer-events:none;transition:opacity .3s}
+.sala.comprobando .controles{opacity:.28;transition:opacity .3s}
+
+/* ---------- «Comprobar», arriba solo «Analizando…» (dueño, 18:26: «arriba ponga solamente, por ejemplo, analizando»): una píldora
+   con su punto verde, la línea de avance en el borde inferior y la ✕ para cancelar; la cara, despejada ---------- */
+.comprobacion-estado:not([hidden]){width:auto;max-width:calc(100% - 32px);grid-template-columns:auto auto;grid-template-areas:"titulo cancelar";gap:0 10px;
+  padding:6px 6px 6px 16px;border-radius:999px;background:rgba(6,8,12,.7);border:1px solid rgba(156,195,228,.26);overflow:hidden;
+  -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
+.comprobacion-estado .comprobacion-onda,.comprobacion-estado .comprobacion-vivo{display:none}
+.comprobacion-estado b{font:600 14.5px/1 var(--ui);letter-spacing:.01em;white-space:nowrap}
+.comprobacion-estado .comprobacion-barra{position:absolute;left:0;right:0;bottom:0;width:auto;height:2px;border-radius:0;background:rgba(156,195,228,.12)}
+.comprobacion-estado .comprobacion-cancelar{display:grid;place-items:center;width:32px;height:32px;padding:0;border-radius:50%;background:rgba(255,255,255,.08);color:#C9D6E3}
+.comprobacion-estado .comprobacion-cancelar:hover{background:rgba(255,255,255,.14)}
+.comprobacion-estado .comprobacion-cancelar svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.comprobacion-estado .comprobacion-cancelar span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.comprobacion-estado.giro{border-radius:18px}.comprobacion-estado.giro b{white-space:normal;line-height:1.3}
+
+/* ---------- el aviso («Conversación terminada», «La otra persona ha salido»…), en el centro de la pantalla, grande y bien visible
+   (dueño, 18:28: «este mensaje quiero que aparezca en el medio de la pantalla y en grande y bien visible») ---------- */
+.aviso{background:rgba(2,3,5,.86);-webkit-backdrop-filter:blur(16px) saturate(120%);backdrop-filter:blur(16px) saturate(120%)}
+@media (max-width:760px){
+  .aviso{align-items:center;padding:18px}
+  .aviso-caja{width:100%;align-items:center;gap:18px;padding:36px 24px 26px;text-align:center;border-radius:24px;border-color:rgba(156,195,228,.22);
+    background:linear-gradient(180deg,#131922,#0A0D12);box-shadow:0 40px 100px -30px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.03) inset}
+  .aviso-caja .etiqueta{font-size:12px;letter-spacing:.3em;color:#9CC3E4}
+  .aviso-caja h2{font-size:clamp(32px,9vw,40px);line-height:1.08}
+  .aviso-caja p{margin:0;font-size:18px;line-height:1.55;color:#CFD8E2}
+  .aviso-botones{width:100%;flex-direction:column;gap:10px;margin-top:6px}
+  .aviso-botones .cristal{width:100%;height:58px;justify-content:center;font-size:13px}
+}
+
+/* ---------- las escenas, más legibles (dueño, 18:39: «haz más grande el texto… debe ser grande y claro») ---------- */
+.escena-entradilla{font-weight:400;color:#D3DCE5}
+.escena-nota{font-size:15px;font-weight:400;color:#AEBBC8}
+.escena .etiqueta,.escena-texto>.etiqueta{color:#B7C6D4}
+.dato-cifra small{color:#C9D4DF}
+.escena .fuente{font-size:11.5px;color:#9EAEBE}
+@media (max-width:760px){
+  .escena-entradilla{font-size:18.5px;line-height:1.55}
+  .escena-nota{font-size:15px}
+  .escena .fuente{font-size:11px}
+  .dato-cifra+p,.escena-dato p{font-size:18.5px;line-height:1.5;color:#D3DCE5}
+}
+@media (max-width:760px) and (max-height:700px){ .escena-entradilla{font-size:17px} }
+
+/* ---------- el chat: aire entre la nota de voz, las fotos y el texto (dueño, 18:19: «veo apiñamiento entre el audio y el resto
+   de texto») ---------- */
+@media (max-width:760px){
+  .sala.en-chat .mensajes{gap:8px}
+  .sala.en-chat .msg.nota,.sala.en-chat .msg.archivo{margin:4px 0}
+  .sala.en-chat .msg.mia+.msg.suya,.sala.en-chat .msg.suya+.msg.mia{margin-top:10px}
+  .sala.en-chat .msg.nota{padding:10px 12px 9px}
+  .sala.en-chat .msg.archivo.foto{padding:4px 4px 8px}
+  .sala.en-chat .msg.archivo.foto .nombre,.sala.en-chat .msg.archivo.foto .tam{padding:0 8px}
+}
+
+/* ---------- «La nueva amenaza»: caras realistas en la videollamada falsa (dueño, 18:29: «lo más real… si puede ser en movimiento»).
+   Son caras generadas por inteligencia artificial (personas que no existen; dominio público, Wikimedia Commons): justo lo que cuenta
+   la escena. Se mueven como en una cámara: respiran, se desplazan y se inclinan un poco, cada una a su ritmo ---------- */
+.lf-cara{left:0;right:0;top:0;bottom:0;width:auto;height:auto;transform:none;overflow:hidden}
+.lf-cara img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 55%;transform-origin:50% 40%;
+  animation:lfVive 9s ease-in-out infinite;will-change:transform;filter:saturate(.95) contrast(1.02)}
+.lf-tile:nth-of-type(2) .lf-cara img{animation-duration:11s;animation-delay:-3s;object-position:50% 30%}
+.lf-tile:nth-of-type(3) .lf-cara img{animation-duration:13s;animation-delay:-6s;object-position:50% 30%}
+.lf-tile::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(4,6,9,.55) 100%),linear-gradient(180deg,transparent 60%,rgba(4,6,9,.45))}
+.lf-nombre,.lf-vivo{z-index:1}
+@keyframes lfVive{0%,100%{transform:scale(1.06) translate(0,0) rotate(0)}30%{transform:scale(1.085) translate(-1.1%,.7%) rotate(-.5deg)}62%{transform:scale(1.07) translate(1%,-.5%) rotate(.4deg)}}
+.escena[data-paso="2"] .lf-cara img{filter:saturate(.8) contrast(1.1) hue-rotate(-8deg)}
+@media (prefers-reduced-motion:reduce){.lf-cara img{animation:none;transform:scale(1.06)}}
+/* (el fallo de la escena, sobre la cara entera: un tirón con los colores separados, como un cambio de cara que se rompe) */
+@keyframes fallaCara{0%,100%{transform:none;filter:none}8%{transform:translateX(3px);filter:drop-shadow(-3px 0 0 rgba(224,122,108,.75)) drop-shadow(3px 0 0 rgba(156,195,228,.75))}
+  12%{transform:translateX(-2px) skewX(-2deg);filter:none}46%{transform:none;filter:none}50%{transform:translateX(-4px);filter:drop-shadow(4px 0 0 rgba(224,122,108,.7)) drop-shadow(-4px 0 0 rgba(156,195,228,.7))}54%{transform:none;filter:none}}
+.escena[data-paso="2"] .lf-cara{animation:fallaCara 1.6s steps(1) infinite}
+.dato-texto{font-weight:400;color:#D3DCE5}
+.dato-fuente{font-size:11.5px;color:#A9B8C7}
+.escena .etiqueta{font-size:12px;color:#B7C6D4}
+@media (max-width:760px){ .dato-texto{font-size:18.5px;line-height:1.5} .dato-fuente{font-size:11px} .escena .etiqueta{font-size:11.5px} }
+
+/* ---------- el pie (dueño, 18:38: «abajo del todo sobra espacio en negro, recórtalo y añade términos y condiciones, la empresa… todo
+   lo necesario para que se vea profesional»): la marca, los enlaces legales y la empresa; sin espacio muerto debajo ---------- */
+html{overscroll-behavior-y:none}
+.cierre{padding-bottom:clamp(56px,10vh,120px)}
+.pie{display:block;padding:34px var(--margen) calc(env(safe-area-inset-bottom) + 30px);border-top:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(6,8,12,.6),#06080C 60%)}
+.pie-fila{display:flex;align-items:center;justify-content:space-between;gap:18px 28px;flex-wrap:wrap}
+.pie-enlaces{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px}
+.pie-enlaces a{font:500 12.5px/1.3 var(--ui);letter-spacing:.06em;color:#C9D3DD;text-decoration:none;transition:color .25s}
+.pie-enlaces a:hover,.pie-enlaces a:focus-visible{color:#F4F6F8}
+.pie-enlaces .verificar{font:500 12.5px/1.3 var(--ui);letter-spacing:.06em;text-transform:none;color:#9CC3E4}
+.pie-empresa{display:flex;flex-wrap:wrap;gap:4px 18px;margin:22px 0 0;font:400 12px/1.5 var(--ui);letter-spacing:.03em;color:#8697A8}
+@media (max-width:760px){
+  .pie{padding:28px 22px calc(env(safe-area-inset-bottom) + 26px)}
+  .pie-fila{flex-direction:column;align-items:flex-start;gap:18px}
+  .pie-enlaces{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;width:100%}
+  .pie-enlaces a{font-size:14px}
+  .pie-empresa{flex-direction:column;gap:2px;margin-top:20px;font-size:12px}
+}
+
+/* ---------- antes de enviar: la foto o el archivo, con «Quitar» y «Enviar» (dueño, 18:20) ---------- */
+.previa{display:none}
+.previa:not([hidden]){display:flex;position:fixed;inset:0;z-index:72;flex-direction:column;padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 14px);
+  background:rgba(4,6,10,.97);color:#F4F6F8;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);animation:aparece .25s ease both}
+.previa-cab{display:flex;align-items:center;justify-content:space-between;min-height:50px;padding:0 4px 0 8px}
+.previa-cab b{font:600 17px/1.3 var(--ui)}
+.previa-cerrar{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(232,236,241,.1);color:#F4F6F8;cursor:pointer}
+.previa-cerrar svg,.previa-quitar svg,.previa-enviar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.previa-cuerpo{position:relative;flex:1;min-height:0;margin:8px 0 14px;display:flex;align-items:center;justify-content:center}
+.previa-cuerpo img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px}
+.previa-cuerpo.varias{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));align-content:start;gap:8px;overflow-y:auto}
+.previa-cuerpo.varias img{width:100%;aspect-ratio:1;object-fit:cover}
+.previa-archivo{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:14px;align-items:center;width:min(420px,100%);padding:16px 18px;border-radius:16px;background:rgba(255,255,255,.06)}
+.previa-archivo svg{grid-row:1/3;width:30px;height:30px;fill:none;stroke:#9CC3E4;stroke-width:1.6}
+.previa-archivo b{font:500 15.5px/1.35 var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.previa-archivo small{font:400 12.5px/1.3 var(--ui);color:#9FB3C4}
+.previa-pie{display:flex;gap:10px}
+.previa-quitar,.previa-enviar{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:9px;height:54px;border-radius:16px;font:600 16px/1 var(--ui);cursor:pointer}
+.previa-quitar{border:1px solid rgba(224,122,108,.5);background:rgba(224,122,108,.1);color:#F2B5AB}
+.previa-enviar{border:0;background:#9CC3E4;color:#05070A}
+@media (min-width:761px){ .previa:not([hidden]){inset:auto;left:50%;top:50%;width:min(560px,92vw);height:min(640px,86vh);transform:translate(-50%,-50%);border:1px solid var(--hilo-2);border-radius:20px;padding:12px 14px 16px} }
+
+/* ---------- la nota de voz, antes de enviarla: ■ para parar, ▶ para escucharla, la papelera para quitarla ---------- */
+.redactor .nv-parar{background:#E07A6C!important;border-color:#E07A6C!important;color:#05070A}
+.redactor .nv-parar[hidden]{display:none}
+.grabando .nv-oir{flex:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:#9CC3E4;color:#05070A;cursor:pointer}
+.grabando .nv-oir[hidden]{display:none}
+.grabando .nv-oir span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.grabando .nv-oir svg{width:17px;height:17px;fill:currentColor;stroke:none}
+.grabando .nv-oir svg+svg{display:none;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round}
+.grabando.sonando .nv-oir svg{display:none}.grabando.sonando .nv-oir svg+svg{display:block}
+.grabando.revision{background:rgba(156,195,228,.1);border-color:rgba(156,195,228,.38)}
+.grabando.revision .rec{display:none}
+.grabando.revision .nivel i{background:#9CC3E4;opacity:.55}
+
+/* ---------- mantener pulsado: la hoja con «Copiar», «Borrar para todos» y «Borrar para mí» ---------- */
+.hoja-msg{display:none}
+.hoja-msg:not([hidden]){display:flex;position:fixed;inset:0;z-index:74;align-items:flex-end;justify-content:center;padding:0 10px calc(env(safe-area-inset-bottom) + 10px);background:rgba(3,4,6,.55);animation:aparece .18s ease both}
+.hoja-caja{width:min(440px,100%);display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:22px;background:#141A22;border:1px solid rgba(255,255,255,.08);box-shadow:0 -10px 40px rgba(0,0,0,.5)}
+.hoja-caja button{display:flex;align-items:center;gap:14px;width:100%;height:56px;padding:0 18px;border:0;border-radius:15px;background:rgba(255,255,255,.04);color:#F4F6F8;font:500 16.5px/1 var(--ui);text-align:left;cursor:pointer}
+.hoja-caja button[hidden]{display:none}
+.hoja-caja button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hoja-caja #borra-todos,.hoja-caja #borra-mi{color:#F2A89C}
+.hoja-caja .hoja-no{justify-content:center;margin-top:4px;background:rgba(255,255,255,.08);font-weight:600}
+@media (min-width:761px){ .hoja-msg:not([hidden]){align-items:center} }
+.msg.elegido{outline:2px solid rgba(156,195,228,.7);outline-offset:2px}
+.msg.borrado{font-style:italic;opacity:.62;background:transparent!important;border:1px dashed rgba(255,255,255,.18)!important;color:#AEBBC8!important}
+.msg.borrado .hora{display:none}
+@media (max-width:760px){ .sala .mensajes .msg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} }
+
+/* ---------- en el chat, la miniatura del vídeo se mueve donde quieras (dueño, 18:51) ---------- */
+@media (max-width:760px){
+  .sala.en-chat .escena-video{touch-action:none;transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1)}
+  .sala.en-chat .escena-video.movida{left:var(--mini-x)!important;top:var(--mini-y)!important;right:auto!important;bottom:auto!important}
+  .sala.en-chat .escena-video.arrastrando{transition:none;box-shadow:0 18px 40px rgba(0,0,0,.7)!important;transform:scale(1.04)}
+}
+
+/* ---------- girar la cámara: arriba a la derecha de la llamada ---------- */
+.b-girar{display:none}
+@media (max-width:760px){
+  .sala .b-girar:not([hidden]){display:grid;place-items:center;position:absolute;z-index:4;right:14px;top:calc(env(safe-area-inset-top) + 12px);width:46px;height:46px;padding:0;border-radius:50%;
+    border:1px solid rgba(255,255,255,.2);background:rgba(8,12,18,.5);color:#F4F6F8;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sala .b-girar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s ease}
+  .sala .b-girar.girando svg{transform:rotate(180deg)}
+  .sala.comprobando .b-girar,.sala.en-chat .b-girar{display:none!important}
+}
+.video-mio.trasera{transform:none!important}

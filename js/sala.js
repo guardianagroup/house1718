@@ -30,12 +30,12 @@
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
-    paraNota(false); cierraChat(); sinLeer = 0; pintaCuenta(); paraReproductor(); for (const n of notas.values()) if (n.mia && n.url) URL.revokeObjectURL(n.url); notas.clear();
+    paraNota(false); descartaRevision(); cierraPrevia(false); cierraHoja(); cierraChat(); sinLeer = 0; pintaCuenta(); paraReproductor(); for (const n of notas.values()) if (n.mia && n.url) URL.revokeObjectURL(n.url); notas.clear();
     lista.textContent = ''; texto.value = ''; ajusta(); pintaVoz(); avisos.textContent = ''; menuEnviar.hidden = true; visor.hidden = true; $('#visor-img').removeAttribute('src'); archivosVivos.clear(); for (const u of previas.values()) URL.revokeObjectURL(u); previas.clear();
     const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
     for (const k of ['left', 'top', 'right', 'bottom']) vm.style.removeProperty(k);
     if (window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(false);
-    if (window.Elixire) window.Elixire.vuelve();
+    if (window.Elixire && window.Elixire.reinvitando) window.Elixire.reinvitando = false; else if (window.Elixire) window.Elixire.vuelve();
   }
   function ponEstado(k, mal) { const e = $('#sala-estado'); e.classList.toggle('mal', !!mal); const x = $('#sala-estado-texto'); x.dataset.t = k; x.textContent = tr(k); }
 
@@ -66,7 +66,8 @@
   }
   $('#redactor').addEventListener('submit', (e) => {
     e.preventDefault();
-    if (grab) { paraNota(true); return; }
+    if (grab) { paraNota('enviar'); return; }
+    if (revision) { enviaRevision(); return; }
     const m = M.envia(texto.value); if (!m) return;
     texto.value = ''; ajusta(); pintaVoz(); pintaMensaje(m);
   });
@@ -136,9 +137,34 @@
   $('#enviar-foto').addEventListener('click', () => { menuEnviar.hidden = true; $('#foto-llamada').click(); });
   $('#enviar-archivo').addEventListener('click', () => { menuEnviar.hidden = true; $('#archivo').click(); });
   $('#foto-llamada').addEventListener('change', async (e) => {
-    const fs = [...e.target.files]; e.target.value = '';
-    for (const f of fs) { const g = await comprimeFoto(f); enviaArchivos([g], URL.createObjectURL(g)); }
+    const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
+    const gs = []; for (const f of fs) gs.push(await comprimeFoto(f));
+    abrePrevia(gs, true);
   });
+  // ---------- antes de enviar: la foto o el archivo, con «Quitar» y «Enviar» (dueño, 18:20: «cuando una persona añade una foto y ya
+  // la tiene seleccionada… no la puede deseleccionar… que se pueda deseleccionar. Y el audio igual») ----------
+  const previa = $('#previa'); let pendientes = null;
+  function abrePrevia(files, foto) {
+    cierraPrevia(false); if (!files.length) return;
+    const cuerpo = $('#previa-cuerpo'), urls = []; cuerpo.textContent = '';
+    for (const f of files) {
+      if (esFoto(f.type)) { const u = URL.createObjectURL(f); urls.push(u); const im = document.createElement('img'); im.src = u; im.alt = ''; cuerpo.append(im); }
+      else { urls.push(null); const d = document.createElement('div'); d.className = 'previa-archivo'; const n = document.createElement('b'); n.textContent = f.name; const t = document.createElement('small'); t.textContent = tam(f.size); d.append(icono('doc'), n, t); cuerpo.append(d); }
+    }
+    cuerpo.classList.toggle('varias', files.length > 1);
+    const todasFotos = files.every((f) => esFoto(f.type)), k = todasFotos ? (files.length > 1 ? 'previaFotos' : 'previaFoto') : (files.length > 1 ? 'previaArchivos' : 'previaArchivo');
+    const tt = $('#previa-t'); tt.dataset.t = k; tt.textContent = tr(k);
+    pendientes = { files, urls }; menuEnviar.hidden = true; previa.hidden = false; setTimeout(() => $('#previa-enviar').focus({ preventScroll: true }), 60);
+  }
+  function cierraPrevia(enviar) {
+    const p = pendientes; pendientes = null; previa.hidden = true; $('#previa-cuerpo').textContent = '';
+    if (!p) return;
+    if (enviar) p.files.forEach((f, i) => enviaArchivos([f], p.urls[i] || undefined));
+    else for (const u of p.urls) if (u) URL.revokeObjectURL(u);
+  }
+  $('#previa-enviar').addEventListener('click', () => cierraPrevia(true));
+  $('#previa-quitar').addEventListener('click', () => cierraPrevia(false));
+  $('#previa-cerrar').addEventListener('click', () => cierraPrevia(false));
   $('#enviar-ubicacion').addEventListener('click', () => {
     menuEnviar.hidden = true;
     if (!navigator.geolocation) { toast('ubi', { icono: 'pin', titulo: tr('sinUbicacion'), ms: 5000 }); return; }
@@ -211,10 +237,10 @@
     const i = document.createElement('img'); i.src = url; i.alt = ''; b.append(i);
     b.addEventListener('click', () => abreVisor(url, nombre)); return b;
   }
-  $('#archivo').addEventListener('change', (e) => { enviaArchivos([...e.target.files]); e.target.value = ''; });
+  $('#archivo').addEventListener('change', (e) => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) abrePrevia(fs, false); });
   sala.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); sala.classList.add('arrastra'); } });
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
-  sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) enviaArchivos([...e.dataTransfer.files]); });
+  sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
   M.on('archivo', (a) => filaArchivo(a));
   M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); });
   M.on('archivo-enviado', (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
@@ -260,7 +286,7 @@
     sala.classList.remove('en-chat', 'teclado'); sala.style.removeProperty('--vv-h'); sala.style.removeProperty('--vv-top');
   }
   $('#chat-volver').addEventListener('click', cierraChat);
-  escena.addEventListener('click', (e) => { if (enChat) { e.preventDefault(); e.stopPropagation(); cierraChat(); } }, true);
+  escena.addEventListener('click', (e) => { if (enChat) { e.preventDefault(); e.stopPropagation(); if (!recienArrastrada) cierraChat(); } }, true);
   // «+» en el chat del móvil: lo mismo que «Enviar» en el vídeo (foto, ubicación o archivo)
   $('#redactor .adjuntar').addEventListener('click', (e) => { if (!enChat) return; e.preventDefault(); texto.blur(); menuEnviar.hidden = !menuEnviar.hidden; });
   document.addEventListener('pointerdown', (e) => { if (enChat && !menuEnviar.hidden && !menuEnviar.contains(e.target) && !e.target.closest('.adjuntar')) menuEnviar.hidden = true; }, true);
@@ -273,14 +299,36 @@
   const puedeVoz = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   let grab = null;
   const nivel = $('#grabando-nivel'); for (let i = 0; i < 22; i++) nivel.append(document.createElement('i'));
+  // (dueño, 18:20: «el audio igual»: se para con ■, se escucha, y se quita con la papelera o se envía)
+  let revision = null; const oirNota = new Audio(); oirNota.preload = 'auto';
   function pintaVoz() {
-    const hay = !!texto.value.trim();
-    $('#b-voz').hidden = !puedeVoz || hay || !!grab;
-    $('#enviar').hidden = puedeVoz && !hay && !grab;
-    $('#grabando').hidden = !grab; texto.hidden = !!grab; $('#redactor .adjuntar').hidden = !!grab;
-    $('#redactor').classList.toggle('grabando-ya', !!grab);
+    const hay = !!texto.value.trim(), ocupado = !!grab || !!revision;
+    $('#b-voz').hidden = !puedeVoz || hay || ocupado;
+    $('#enviar').hidden = puedeVoz && !hay && !ocupado;
+    $('#grabando').hidden = !ocupado; texto.hidden = ocupado; $('#redactor .adjuntar').hidden = ocupado;
+    $('#nv-parar').hidden = !grab; $('#nv-oir').hidden = !revision;
+    $('#grabando').classList.toggle('revision', !!revision);
+    $('#redactor').classList.toggle('grabando-ya', ocupado);
     if (grab) $('#grabando-t').textContent = mmss(Date.now() - grab.desde).replace(/^(\d+):/, '$1:');
+    else if (revision) $('#grabando-t').textContent = mmss(revision.dur);
   }
+  function descartaRevision() {
+    const r = revision; revision = null; try { oirNota.pause(); } catch (_) {} oirNota.removeAttribute('src'); $('#grabando').classList.remove('sonando');
+    if (r) URL.revokeObjectURL(r.url); pintaVoz();
+  }
+  function enviaRevision() {
+    const r = revision; revision = null; try { oirNota.pause(); } catch (_) {} oirNota.removeAttribute('src'); $('#grabando').classList.remove('sonando');
+    pintaVoz(); if (r) enviaArchivos([r.f], r.url, r.dur);
+  }
+  $('#nv-oir').addEventListener('click', () => {
+    if (!revision) return;
+    if (!oirNota.paused) { oirNota.pause(); return; }
+    if (oirNota.getAttribute('src') !== revision.url) oirNota.src = revision.url;
+    const p = oirNota.play(); if (p && p.catch) p.catch(() => {});
+  });
+  oirNota.addEventListener('play', () => $('#grabando').classList.add('sonando'));
+  for (const ev of ['pause', 'ended']) oirNota.addEventListener(ev, () => $('#grabando').classList.remove('sonando'));
+  $('#nv-parar').addEventListener('click', () => paraNota('revisar'));
   async function empiezaNota() {
     if (grab || !puedeVoz) return;
     const e = M.estadoLlamada ? M.estadoLlamada() : null;
@@ -296,7 +344,7 @@
     r.ondataavailable = (ev) => { if (ev.data && ev.data.size) n.trozos.push(ev.data); };
     r.onstop = () => terminaNota(n);
     r.start(250);
-    n.reloj = setInterval(() => { if (grab !== n) return; pintaVoz(); if (Date.now() - n.desde > 300000) paraNota(true); }, 200);
+    n.reloj = setInterval(() => { if (grab !== n) return; pintaVoz(); if (Date.now() - n.desde > 300000) paraNota('revisar'); }, 200);
     // el nivel de la voz mientras se graba (solo se mide aquí; no sale de este equipo)
     try {
       const AC = window.AudioContext || window.webkitAudioContext; n.ctx = new AC(); if (n.ctx.state === 'suspended') n.ctx.resume().catch(() => {});
@@ -311,7 +359,7 @@
     } catch (_) {}
     vibra(18); pintaVoz();
   }
-  function paraNota(enviar) { const n = grab; if (!n) return; n.enviar = !!enviar; try { if (n.r.state !== 'inactive') n.r.stop(); else terminaNota(n); } catch (_) { terminaNota(n); } }
+  function paraNota(modo) { const n = grab; if (!n) return; n.modo = modo || ''; try { if (n.r.state !== 'inactive') n.r.stop(); else terminaNota(n); } catch (_) { terminaNota(n); } }
   function terminaNota(n) {
     if (n.hecha) return; n.hecha = true;
     if (grab === n) grab = null;
@@ -320,14 +368,15 @@
     for (const x of nivel.children) x.style.removeProperty('--h');
     pintaVoz();
     const dur = Date.now() - n.desde;
-    if (!n.enviar || !n.trozos.length || dur < 700) return;
+    if (!n.modo || !n.trozos.length || dur < 700) return;
     const tipo = (n.tipo || 'audio/webm').split(';')[0], d = new Date(), p = (x) => String(x).padStart(2, '0');
     const nombre = 'nota-de-voz-' + Math.round(dur / 1000) + 's-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + (tipo === 'audio/mp4' ? '.m4a' : '.webm');
     const f = new File([new Blob(n.trozos, { type: tipo })], nombre, { type: tipo });
+    if (n.modo === 'revisar') { revision = { f, url: URL.createObjectURL(f), dur }; pintaVoz(); return; }
     enviaArchivos([f], URL.createObjectURL(f), dur);
   }
   $('#b-voz').addEventListener('click', empiezaNota);
-  $('#nv-cancelar').addEventListener('click', () => paraNota(false));
+  $('#nv-cancelar').addEventListener('click', () => { if (grab) paraNota(''); else descartaRevision(); });
   pintaVoz();
 
   // ---------- las notas de voz en la conversación: su propio reproductor (reproducir, la onda y el tiempo) ----------
@@ -417,6 +466,9 @@
   // completa y abajo, botones redondos: rojo para colgar; al colgar o si se corta, verde para volver a llamar (css/elixir.css). Sin
   // palabras ni chat. Mientras la llamada de la invitación está por llegar, «Conectando la llamada…» (sin botón, para no cruzarse).
   let ultimo = { estado: 'libre' }, esperaLlamada = false, esperaT = null;
+  // La otra persona ha salido de Elixire (dueño, 18:17: «si uno le da a volver a llamar y el otro ha salido completamente de la web,
+  // que lo detecte… para que la persona no pierda el tiempo»): en vez de «Volver a llamar», «Invitar de nuevo».
+  let otroFuera = false;
   // Si el navegador no deja arrancar la imagen y el sonido sin un toque (dueño, 15:50: Android con Brave: «ni me escuchaba y veía toda
   // la pantalla negra»; en GUARDIANA pasó igual el 2 de noviembre): «Toca para ver y oír a la otra persona», y con el toque, arranca.
   function intentaVer() {
@@ -513,6 +565,8 @@
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
+    vm.classList.toggle('trasera', e.mira === 'environment');
+    $('#b-girar').hidden = !(m && (e.estado === 'hablando' || e.estado === 'reconectando') && e.local && e.local.getVideoTracks().length && e.cam !== false);
     if (e.remoto && vs.srcObject !== e.remoto) { vs.srcObject = e.remoto; intentaVer(); }
     if (e.estado === 'hablando') intentaVer(); else if (e.estado !== 'reconectando') $('#video-toca').hidden = true;
     const hablando = e.estado === 'hablando' || e.estado === 'reconectando';
@@ -522,7 +576,8 @@
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
     ent.hidden = e.estado !== 'entrante';
-    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (m && e.estado === 'libre' && esperaLlamada) || (m && e.estado === 'fin' && (!!e.prueba || e.motivo === 'se-fue'));
+    const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
+    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (m && e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);
     $('#salir-llamada').hidden = !(e.estado === 'libre' || e.estado === 'fin');
     ctl.hidden = !activa;
     velo.hidden = hablando;
@@ -549,6 +604,7 @@
       // en el móvil, lo que ha pasado, en el centro; y el verde: «Volver a llamar»
       if (m) { if (k) pon(k); if (!e.prueba) rotuloLlamar('volverLlamar'); }
     }
+    if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
   }
   M.on('llamada', (e) => {
     if (abierta) pintaLlamada(e);
@@ -569,7 +625,11 @@
   });
   $('#b-reto').addEventListener('click', () => M.reto());
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
-  $('#llamar').addEventListener('click', () => { if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return; $('#llamar').hidden = true; M.llamar(); });
+  $('#llamar').addEventListener('click', () => {
+    if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return;
+    if (movil.matches && (otroFuera || M.otroEsta === false)) { if (otroFuera && window.Elixire && window.Elixire.reinvita) { window.Elixire.reinvita(); return; } otroFuera = true; pintaLlamada(ultimo); return; }
+    $('#llamar').hidden = true; M.llamar();
+  });
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
   $('#b-colgar').addEventListener('click', () => M.colgar());
@@ -578,7 +638,7 @@
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
-    continuada = false; abre(); sistema('mConectado');
+    continuada = false; otroFuera = false; abre(); sistema('mConectado');
     // invitación a una llamada: quien entra con el enlace llama sin más; quien invitó contesta sola (ver puerta.js)
     const E = window.Elixire || {};
     esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
@@ -615,8 +675,8 @@
     sistema(e && e.movil ? 'continuaAqui' : 'continuaSuMovil');
   });
   M.on('claves', (c) => { if (abierta && c.renovada) sistema('clavesRenovadas'); });
-  M.on('se-va', () => { if (abierta) { ponEstado('seFue', true); sistema('seFue'); } });
-  M.on('vuelve', () => { if (abierta) { ponEstado('salaEstado', false); sistema('vuelve'); } });
+  M.on('se-va', () => { otroFuera = true; if (abierta) { ponEstado('seFue', true); sistema('seFue'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
+  M.on('vuelve', () => { otroFuera = false; if (abierta) { ponEstado('salaEstado', false); sistema('vuelve'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
   M.on('intruso', () => { if (abierta) sistema('intruso'); });
   M.on('integridad', () => { if (abierta) sistema('integridad'); });
   M.on('red', (si) => { if (abierta) ponEstado(si ? 'salaEstado' : 'sinRed', !si); });
@@ -628,16 +688,90 @@
       alarma: ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true], 'alarma-suya': ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true],
       'no-coinciden': ['alarmaEtiqueta', 'noCoincidenTitulo', 'noCoincidenTexto', true],
     }[f.motivo];
-    if (textos && (enSala || f.motivo.startsWith('alarma'))) aviso(...textos);
+    if (textos && (enSala || f.motivo.startsWith('alarma'))) aviso(...textos, false, f.motivo === 'suyo' && !!(window.Elixire && window.Elixire.reinvita));
   });
 
+  // ---------- mantener pulsado un mensaje, una foto o una nota: «Copiar», «Borrar para todos» (lo tuyo) y «Borrar para mí» (dueño,
+  // 18:20: «una vez que la foto está enviada… dejar pulsada y te dé la opción de borrar para los dos o borrar solo para uno»). En el
+  // ordenador, con el botón derecho. «Para todos» viaja por la sesión encriptada; solo se borra lo que envió quien lo pide. ----------
+  const hoja = $('#hoja-msg'); let objetivo = null, pulsaT = 0, pulsaXY = null;
+  const borrable = (li) => li && li.classList.contains('msg') && !li.classList.contains('sistema') && !li.classList.contains('borrado') && !li.classList.contains('vacio');
+  lista.addEventListener('pointerdown', (e) => {
+    const li = e.target.closest('li.msg'); if (!borrable(li) || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pulsaXY = [e.clientX, e.clientY]; clearTimeout(pulsaT); pulsaT = setTimeout(() => { pulsaT = 0; abreHoja(li); }, 480);
+  });
+  const cancelaPulsa = () => { clearTimeout(pulsaT); pulsaT = 0; pulsaXY = null; };
+  lista.addEventListener('pointermove', (e) => { if (pulsaXY && Math.hypot(e.clientX - pulsaXY[0], e.clientY - pulsaXY[1]) > 10) cancelaPulsa(); });
+  for (const ev of ['pointerup', 'pointercancel', 'scroll']) lista.addEventListener(ev, cancelaPulsa, { passive: true });
+  lista.addEventListener('contextmenu', (e) => { const li = e.target.closest('li.msg'); if (borrable(li)) { e.preventDefault(); cancelaPulsa(); abreHoja(li); } });
+  function abreHoja(li) {
+    cierraHoja(); objetivo = li; li.classList.add('elegido');
+    $('#borra-todos').hidden = !li.classList.contains('mia');
+    $('#hoja-copiar').hidden = li.classList.contains('archivo') || li.classList.contains('nota') || !navigator.clipboard;
+    hoja.hidden = false; vibra(12);
+  }
+  function cierraHoja() { if (objetivo) objetivo.classList.remove('elegido'); objetivo = null; hoja.hidden = true; }
+  hoja.addEventListener('click', (e) => { if (e.target === hoja) cierraHoja(); });
+  $('#borra-no').addEventListener('click', cierraHoja);
+  $('#hoja-copiar').addEventListener('click', () => {
+    const li = objetivo; cierraHoja(); if (!li) return;
+    const c = li.cloneNode(true); for (const h of c.querySelectorAll('.hora')) h.remove();
+    navigator.clipboard.writeText(c.textContent.trim()).then(() => toast('copiado', { ok: true, titulo: tr('copiadoMsg'), ms: 1600 })).catch(() => {});
+  });
+  $('#borra-mi').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (li) quitaFila(li, false); });
+  $('#borra-todos').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (!li || !li.classList.contains('mia')) return; if (M.borra(li.dataset.id)) quitaFila(li, true); else quitaFila(li, false); });
+  M.on('borrado', (id) => { const li = lista.querySelector('li.msg.suya[data-id="' + CSS.escape(id) + '"]'); if (li) quitaFila(li, true, true); quitaToast('a-' + id); quitaToast('m-' + id); });
+  function quitaFila(li, paraTodos, suyo) {
+    const id = li.dataset.id;
+    for (const a of li.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
+    for (const im of li.querySelectorAll('img[src^="blob:"]')) URL.revokeObjectURL(im.src);
+    const n = notas.get(id); if (n) { if (n.li && n.li.classList.contains('sonando')) paraReproductor(); if (n.url) URL.revokeObjectURL(n.url); notas.delete(id); }
+    const u = previas.get(id); if (u) { URL.revokeObjectURL(u); previas.delete(id); }
+    if (archivosVivos.has(id)) { archivosVivos.delete(id); if (M.cancelaArchivo) { try { M.cancelaArchivo(id); } catch (_) {} } quitaToast('a-' + id); }
+    if (!paraTodos) { li.remove(); return; }
+    li.className = 'msg borrado ' + (suyo ? 'suya' : 'mia'); li.textContent = '';
+    const b = document.createElement('span'); b.textContent = tr(suyo ? 'mensajeBorradoSuyo' : 'mensajeBorrado'); li.append(b);
+  }
+
+  // ---------- en el chat del móvil, la miniatura del vídeo se arrastra a cualquier sitio y se queda en el borde más cercano (dueño,
+  // 18:51: «la quiero cambiar de sitio como yo quiera»); un toque, sin arrastrar, vuelve al vídeo ----------
+  let arrastre = null, recienArrastrada = false;
+  escena.addEventListener('pointerdown', (e) => {
+    if (!enChat) return;
+    const r = escena.getBoundingClientRect();
+    arrastre = { id: e.pointerId, x0: e.clientX, y0: e.clientY, l: r.left, t: r.top, w: r.width, h: r.height, mov: false };
+    try { escena.setPointerCapture(e.pointerId); } catch (_) {}
+  }, true);
+  escena.addEventListener('pointermove', (e) => {
+    if (!arrastre || e.pointerId !== arrastre.id) return;
+    const dx = e.clientX - arrastre.x0, dy = e.clientY - arrastre.y0;
+    if (!arrastre.mov && Math.hypot(dx, dy) < 7) return;
+    arrastre.mov = true; escena.classList.add('movida', 'arrastrando');
+    const W = innerWidth, H = vv ? vv.height : innerHeight;
+    escena.style.setProperty('--mini-x', Math.round(Math.max(8, Math.min(W - arrastre.w - 8, arrastre.l + dx))) + 'px');
+    escena.style.setProperty('--mini-y', Math.round(Math.max(8, Math.min(H - arrastre.h - 8, arrastre.t + dy))) + 'px');
+  }, true);
+  const sueltaMini = (e) => {
+    if (!arrastre || e.pointerId !== arrastre.id) return;
+    const movida = arrastre.mov; arrastre = null; escena.classList.remove('arrastrando');
+    if (!movida) return;
+    recienArrastrada = true; setTimeout(() => { recienArrastrada = false; }, 80);
+    const r = escena.getBoundingClientRect(); escena.style.setProperty('--mini-x', (r.left + r.width / 2 < innerWidth / 2 ? 10 : Math.round(innerWidth - r.width - 10)) + 'px');
+  };
+  escena.addEventListener('pointerup', sueltaMini, true); escena.addEventListener('pointercancel', sueltaMini, true);
+
+  // ---------- girar la cámara (dueño, 18:51) ----------
+  $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await M.giraCamara(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
+
   // ---------- avisos ----------
-  function aviso(etiqueta, titulo, cuerpo, mal, enlace) {
-    const a = $('#aviso'); a.classList.toggle('mal', !!mal); $('#aviso-enlace').hidden = !enlace;
+  function aviso(etiqueta, titulo, cuerpo, mal, enlace, invitar) {
+    const a = $('#aviso'); a.classList.toggle('mal', !!mal); $('#aviso-enlace').hidden = !enlace; $('#aviso-invitar').hidden = !invitar;
     for (const [id, k] of [['#aviso-etiqueta', etiqueta], ['#aviso-titulo', titulo], ['#aviso-texto', cuerpo]]) { const e = $(id); e.dataset.t = k; e.textContent = tr(k); }
     a.hidden = false; setTimeout(() => $('#aviso-ok').focus(), 50);
   }
   $('#aviso-ok').addEventListener('click', () => { $('#aviso').hidden = true; });
+  // (dueño, 18:17: «que lo detecte para decirle… tiene que volver a enviar o invitar tú… para que la persona no pierda el tiempo»)
+  $('#aviso-invitar').addEventListener('click', () => { $('#aviso').hidden = true; if (window.Elixire && window.Elixire.reinvita) window.Elixire.reinvita(); });
   window.ElixireAviso = aviso;
   // «Verificar esta página»: el código es público y cada script lleva su huella SHA-384 (herramientas/huellas.py)
   for (const v of document.querySelectorAll('.verificar')) v.addEventListener('click', (e) => { e.preventDefault(); aviso('verificarEtiqueta', 'verificarTitulo', 'verificarTexto', false, true); });
