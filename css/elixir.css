@@ -1374,3 +1374,5 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 /* la tarjeta de «Comprobar» en móviles de 320 px: que los valores no se salgan */
 @media (max-width:360px){.senales-escena li{gap:8px}.senales-escena li b,.senales-escena li span{font-size:12.5px}.escaner{max-width:100%}.senales-escena{min-width:0;max-width:100%}}
 @media (max-width:360px){.escaner{grid-template-columns:minmax(0,104px) minmax(0,1fr)!important;gap:10px!important}.senales-escena li{padding:9px 9px!important}}
+.comparar .pais{display:block;margin-top:3px;font:500 9.5px/1.2 var(--ui);letter-spacing:.08em;text-transform:uppercase;color:#9CC3E4}
+@media (min-width:361px) and (max-width:760px){.comparar thead th{-webkit-hyphens:manual;hyphens:manual;overflow-wrap:normal}}

@@ -70,7 +70,7 @@
     otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
-    e7C1: 'Detects fake faces', e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Zoom has announced fake-face detection for December 2026 as a paid add-on. Teams and Meet rely on third-party software.',
+    e7C1: 'Detects fake faces', e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Zoom has announced fake-face detection for December 2026 as a paid add-on. Teams and Meet rely on third-party software. Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with fake-face detection.',
     navDescubrir: 'Discover', navAcceso: 'Access', empezar: 'Start trial',
     c1v: '$16.6 bn', c1t: 'lost to internet crime in the US in 2024', c1f: 'FBI · IC3 2024',
