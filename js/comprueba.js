@@ -463,6 +463,10 @@
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
   const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes']);
   function probabilidad(r) {
+    // dueño (20:51): si detecta una foto, 0 %. Muy quieta sin más (puede ser alguien muy quieto) pasa a la prueba del gesto; si
+    // tampoco la hace, es una foto: 0 %
+    const giroNo = (r.senales || []).some((x) => x.k === 'giro' && x.estado === 'no');
+    if (r.tipo === 'plana' || (r.tipo === 'fija' && (r.fija !== 'quieta' || giroNo))) return 0;
     let L = 0; const k = Math.min(1, ((r.n | 0) || 30) / 30);
     for (const x of r.senales || []) { const w = PESOS[x.k]; if (w && w[x.estado] != null) L += w[x.estado] * (FIJAS.has(x.k) || w[x.estado] <= -3 ? 1 : k); }
     // imagen congelada: casi seguro que no es nadie en directo; moverse como un bloque sin un solo gesto: muy probablemente una
@@ -493,7 +497,8 @@
     previo = r; capa.classList.add('con-resultado');
     resultadoCaja.className = 'comprobacion-resultado solo-prob ' + r.tipo; pintaProbabilidad(r);
     const gi = (r.senales || []).find((x) => x.k === 'giro'), mo = $('#comprobacion-motivo');
-    if (mo) { const k = gi ? (gi.estado === 'si' ? 'motivo_giroSi' : 'motivo_sinGiro') : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
+    if (mo) { const foto = (r.tipo === 'fija' || r.tipo === 'plana') && probabilidad(r) === 0;
+    const k = foto ? 'motivo_foto' : gi ? (gi.estado === 'si' ? 'motivo_giroSi' : 'motivo_sinGiro') : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
     $('#comprobacion-estado').hidden = true; resultadoCaja.hidden = false; resultadoCaja.scrollTop = 0;
     $('#comprobacion-titulo').textContent = tr('comprobacion_' + r.tipo);
     let texto = tr('comprobacion_' + r.tipo + 'Texto');
