@@ -1267,3 +1267,10 @@ html{overscroll-behavior-y:none}
 @media (max-width:760px) and (max-height:700px){
   .escena-entradilla,.dato-texto,.parada p,.ficha dd,.pasos p,.escena-nota,.cierre .intro{font-size:16.5px}
 }
+/* esquinas redondeadas: el botón principal, en cápsula; el resto de botones de cristal, suaves y a juego */
+.cristal,.par{border-radius:14px}
+.cristal.grande{border-radius:999px}
+/* la marca, más grande y con más presencia */
+.marca{font-size:21px;letter-spacing:.42em}
+@media (max-width:760px){.marca{font-size:19px;letter-spacing:.36em}}
+@media (max-width:350px){.marca{font-size:17px;letter-spacing:.3em}}
