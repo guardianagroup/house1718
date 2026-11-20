@@ -603,6 +603,8 @@
       if (k && abierta) sistema(k);
       // en el móvil, lo que ha pasado, en el centro; y el verde: «Volver a llamar»
       if (m) { if (k) pon(k); if (!e.prueba) rotuloLlamar('volverLlamar'); }
+      // el código técnico del fallo, pequeño, para saber la causa (red, servidor de llamadas o teléfono)
+      if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
     }
     if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
   }

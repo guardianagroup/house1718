@@ -1285,10 +1285,22 @@ html{overscroll-behavior-y:none}
 /* el resultado: además del porcentaje, el motivo en una línea y «Repetir comprobación» */
 .prob-motivo{margin:-4px 0 0;max-width:262px;font:400 14.5px/1.45 var(--ui);color:#C9D6E3;text-align:center}
 .comprobacion-resultado.solo-prob.solo-prob>.prob-motivo.prob-motivo:not([hidden]){display:block!important}
-.comprobacion-resultado.solo-prob.solo-prob>.comprobacion-giro.comprobacion-giro:not([hidden]){display:inline-flex!important}
 /* en el móvil también se ve (el reto manual no, pero la prueba del gesto sí): centrada, grande, sobre el vídeo */
 .sala .video-reto.gesto:not([hidden]){display:flex!important;z-index:30;width:min(360px,88%);padding:24px 22px 26px;border-radius:24px;
   background:rgba(5,7,10,.66);-webkit-backdrop-filter:blur(14px) saturate(130%);backdrop-filter:blur(14px) saturate(130%);border:1px solid rgba(156,195,228,.32);box-shadow:0 24px 60px -24px rgba(0,0,0,.8)}
 .sala .video-reto.gesto .etiqueta{font:500 11px/1.3 var(--ui);letter-spacing:.2em;color:#9CC3E4}
-/* «Comprobar», desactivado de momento (dueño, 20:35: «mientras no se hace el arreglo, desactiva la función de comprobar») */
-#b-comprobar{display:none!important}
+/* la llamada en el móvil: «Girar» abajo, en la fila con los demás (dueño, 20:34: arriba quedaba tapado), y todos un poco más
+   pequeños para que quepan cinco con aire */
+.controles #b-girar{display:none}
+@media (max-width:760px){
+  .sala .controles,.sala.video-grande .controles{display:flex!important;justify-content:space-evenly;align-items:flex-start;gap:0;max-width:460px;padding:0 4px}
+  .sala .controles .seg#b-comprobar,.sala .controles .seg#b-chat,.sala .controles .seg#b-enviar,.sala .controles .seg#b-colgar{width:54px;height:54px}
+  .sala .controles .seg#b-girar:not([hidden]){display:inline-flex!important;align-items:center;justify-content:center;justify-self:center;position:relative;right:auto;top:auto;z-index:auto;
+    width:54px;height:54px;min-width:0;margin:0;padding:0;border-radius:50%;overflow:visible!important;letter-spacing:0;text-transform:none;flex:none;
+    background:rgba(18,24,32,.62);border:1px solid rgba(255,255,255,.24);color:#F4F6F8;box-shadow:0 12px 30px -10px rgba(0,0,0,.75);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .sala .controles .seg#b-girar svg{width:24px;height:24px}
+  .sala #b-girar{order:4}.sala #b-colgar{order:5}
+  .sala .controles .seg > span{font-size:11.5px!important;top:calc(100% + 8px)!important}
+  .sala .controles .ico-tel{width:24px;height:24px}
+  .sala .controles .ico-env{width:23px!important;height:23px!important}
+}

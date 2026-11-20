@@ -676,7 +676,7 @@
         if (!L.t0) { L.t0 = Date.now(); L.tope = restante(S); clearTimeout(L.limite); L.limite = setTimeout(() => colgar('prueba'), L.tope); velaPantalla(true); vigilaCalidad(L); }
         if (L.estado !== 'hablando') { L.estado = 'hablando'; emite('llamada', estadoLlamada()); }
       } else if (st === 'failed' || st === 'disconnected') {
-        if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') colgar('fallo');
+        if (L.t0) recupera(st === 'failed' ? 'fallo' : 'corte'); else if (st === 'failed') { L.diag = pc.__relay ? 'ICE' : 'ICE-0'; colgar('fallo'); }
       }
     });
     return pc;
@@ -747,8 +747,8 @@
     let hecho = false, gracia = null;
     const fin = () => { if (hecho) return; hecho = true; pc.removeEventListener('icegatheringstatechange', f); pc.removeEventListener('icecandidate', g); clearTimeout(gracia); res(); };
     const f = () => { if (pc.iceGatheringState === 'complete') fin(); };
-    const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '') && !gracia) gracia = setTimeout(fin, 300); };
-    pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 3000);
+    const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '')) { pc.__relay = (pc.__relay || 0) + 1; if (!gracia) gracia = setTimeout(fin, 500); } };
+    pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 8000);
   });
   function puedeLlamar() {
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return 'sin-medios';
@@ -777,7 +777,7 @@
       if (L.sinCapa) emite('llamada-aviso', 'sin-capa-mia');
       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
       return true;
-    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
+    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); x.diag = 'E:' + String((e && e.name) || 'Error').slice(0, 24) + (m && m !== 'undefined' ? ' ' + m.slice(0, 40) : ''); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
   }
   async function contestar() {
     const s = S; if (!L || L.estado !== 'entrante' || !s) return false;
@@ -908,7 +908,7 @@
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
     // la prueba: hasta 3 minutos hablados por conversación
     if (S && x.t0) S.usado = (S.usado || 0) + (Date.now() - x.t0);
-    emite('llamada', { estado: 'fin', motivo: motivo || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
+    emite('llamada', { estado: 'fin', motivo: motivo || '', diag: x.diag || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
   }
   // Prueba de vida (agencia, ronda 96, f): un reto al azar que la otra persona tiene que hacer en directo, en cámara. Va por la sesión
   // encriptada, así que lo pide el equipo verificado con las cuatro palabras. Ayuda a detectar un vídeo grabado o una suplantación
