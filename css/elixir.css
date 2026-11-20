@@ -1308,3 +1308,8 @@ html{overscroll-behavior-y:none}
 .aviso-comprobando{position:absolute;z-index:40;left:50%;top:calc(env(safe-area-inset-top) + 120px);transform:translateX(-50%);margin:0;width:min(340px,88%);padding:14px 18px;border-radius:18px;
   background:rgba(5,7,10,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(156,195,228,.35);color:#F4F6F8;font:500 15px/1.4 var(--ui);text-align:center;box-shadow:0 18px 50px -20px rgba(0,0,0,.8)}
 .aviso-comprobando[hidden]{display:none}
+/* el resultado: «Prueba del gesto» a mano, debajo del porcentaje (dueño, 20:45) */
+.comprobacion-resultado.solo-prob.solo-prob>.comprobacion-giro.comprobacion-giro:not([hidden]){display:inline-flex!important}
+/* la prueba del gesto: lo que hay que pedirle, más ancho y legible arriba */
+#comprobacion-estado.giro{width:min(380px,calc(100% - 28px));max-width:none}
+#comprobacion-estado.giro #comprobacion-estado-texto{font-size:16px;line-height:1.35}

@@ -458,7 +458,7 @@
   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
   const PESOS = {
     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 1.2, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 },
   };
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
   const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes']);
@@ -469,7 +469,9 @@
     // foto o una pantalla movidas; quieta del todo y sin parpadear: dudoso (alguien muy quieto también puede estarlo)
     if (r.tipo === 'fija') L = Math.min(L, r.fija === 'quieta' ? -1.2 : r.fija === 'rigida' ? -2.2 : -3.5);
     // ninguna prueba pasiva da certeza (agencia, ronda 98): el resultado se queda entre el 3 % y el 92 %
-    L = Math.max(-3.5, Math.min(2.45, L));
+    // si no hizo lo que se le pidió: posible vídeo falso, muñeco o avatar (como mucho un 5 %); si lo hizo, hasta el 96 %
+    if (r.tipo === 'sinGiro') L = Math.min(L, -2.95);
+    L = Math.max(-3.5, Math.min((r.senales || []).some((x) => x.k === 'giro' && x.estado === 'si') ? 3.2 : 2.45, L));
     return Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-L)))));
   }
   function pintaProbabilidad(r) {
@@ -490,6 +492,8 @@
   function resultado(r) {
     previo = r; capa.classList.add('con-resultado');
     resultadoCaja.className = 'comprobacion-resultado solo-prob ' + r.tipo; pintaProbabilidad(r);
+    const gi = (r.senales || []).find((x) => x.k === 'giro'), mo = $('#comprobacion-motivo');
+    if (mo) { const k = gi ? (gi.estado === 'si' ? 'motivo_giroSi' : 'motivo_sinGiro') : ''; mo.hidden = !k; if (k) { mo.dataset.t = k; mo.textContent = tr(k); } }
     $('#comprobacion-estado').hidden = true; resultadoCaja.hidden = false; resultadoCaja.scrollTop = 0;
     $('#comprobacion-titulo').textContent = tr('comprobacion_' + r.tipo);
     let texto = tr('comprobacion_' + r.tipo + 'Texto');
@@ -716,39 +720,59 @@
     const r = analiza(datos, { fuente, pulso: pulso(piel), voz, luz, cortes: nCortes });
     r._datos = datos; r._extra = { fuente, pulso: r.pulso, voz, luz, cortes: nCortes };
     if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__comprueba = { muestras: datos.length, cara: nCon, seguidas: datos.filter((d) => d.s).length, ms: Math.round(performance.now() - t0), tipo: r.tipo, forma: r.forma, parpadeos: r.parpadeos, pct: probabilidad(r) };
+    // si sale raro (ni claramente falso ni claramente real), la prueba del gesto, sin más pasos
+    const pr0 = probabilidad(r);
+    if (pr0 >= 10 && pr0 < 80 && (r.n | 0) >= 5 && !['virtual', 'sinCara', 'sinVideo', 'error'].includes(r.tipo)) { previo = r; pruebaGesto(true); return; }
     resultado(r);
   }
 
   // ---- la prueba extra: «pídele que gire la cabeza despacio hacia un lado y que vuelva» ----
   // Un vídeo grabado no puede hacerlo cuando se le pide, y las caras puestas con un programa suelen deformarse de perfil.
-  async function pruebaGiro() {
+  // ---- la prueba del gesto (dueño, 20:45): si el análisis sale raro (o si quien comprueba quiere), se le dice qué pedirle a la otra
+  // persona, paso a paso, y a ella también le sale en su pantalla: girar la cabeza a un lado, taparse la cara con la mano y girar al
+  // otro lado. Un vídeo grabado, una foto, un muñeco o un avatar no lo hacen cuando se les pide. Si no lo hace: posible falso.
+  const PASO_MS = 6500;
+  async function pruebaGesto(auto) {
     if (enMarcha || !previo || !previo._datos) return;
     const base = previo; enMarcha = true; cancelado = false; triangulos = null; const mia = ++vuelta;
     resultadoCaja.hidden = true; capa.classList.remove('con-resultado'); const caja = $('#comprobacion-estado'); caja.hidden = false; caja.classList.add('giro');
     vivo.textContent = ''; $('#comprobacion-avance').style.width = '0%';
-    const est = $('#comprobacion-estado-texto'), frase = tr('giroPide').replace('{w}', tresPalabras()); est.textContent = frase;
+    const est = $('#comprobacion-estado-texto');
     let fa; try { fa = await cargaFaceApi(); } catch (_) { enMarcha = false; resultado(base); return; }
     const telefono = matchMedia('(max-width: 760px)').matches;
     const opc = new fa.TinyFaceDetectorOptions({ inputSize: telefono ? 224 : 320, scoreThreshold: 0.35 });
     const a0s = base._datos.filter((d) => d.p).map((d) => afin(d.p)).filter(Boolean).map((x) => x[0]);
-    let a0 = a0s.length ? mediana(a0s) : null, maxD = 0, hecho = false, vistos = 0, total = 0;
-    const t0 = performance.now();
-    while (!cancelado && mia === vuelta && performance.now() - t0 < DUR_GIRO) {
-      let res = null; try { res = await fa.detectSingleFace(video, opc).withFaceLandmarks(); } catch (_) {}
-      if (cancelado || mia !== vuelta) break;
-      const t = performance.now() - t0, r = ajustaLienzo(), m = aPantalla(r);
-      const p = res ? res.landmarks.positions.map((q) => [q.x, q.y]) : null; total++;
-      let d = 0;
-      if (p) { vistos++; const ab = afin(p); if (ab) { if (a0 == null) a0 = ab[0]; d = ab[0] - a0; maxD = Math.max(maxD, Math.abs(d)); } }
-      if (maxD >= 0.15 && !hecho) { hecho = true; est.textContent = tr('giroHecho') + ' ' + frase.slice(frase.indexOf('«') >= 0 ? frase.indexOf('«') : frase.indexOf('“')); vibra(); }
-      dibuja(r, p ? p.map(([x, y]) => [m.ox + x * m.s, m.oy + y * m.s]) : null, Math.min(1, t / DUR_GIRO), t);
-      dibujaOnda(null, null, false, { d, hecho });
-      if (hecho && t > 6500 && Math.abs(d) < 0.05) break;
-      await new Promise((ok) => requestAnimationFrame(ok));
+    let a0 = a0s.length ? mediana(a0s) : null, signo = 0, hechos = 0;
+    const az = new Uint32Array(1); crypto.getRandomValues(az); const lado = az[0] & 1 ? 'izq' : 'der';
+    const pasos = [lado, 'mano', lado === 'izq' ? 'der' : 'izq'];
+    if (M && M.gesto) avisado = !!M.gesto('inicio', 0, 0);
+    for (let k = 0; k < pasos.length && !cancelado && mia === vuelta; k++) {
+      const q = pasos[k]; est.textContent = (auto && k === 0 ? tr('pide_aviso') + ' ' : '') + tr('pide_' + q);
+      try { if (M && M.gesto) M.gesto(q, k + 1, 3); } catch (_) {}
+      const t0 = performance.now(); let hecho = false, perdidas = 0, vista = false, d = 0;
+      while (!cancelado && mia === vuelta && performance.now() - t0 < PASO_MS && !hecho) {
+        let res = null; try { res = await fa.detectSingleFace(video, opc).withFaceLandmarks(); } catch (_) {}
+        if (cancelado || mia !== vuelta) break;
+        const t = performance.now() - t0, rr = ajustaLienzo(), m = aPantalla(rr);
+        const p = res ? res.landmarks.positions.map((x) => [x.x, x.y]) : null;
+        if (q === 'mano') { if (p) { vista = true; perdidas = 0; } else if (vista && ++perdidas >= 2) hecho = true; }
+        else if (p) {
+          const ab = afin(p);
+          if (ab) { if (a0 == null) a0 = ab[0]; d = ab[0] - a0; const s = Math.sign(d) * (q === 'izq' ? 1 : -1);
+            // el primer giro marca el lado (la imagen puede llegar en espejo); el último tiene que ir al lado contrario
+            if (Math.abs(d) >= 0.15) { if (!signo) { signo = s; hecho = true; } else if (s === signo) hecho = true; } }
+        }
+        dibuja(rr, p ? p.map(([x, y]) => [m.ox + x * m.s, m.oy + y * m.s]) : null, Math.min(1, (k + t / PASO_MS) / pasos.length), t);
+        dibujaOnda(null, null, false, q === 'mano' ? null : { d, hecho });
+        await new Promise((ok) => requestAnimationFrame(ok));
+      }
+      if (!hecho) break;
+      hechos++; vibra(); est.textContent = tr('pide_hecho'); await new Promise((ok) => setTimeout(ok, 700));
     }
+    avisaFin();
     if (cancelado || mia !== vuelta) return;
     enMarcha = false; caja.classList.remove('giro'); g.clearRect(0, 0, lienzo.width, lienzo.height);
-    const giro = { estado: hecho ? 'si' : 'no', max: maxD, vistos: total ? vistos / total : 0 };
+    const giro = { estado: hechos === pasos.length ? 'si' : 'no', hechos };
     const r = analiza(base._datos, Object.assign({}, base._extra, { giro }));
     r._datos = base._datos; r._extra = base._extra;
     resultado(r);
@@ -758,7 +782,7 @@
   $('#b-comprobar').addEventListener('click', comprueba);
   $('#comprobacion-cerrar').addEventListener('click', termina);
   $('#comprobacion-cancelar').addEventListener('click', termina);
-  $('#comprobacion-giro').addEventListener('click', pruebaGiro);
+  $('#comprobacion-giro').addEventListener('click', () => pruebaGesto(false));
   // la llamada termina: fuera
   if (M) M.on('llamada', (e) => { if (e.estado !== 'hablando' && e.estado !== 'reconectando' && !capa.hidden) termina(); });
   window.ElixireComprueba = {
