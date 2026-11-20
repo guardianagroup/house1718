@@ -1316,3 +1316,9 @@ html{overscroll-behavior-y:none}
 /* el destello de color de la prueba del gesto: su luz se refleja en una cara de verdad */
 .gesto-luz{position:fixed;inset:0;z-index:29;pointer-events:none;opacity:0;background:var(--c,#fff);transition:opacity .1s linear}
 .gesto-luz.on{opacity:1}
+/* la prueba de las palabras: quien comprueba confirma con un toque si las dijo */
+.pide-botones{position:absolute;z-index:60;left:50%;top:calc(env(safe-area-inset-top) + 150px);transform:translateX(-50%);display:flex;gap:12px;width:min(380px,calc(100% - 28px));justify-content:center}
+.pide-botones[hidden]{display:none}
+.pide-botones button{flex:1 1 0;height:50px;border-radius:999px;border:0;font:600 15px/1 var(--ui);cursor:pointer;box-shadow:0 14px 36px -14px rgba(0,0,0,.8)}
+.pide-botones .pide-si{background:#5CC98A;color:#05070A}
+.pide-botones .pide-no{background:#E07A6C;color:#05070A}

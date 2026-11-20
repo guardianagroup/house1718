@@ -431,6 +431,7 @@
       imagen,
     ];
     if (x.giro) senales.push({ k: 'giro', estado: x.giro.estado, v: tr(x.giro.estado === 'si' ? 'v_giroSi' : 'v_giroNo') });
+    if (x.palabras === 'si') senales.push({ k: 'palabras', estado: 'si', v: tr('v_palabrasSi') });
     if (x.reflejo && x.reflejo.estado === 'si') senales.push({ k: 'reflejo', estado: 'si', v: tr('v_reflejoSi') });
     if (x.cortes) senales.push({ k: 'cortes', estado: x.cortes >= 2 ? 'no' : 'aviso', v: tr('v_cortesNo') });
     const E = {}; for (const s of senales) E[s.k] = s.estado;
@@ -459,10 +460,10 @@
   // relieve 3D, el pulso y los labios con la voz, a favor. Es una estimación: nunca 0 ni 100.
   const PESOS = {
     camara: { si: 0.3, aviso: -1.0, no: -4.5 }, directo: { si: 0.2, no: -5 }, parpadeo: { si: 0.9, nd: -0.3 }, movimiento: { si: 0.3, nd: -0.2 }, forma: { si: 1.0, no: -3.0 },
-    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 }, reflejo: { si: 1.0 },
+    relieve: { si: 0.8, no: -2.5 }, pulso: { si: 1.0 }, labios: { si: 0.9, no: -3.5 }, voz: { aviso: -0.4 }, imagen: { aviso: -0.3 }, giro: { si: 2.0, no: -1.5 }, cortes: { aviso: -2.0, no: -3.5 }, reflejo: { si: 1.0 }, palabras: { si: 1.0 },
   };
   // lo que se ve en la cara pesa según cuántas imágenes con cara hubo (con pocas, el resultado se queda cerca del 50 %)
-  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes', 'reflejo']);
+  const FIJAS = new Set(['camara', 'directo', 'giro', 'cortes', 'reflejo', 'palabras']);
   function probabilidad(r) {
     // dueño (20:51): si detecta una foto, 0 %. Muy quieta sin más (puede ser alguien muy quieto) pasa a la prueba del gesto; si
     // tampoco la hace, es una foto: 0 %
@@ -738,6 +739,16 @@
   // persona, paso a paso, y a ella también le sale en su pantalla: girar la cabeza a un lado, taparse la cara con la mano y girar al
   // otro lado. Un vídeo grabado, una foto, un muñeco o un avatar no lo hacen cuando se les pide. Si no lo hace: posible falso.
   const PASO_MS = 6500;
+  function preguntaDijo(mia) {
+    return new Promise((ok) => {
+      let pb = capa.querySelector('.pide-botones');
+      if (!pb) { pb = document.createElement('div'); pb.className = 'pide-botones'; for (const c of ['pide-si', 'pide-no']) { const b = document.createElement('button'); b.type = 'button'; b.className = c; pb.append(b); } capa.append(pb); }
+      const [si, no] = pb.querySelectorAll('button'); si.textContent = tr('pide_dijoSi'); no.textContent = tr('pide_dijoNo'); pb.hidden = false;
+      let t = null, vig = null; const fin = (v) => { clearTimeout(t); clearInterval(vig); pb.hidden = true; si.onclick = no.onclick = null; ok(v); };
+      si.onclick = () => fin('si'); no.onclick = () => fin('no');
+      t = setTimeout(() => fin('nd'), 25000); vig = setInterval(() => { if (cancelado || mia !== vuelta) fin('nd'); }, 300);
+    });
+  }
   async function pruebaGesto(auto) {
     if (enMarcha || !previo || !previo._datos) return;
     const base = previo; enMarcha = true; cancelado = false; triangulos = null; const mia = ++vuelta;
@@ -796,11 +807,19 @@
       if (!hecho) break;
       hechos++; vibra(); est.textContent = tr('pide_hecho'); await new Promise((ok) => setTimeout(ok, 700));
     }
+    // tres palabras al azar (dueño, 20:55: «alguna más»): un vídeo grabado no puede decirlas, y a un avatar le cuesta hacerlo en el
+    // momento. Quien comprueba las oye y lo confirma con un toque.
+    let palabras = 'nd';
+    if (hechos === pasos.length && !cancelado && mia === vuelta) {
+      const w = tresPalabras(); est.textContent = tr('pide_voz').replace('{w}', w);
+      try { if (M && M.gesto) M.gesto('voz', 0, 0, w); } catch (_) {}
+      palabras = await preguntaDijo(mia);
+    }
     avisaFin();
     if (cancelado || mia !== vuelta) return;
     enMarcha = false; caja.classList.remove('giro'); g.clearRect(0, 0, lienzo.width, lienzo.height);
-    const giro = { estado: hechos === pasos.length ? 'si' : 'no', hechos };
-    const r = analiza(base._datos, Object.assign({}, base._extra, { giro, reflejo }));
+    const giro = { estado: hechos === pasos.length && palabras !== 'no' ? 'si' : 'no', hechos, palabras };
+    const r = analiza(base._datos, Object.assign({}, base._extra, { giro, reflejo, palabras }));
     if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.__gesto = { giro, reflejo, muestras: col.length };
     r._datos = base._datos; r._extra = base._extra;
     resultado(r);
