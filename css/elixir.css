@@ -1457,3 +1457,39 @@ html body .sala .controles .seg#b-comprobar,html body #b-comprobar{display:none!
 @media (max-width:360px){.cristal.grande.vivo{padding:0 14px 0 62px}.cristal.grande.vivo>span{letter-spacing:.05em}}
 @media (min-width:761px){.cristal.grande.vivo{height:60px;padding:0 36px 0 70px}.cristal.grande.vivo>span{font-size:14px}}
 @media (prefers-reduced-motion:reduce){.cristal.grande.vivo{animation:none}}
+/* ---------- la portada sin tapar el holograma (dueño, 22 nov: «en la versión pc el botón empezar prueba tapa la parte inferior del
+   holograma»): la sala sube un poco (js/sala3d.js) y el botón baja, por debajo de la base del proyector; debajo, la flecha de bajar ---------- */
+.consola{bottom:max(1.2vh,8px);gap:8px}
+@media (max-width:760px){.consola{bottom:calc(env(safe-area-inset-bottom) + 2px);gap:0}}
+@media (max-width:760px) and (display-mode:standalone){.consola{bottom:max(env(safe-area-inset-bottom),6px)}}
+/* la flecha de bajar (dueño, 22 nov: «añade una flecha de diseño profesional para que la persona sepa que debe deslizar hacia abajo»):
+   un hilo de luz con su punta; una gota de luz baja por él sin parar. Va debajo del botón y se apaga con él al bajar o en la llamada */
+.flecha-bajar{position:relative;z-index:3;display:grid;place-items:center;width:48px;height:52px;flex:none;color:#CFE2F3;text-decoration:none;opacity:.92;
+  transition:opacity .5s ease;-webkit-tap-highlight-color:transparent}
+.flecha-bajar svg{width:24px;height:42px;overflow:visible;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(156,195,228,.55))}
+.flecha-bajar .fb-linea{stroke:rgba(207,226,243,.36);stroke-width:1.2}
+.flecha-bajar .fb-gota{stroke:#F4F6F8;stroke-width:1.6;stroke-dasharray:7 40;stroke-dashoffset:7;animation:gotaBaja 2.4s cubic-bezier(.55,0,.35,1) infinite}
+.flecha-bajar .fb-punta{stroke:#F4F6F8;stroke-width:1.6;animation:puntaLate 2.4s cubic-bezier(.55,0,.35,1) infinite}
+.flecha-bajar:hover .fb-linea,.flecha-bajar:focus-visible .fb-linea{stroke:rgba(207,226,243,.6)}
+.flecha-bajar:focus-visible{outline:1px solid rgba(207,226,243,.5);outline-offset:2px;border-radius:12px}
+@keyframes gotaBaja{0%{stroke-dashoffset:7;opacity:0}12%{opacity:1}70%{stroke-dashoffset:-26;opacity:1}100%{stroke-dashoffset:-26;opacity:0}}
+@keyframes puntaLate{0%,58%{transform:translateY(0);opacity:.85}72%{transform:translateY(3px);opacity:1}100%{transform:translateY(0);opacity:.85}}
+.bajado .flecha-bajar,.en-sala .flecha-bajar{opacity:0;pointer-events:none}
+@media (max-width:760px){.flecha-bajar{height:44px}.flecha-bajar svg{height:32px}}
+@media (prefers-reduced-motion:reduce){.flecha-bajar .fb-gota,.flecha-bajar .fb-punta{animation:none}.flecha-bajar .fb-gota{opacity:0}}
+/* ---------- qué hacemos, por qué y con qué tecnología, en tres segundos (dueño, 22 nov: «la persona o empresa debe entender en 3
+   segundos qué hacemos, por qué y qué tecnología novedosa aplicamos») ---------- */
+.tres{max-width:1240px;margin:0 auto;padding:clamp(72px,11vh,132px) var(--margen) clamp(24px,5vh,56px);text-align:center}
+.seccion.tres{display:block}
+.seccion.tres>h2.tres-titulo{margin:0 auto clamp(32px,5.5vh,60px);max-width:22ch;font:300 clamp(32px,3.7vw,58px)/1.08 var(--display);letter-spacing:-.02em;color:#F4F6F8;text-wrap:balance}
+.tres-titulo em{font-style:normal}
+.tres-cols{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,1.6vw,24px);text-align:left;counter-reset:tres}
+.tres-cols li{position:relative;display:flex;flex-direction:column;gap:12px;padding:clamp(24px,2.4vw,34px);border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.tres-ico{display:grid;place-items:center;width:48px;height:48px;margin-bottom:6px;border-radius:50%;border:1px solid rgba(156,195,228,.38);background:rgba(156,195,228,.07);color:#CFE2F3}
+.tres-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tres-et{font:500 12px/1.2 var(--ui);letter-spacing:.22em;color:#9CC3E4;text-transform:uppercase}
+.tres-cols b{font:500 clamp(20px,1.6vw,24px)/1.28 var(--ui);letter-spacing:-.01em;color:#F4F6F8;text-wrap:balance}
+.tres-cols p{margin:0;font:400 clamp(16px,1.15vw,18px)/1.5 var(--ui);color:#C9D6E3;text-wrap:pretty}
+@media (max-width:860px){.tres-cols{grid-template-columns:1fr}.tres-cols li{display:grid;grid-template-columns:48px 1fr;column-gap:16px;row-gap:8px;align-items:start}
+  .tres-ico{grid-row:1/4;margin:0}.seccion.tres>h2.tres-titulo{max-width:16ch}}

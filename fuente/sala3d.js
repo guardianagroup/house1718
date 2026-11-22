@@ -555,13 +555,15 @@ function arranca() {
     camara.aspect = w / h;
     // en pantallas estrechas, más ángulo para que quepa la sala; en las muy anchas, algo menos
     // (dueño, 15:42: «así se verá más grande e impresionante en el PC»: en el ordenador, menos ángulo: la roca, más grande)
-    camara.fov = camara.aspect < 0.8 ? 48 : camara.aspect < 1.2 ? 46 : camara.aspect > 2.1 ? 33 : 38;
+    camara.fov = camara.aspect < 0.8 ? 48 : camara.aspect < 1.2 ? 46 : camara.aspect > 2.1 ? 38 : 40;
     // en el móvil de pie (dueño, 15:41: «arriba queda mucho espacio, aprovéchalo»): la roca, más grande y más arriba (la imagen se
     // desplaza como con un objetivo descentrable, sin deformar), y abajo el suelo espejo y el botón; al abrir, se acerca menos
     retrato = camara.aspect < 0.8;
     // y más cerca: el holograma, a pantalla completa (dueño, 16:05)
     CAM.z = retrato ? 4.2 : 4.7;
-    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.095 : 0.02)), w, h);
+    // (dueño, 22 nov: «en la versión pc el botón tapa la parte inferior del holograma»): la sala, algo más arriba, para que el botón
+    // y la flecha de bajar queden debajo de la base del proyector
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.115 : 0.1)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;
