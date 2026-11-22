@@ -28,8 +28,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261122-01" integrity="sha384-wqFzGbq/1dYo8GqEegmkhCX83CVBfFcfO5kS/1rnPROHIHoCjvdIVqJlBNvubeCM">
-<script src="js/idioma-inicio.js?v=20261122-01" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261122-02" integrity="sha384-sp/u7m41E8i2DGUfcGw0/q7v9/E+XgXrE7GTrel15RYiouO/PldtORjbuLYU2lYJ">
+<script src="js/idioma-inicio.js?v=20261122-02" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -51,7 +51,7 @@
 <div class="monolito-css" id="monolito-css" aria-hidden="true"><span class="mitad izq"></span><span class="mitad der"></span><span class="nucleo"></span></div>
 
 <div class="consola" id="consola">
-<button type="button" class="cristal grande vivo" id="empezar"><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button>
+<button type="button" class="cristal grande vivo" id="empezar"><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span data-t="invitar">Invitar a una llamada</span></button>
 <a class="flecha-bajar" href="#que" aria-label="Desliza hacia abajo" data-t-aria="bajarAria"><svg viewBox="0 0 24 40" aria-hidden="true"><path class="fb-linea" d="M12 3v29"/><path class="fb-gota" d="M12 3v29"/><path class="fb-punta" d="M5.5 25.5 12 32l6.5-6.5"/></svg></a>
 </div>
 
@@ -68,9 +68,11 @@
 <div class="espera-llamada" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
 <b class="llamando" aria-live="polite"><span data-t="llamandoT">Llamando</span><i></i><i></i><i></i></b>
 <p class="codigo-grande" id="codigo">···· ···· ···· ····</p>
-<p class="texto-panel"><span class="t-pc" data-t="daselo">Envíaselo a la otra persona. Caduca en 10 minutos y sirve una sola vez.</span><span class="t-movil" data-t="invitacionTexto">Envíala por WhatsApp. Cuando la otra persona la abra, la videollamada empezará sola. Caduca en 10 minutos.</span></p>
+<p class="texto-panel"><span class="t-pc" data-t="daselo">Envíaselo a la otra persona. Caduca en 10 minutos y sirve una sola vez.</span><span class="t-movil" data-t="invitacionTexto">Envíala por WhatsApp. Cuando la otra persona la abra, la videollamada empezará sola. Caduca en 10 minutos.</span><span class="t-invita" data-t="invitacionTextoPC">Envíala por WhatsApp o por correo, o copia el enlace. Cuando la otra persona la abra, la videollamada empezará sola. Caduca en 10 minutos.</span></p>
+<div class="compartir-pc" role="group" aria-label="Enviar la invitación" data-t-aria="enviarInvitacionAria"><a class="cp-boton" id="enviar-wa" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.6 19.4 5.7 16A8 8 0 1 1 8.4 18.6Z"/><path d="M9.2 8.6c.3-.6.9-.6 1.1-.1l.6 1.4c.1.3 0 .6-.2.8l-.4.4c.5 1.1 1.4 2 2.5 2.5l.4-.4c.2-.2.5-.3.8-.2l1.4.6c.5.2.5.8-.1 1.1-1.6 1-5.2-.9-6.1-4.1"/></svg><span data-t="cpWhatsApp">WhatsApp</span></a><a class="cp-boton" id="enviar-correo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="5.5" width="17.6" height="13" rx="2.4"/><path d="m4 7.2 8 5.8 8-5.8"/></svg><span data-t="cpCorreo">Correo</span></a><button type="button" class="cp-boton" id="copiar-enlace"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.2 13.8a3.6 3.6 0 0 0 5.1 0l3-3a3.6 3.6 0 0 0-5.1-5.1l-1 1"/><path d="M13.8 10.2a3.6 3.6 0 0 0-5.1 0l-3 3a3.6 3.6 0 0 0 5.1 5.1l1-1"/></svg><span data-t="cpCopiar">Copiar enlace</span></button></div>
 <div class="estado" role="status"><span class="punto" aria-hidden="true"></span><span id="estado-crear" data-t="esperando">Esperando a la otra persona</span></div>
 <button type="button" class="cristal pequeno" id="cancelar-invitacion" data-volver-elige><span data-t="cancelar">Cancelar</span></button>
+<button type="button" class="enlace-codigo" id="tengo-pc"><span data-t="tengoCodigoPC">¿Te han dado un código? Entra aquí</span></button>
 <a class="cristal ancho" id="whatsapp" target="_blank" rel="noopener noreferrer" aria-disabled="true"><span class="t-pc" data-t="whatsapp">Enviar por WhatsApp</span><span class="t-movil" data-t="enviarInvitacion">Enviar la invitación</span></a>
 <div class="par ancho" role="group"><button type="button" class="seg" id="copiar"><span data-t="copiar">Copiar el código</span></button><button type="button" class="seg" data-volver-elige data-t="volver">Volver</button></div>
 </section>
@@ -248,7 +250,7 @@
 <span class="etiqueta" data-t="accesoEtiqueta">ACCESO</span>
 <h2 id="h-acceso" data-t="e9Titulo">Si importa, <em class="c-ambar">hablad aquí</em>.</h2>
 <p class="intro" data-t="e9Texto">Para una junta, una operación, un contrato o una conversación personal que no debe salir de ahí. Servicio de pago para particulares, despachos, clínicas y empresas. Durante la fase de pruebas, sin límite.</p>
-<button type="button" class="cristal grande vivo" data-empezar><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span class="t-pc" data-t="empezar">Empezar prueba</span><span class="t-movil" data-t="invitar">Invitar a una llamada</span></button> <p class="ventas"><span data-t="ventasTexto">¿Para tu empresa o tu despacho?</span><a href="mailto:hola@guardianagroup.com?subject=Elixire%20para%20empresas" data-t="ventasEnlace">Hablar con ventas</a></p>
+<button type="button" class="cristal grande vivo" data-empezar><svg class="ico-boton" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="6.3" width="13" height="11.4" rx="2.6"/><path d="M15.8 10.4 21.2 7.4v9.2l-5.4-3"/></svg><span data-t="invitar">Invitar a una llamada</span></button> <p class="ventas"><span data-t="ventasTexto">¿Para tu empresa o tu despacho?</span><a href="mailto:hola@guardianagroup.com?subject=Elixire%20para%20empresas" data-t="ventasEnlace">Hablar con ventas</a></p>
 </section>
 </main>
 
@@ -376,20 +378,21 @@
 </div>
 </div>
 
-<script src="js/luz.js?v=20261122-01" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
-<script src="js/idioma.js?v=20261122-01" integrity="sha384-9Pbz8C33hF9AUmIs366Q7QXO5OmNOrK3cGJtyOGbDGF7WjI6e1VVprSI5suSz6tk"></script>
-<script src="js/pq-cnsa.js?v=20261122-01" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261122-01" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261122-01" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261122-01" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261122-01" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261122-01" integrity="sha384-hTFQknHiLXYS4G6UeqtvnWV1yPVDI4tWd9pip9wLEcSyI8Z5VXtTnocdS+LnEqPs"></script>
-<script type="module" src="js/sala3d.js?v=20261122-01" integrity="sha384-YIygH6NEQuaICS7LvWgNf1wr66mpzfWK1dOKCw/3pgX5Ve4BfvjPeRNeCORPmV2o"></script>
-<script src="js/holo.js?v=20261122-01" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
-<script src="js/puerta.js?v=20261122-01" integrity="sha384-axmIAiq+dlDelVAL3hTHz+HQpXMWFCrzjllAOK8r0zblpDrqEWzTaCuWuvi3MzuB"></script>
-<script src="js/comprueba.js?v=20261122-01" integrity="sha384-Lwio08S0Spu9doD4F7cv/TZv0kyTT1j10n9iWh6Wfl5TNY/gnFWyNSOTUGtuxw7U"></script>
-<script src="js/escenas.js?v=20261122-01" integrity="sha384-LwEtf5wmUd4TmLE3QxKIO61kDAIHMjAapBAwJ8bGwCr0BO5d5NYbGce2PVtBm7u4"></script>
-<script src="js/sala.js?v=20261122-01" integrity="sha384-tTpl8rUfe8cI0hnjg/cHAIxwvsaxSL9qfjx4CZOfJzJSSs1RNkfYlnA/k9IH0fuG"></script>
+<script src="js/luz.js?v=20261122-02" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
+<script src="js/idioma.js?v=20261122-02" integrity="sha384-Dt5xTZgk+3//ka3M3M89oEmvES57HZ91k7BCjv3Qq/u4S/DQIKDkMGUN5+OF71zv"></script>
+<script src="js/pq-cnsa.js?v=20261122-02" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261122-02" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261122-02" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261122-02" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261122-02" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261122-02" integrity="sha384-NBZjnBVk59VRH8M38Ne9o253qQipJ2PkRd7OeyKtYbDJxdCKx7+/aSnGfNzHbwo4"></script>
+<script type="module" src="js/sala3d.js?v=20261122-02" integrity="sha384-HMk2zHk9nlDZh8VhQhEqyKo/GRbP/5vDRdHy8ozuFDSyf5DYQWFCsalvUMvBiT7R"></script>
+<script src="js/holo.js?v=20261122-02" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+<script src="js/puerta.js?v=20261122-02" integrity="sha384-9UaGYNZveCVr5vaFtr9yF4XTDl+oxVtF2DzT2wmNlJe907mSTfdBZPC9ptHWwsIz"></script>
+<script src="js/comprueba.js?v=20261122-02" integrity="sha384-Lwio08S0Spu9doD4F7cv/TZv0kyTT1j10n9iWh6Wfl5TNY/gnFWyNSOTUGtuxw7U"></script>
+<script src="js/vigia.js?v=20261122-02" integrity="sha384-sts/cF4uZPUysvFBr8RbN1yjaYdO3Imr2cB/pYm6v5iulAcrZtHDXAMCP4pWbI+U"></script>
+<script src="js/escenas.js?v=20261122-02" integrity="sha384-LwEtf5wmUd4TmLE3QxKIO61kDAIHMjAapBAwJ8bGwCr0BO5d5NYbGce2PVtBm7u4"></script>
+<script src="js/sala.js?v=20261122-02" integrity="sha384-UFYgbKwPJz5RB0o8hFhYsMxHdvxZjII5iAF4lnZnui+xNS7C/9L7pJhWWKszZ1p7"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
 </body>
 </html>

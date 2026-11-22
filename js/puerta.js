@@ -81,7 +81,7 @@
     if (ocupado || !abierta) return; ocupado = true; suena(false);
     try {
       if (M && M.activa) M.termina('cancela');
-      ocultaPaneles(); abierta = null;
+      ocultaPaneles(); abierta = null; $('#panel-crear').classList.remove('invita');
       await espera(quieto ? 0 : 300);
       if (window.Sala3D) { const fin = window.Sala3D.cierra(); setTimeout(() => $('#consola').classList.remove('fuera'), quieto ? 0 : 1300); await fin; }
       else { $('#monolito-css').classList.remove('abierto'); await espera(quieto ? 0 : 900); $('#consola').classList.remove('fuera'); }
@@ -89,15 +89,16 @@
       $('#empezar').focus({ preventScroll: true });
     } finally { ocupado = false; }
   }
-  // en el móvil, el botón de la portada es «Invitar a una llamada» (abajo, invitaMovil); en el ordenador, «Empezar prueba»
-  const empieza = () => (enMovil() ? invitaMovil() : abre());
+  // «Invitar a una llamada» en el móvil (invitaMovil: el menú «Compartir») y en el ordenador (invitaPC: WhatsApp, correo o copiar el
+  // enlace). Dueño, 22 nov: «en la versión del PC… pon también invitar a una llamada… como lo tenemos en la versión móvil»
+  const empieza = () => (enMovil() ? invitaMovil() : invitaPC());
   $('#empezar').addEventListener('click', empieza);
   for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', empieza);
   for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', () => { olvidaInvitacion(); cierra(); });
   // «Cancelar» y «Volver»: en el móvil, a la portada (no hay más pasos); en el ordenador, a elegir
   for (const b of document.querySelectorAll('[data-volver-elige]')) b.addEventListener('click', () => {
     if (M && M.activa) M.termina('cancela'); paraReloj(); olvidaInvitacion();
-    if (enMovil()) { cierra(); return; }
+    if (enMovil() || $('#panel-crear').classList.contains('invita')) { cierra(); return; }
     ponError('elige', ''); muestra('elige');
   });
 
@@ -114,6 +115,7 @@
   $('#crear').addEventListener('click', async () => {
     if (!M) return;
     if (enMovil()) return invitaMovil();
+    $('#panel-crear').classList.remove('invita');
     invitoLlamada = false; olvidaInvitacion(); window.Elixire.contestaSola = false; window.Elixire.llamaAlEntrar = false;
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
     $('#copiar').disabled = false; ponWhatsApp(null); $('#panel-crear').classList.remove('enviada');
@@ -180,6 +182,43 @@
     const ok = await compartida;
     if (abierta === 'crear' && invitacion) ponEnviada(ok);
   }
+  // En el ordenador, la invitación sale ya lista, sin códigos: WhatsApp (web o escritorio), el correo o copiar el enlace para pegarlo
+  // donde se quiera. Al usar cualquiera, «Invitación enviada» y a esperar; cuando la otra persona la abre, la llamada empieza sola.
+  function enlaceDe(texto) { const m = /https?:\/\/\S+/.exec(texto || ''); return m ? m[0] : ''; }
+  function ponEnlacesPC(texto) {
+    const enlace = enlaceDe(texto), limpio = String(texto || '').replace(/\*/g, '');
+    $('#enviar-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+    $('#enviar-correo').href = 'mailto:?subject=' + encodeURIComponent(tr('correoAsunto')) + '&body=' + encodeURIComponent(tr('correoCuerpo').replace('{enlace}', enlace).replace('{texto}', limpio));
+    $('#copiar-enlace').dataset.enlace = enlace;
+  }
+  async function invitaPC() {
+    if (!M || ocupado || (abierta && abierta !== 'elige')) return;
+    if (window.ElixireTonos) window.ElixireTonos.prepara();
+    const semilla = crypto.getRandomValues(new Uint8Array(32));
+    invitacion = { s: b64u(semilla), t0: Date.now() }; guardaInvitacion();
+    const texto = textoInvitacion(invitacion.s);
+    const p = $('#panel-crear'); p.classList.add('invita'); p.classList.remove('enviada');
+    const c = $('#copiar-enlace span'); c.dataset.t = 'cpCopiar'; c.textContent = tr('cpCopiar');
+    ponEnlacesPC(texto);
+    await abreInvitacion(semilla, texto, false, false);
+  }
+  const enviadaPC = (ms) => setTimeout(() => { if (abierta === 'crear' && invitacion && $('#panel-crear').classList.contains('invita')) ponEnviada(true); }, ms);
+  $('#enviar-wa').addEventListener('click', () => enviadaPC(700));
+  $('#enviar-correo').addEventListener('click', () => enviadaPC(700));
+  $('#copiar-enlace').addEventListener('click', async (e) => {
+    const b = e.currentTarget, s = b.querySelector('span'), enlace = b.dataset.enlace; if (!enlace) return;
+    let ok = false; try { await navigator.clipboard.writeText(enlace); ok = true; } catch (_) {}
+    if (!ok) { try { const t = document.createElement('textarea'); t.value = enlace; t.setAttribute('readonly', ''); t.className = 'fuera-de-vista'; document.body.append(t); t.select(); ok = document.execCommand('copy'); t.remove(); } catch (_) {} }
+    if (!ok) return;
+    s.dataset.t = 'enlaceCopiado'; s.textContent = tr('enlaceCopiado'); b.classList.add('hecho');
+    setTimeout(() => { s.dataset.t = 'cpCopiar'; s.textContent = tr('cpCopiar'); b.classList.remove('hecho'); }, 2200);
+    enviadaPC(1400);
+  });
+  // «¿Te han dado un código?»: se deja la invitación y se va a escribir el código
+  $('#tengo-pc').addEventListener('click', () => {
+    if (M && M.activa) M.termina('cancela'); paraReloj(); olvidaInvitacion(); suena(false);
+    $('#panel-crear').classList.remove('invita', 'enviada'); $('#tengo').click();
+  });
   async function abreInvitacion(semilla, texto, retomada, sinPanel) {
     if (!M || ocupado || (abierta && abierta !== 'elige')) return;
     ocupado = true;
@@ -232,7 +271,7 @@
     e.preventDefault();
     navigator.share({ text: a.dataset.texto }).then(enviada).catch((x) => { if (!x || x.name !== 'AbortError') { try { window.open(a.href, '_blank', 'noopener'); } catch (_) {} setTimeout(enviada, 600); } });
   });
-  document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); else if (invitacion && abierta === 'crear') ponEnlaceWa(textoInvitacion(invitacion.s)); });
+  document.addEventListener('elixire-idioma', () => { const a = $('#whatsapp'); if (a.dataset.codigo) ponWhatsApp(a.dataset.codigo); else if (invitacion && abierta === 'crear') { ponEnlaceWa(textoInvitacion(invitacion.s)); ponEnlacesPC(textoInvitacion(invitacion.s)); } });
   $('#copiar').addEventListener('click', async () => {
     const c = $('#codigo').dataset.codigo; if (!c) return;
     const s = $('#copiar span');

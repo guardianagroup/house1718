@@ -302,7 +302,7 @@
   }
   function cierraChat() {
     if (!enChat) return;
-    enChat = false; paraNota(false); menuEnviar.hidden = true;
+    enChat = false; paraNota(false); menuEnviar.hidden = true; if (enMarchaBotones) muestraBotones();
     if (document.activeElement === texto) texto.blur();
     sala.classList.remove('en-chat', 'teclado'); sala.style.removeProperty('--vv-h'); sala.style.removeProperty('--vv-top');
   }
@@ -575,6 +575,23 @@
   $('#b-chat').addEventListener('click', () => abreChat());
   const mmss = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(q / 60) + ':' + String(q % 60).padStart(2, '0'); };
   function rotuloLlamar(k) { const s = $('#llamar span'); s.dataset.t = k; s.textContent = tr(k); }
+  // La botonería se esconde sola en la videollamada del móvil (dueño, 22 nov 17:00: «cuando llevamos hablando 2 o 3 segundos, quiero
+  // que se minimice la botonería… cuando toques la pantalla, aparezcan los botones, y cuando toques otra vez, se minimicen solos o yo
+  // los quite tocando… si no, estoy viendo todo el tiempo los botones y eso mete mucho ruido»). Un toque en el vídeo los saca (y se
+  // vuelven a esconder a los 4 s); otro toque, fuera. Mientras se usan (un botón, el menú de enviar o el chat), no se esconden.
+  let tBotones = 0, enMarchaBotones = false;
+  const escondeBotones = () => { clearTimeout(tBotones); if (enMarchaBotones && movil.matches && !enChat && menuEnviar.hidden) sala.classList.add('sin-botones'); };
+  const muestraBotones = (ms) => { sala.classList.remove('sin-botones'); clearTimeout(tBotones); if (enMarchaBotones) tBotones = setTimeout(escondeBotones, ms || 4000); };
+  function botonesSolos(si) {
+    if (si && !enMarchaBotones && !/[?&]botones=fijos\b/.test(location.search)) { enMarchaBotones = true; muestraBotones(3000); } // (fijos: solo en pruebas)
+    else if (!si && enMarchaBotones) { enMarchaBotones = false; clearTimeout(tBotones); sala.classList.remove('sin-botones'); }
+  }
+  $('#escena-video').addEventListener('click', (e) => {
+    if (!enMarchaBotones || !movil.matches) return;
+    if (e.target.closest('#controles, #video-mio, .video-mio, .vigia-aviso, .avisos-llamada, #chat, #menu-enviar, .menu-enviar, #video-reto, button, a, input, textarea, label')) return;
+    if (sala.classList.contains('sin-botones')) muestraBotones(); else escondeBotones();
+  });
+  $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(5000); });
   function pintaLlamada(e) {
     const velo = $('#video-velo'), boton = $('#llamar'), ent = $('#entrante'), txt = $('#video-texto'), ctl = $('#controles');
     const vs = $('#video-suyo'), vm = $('#video-mio');
@@ -596,6 +613,7 @@
     $('#video-reconecta').hidden = e.estado !== 'reconectando';
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
+    botonesSolos(e.estado === 'hablando');
     ent.hidden = e.estado !== 'entrante';
     const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
     boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (m && e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);

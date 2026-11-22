@@ -1069,9 +1069,19 @@
     return { ok: true };
   }
 
+  // El nivel de la voz que llega (0–1), para la vigilancia de la cara (js/vigia.js): lo da el propio receptor de audio, sin tocar
+  // el sonido ni abrir otro contexto de audio. Sin paquetes en el último segundo (micro apagado, silencio): 0.
+  function nivelVoz() {
+    try {
+      const r = L && L.pc && L.pc.getReceivers().find((x) => x.track && x.track.kind === 'audio');
+      const f = r && r.getSynchronizationSources ? r.getSynchronizationSources() : [];
+      if (!f.length) return null;
+      const u = f[0]; return performance.now() - (u.timestamp || 0) > 1000 && u.timestamp < 1e12 ? 0 : (u.audioLevel || 0);
+    } catch (_) { return null; }
+  }
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, gesto, fuente, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
