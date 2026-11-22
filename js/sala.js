@@ -504,12 +504,26 @@
   });
   // la cámara propia, donde se quiera (dueño, 15:53: «que podamos mover la cámara donde queramos»): se arrastra con el dedo
   {
-    const vm = $('#video-mio'); let d = null;
+    // (dueño, 22 nov 17:56: «va como a tirones… que vaya más fluido»): durante el arrastre solo cambia un transform, una vez por
+    // fotograma, y la vigilancia de la cara se para (comparte hilo con el dedo); al soltar, la posición queda fija
+    const vm = $('#video-mio'); let d = null, raf = 0, px = 0, py = 0;
     const ponEn = (x, y) => { vm.style.setProperty('left', x + 'px', 'important'); vm.style.setProperty('top', y + 'px', 'important'); vm.style.setProperty('right', 'auto', 'important'); vm.style.setProperty('bottom', 'auto', 'important'); };
-    vm.addEventListener('pointerdown', (e) => { if (!movil.matches) return; const r = vm.getBoundingClientRect(); d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height }; try { vm.setPointerCapture(e.pointerId); } catch (_) {} vm.classList.add('moviendo'); e.preventDefault(); });
-    vm.addEventListener('pointermove', (e) => { if (!d || e.pointerId !== d.id) return; ponEn(Math.round(Math.max(8, Math.min(innerWidth - d.w - 8, e.clientX - d.dx))), Math.round(Math.max(8, Math.min(innerHeight - d.h - 8, e.clientY - d.dy)))); });
-    const suelta = (e) => { if (!d || e.pointerId !== d.id) return; d = null; vm.classList.remove('moviendo'); };
-    vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta);
+    const vigia = (si) => { try { if (window.ElixireVigia && window.ElixireVigia.pausa) window.ElixireVigia.pausa(si); } catch (_) {} };
+    const pinta = () => { raf = 0; if (d) vm.style.setProperty('transform', 'translate3d(' + (px - d.x0) + 'px,' + (py - d.y0) + 'px,0)' + (vm.classList.contains('trasera') ? '' : ' scaleX(-1)'), 'important'); };
+    vm.addEventListener('pointerdown', (e) => {
+      if (!movil.matches) return;
+      const r = vm.getBoundingClientRect(), x0 = Math.round(r.left), y0 = Math.round(r.top);
+      ponEn(x0, y0); d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height, x0, y0 }; px = x0; py = y0;
+      try { vm.setPointerCapture(e.pointerId); } catch (_) {}
+      vm.classList.add('moviendo'); vigia(true); e.preventDefault();
+    });
+    vm.addEventListener('pointermove', (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      px = Math.round(Math.max(8, Math.min(innerWidth - d.w - 8, e.clientX - d.dx))); py = Math.round(Math.max(8, Math.min(innerHeight - d.h - 8, e.clientY - d.dy)));
+      if (!raf) raf = requestAnimationFrame(pinta);
+    });
+    const suelta = (e) => { if (!d || e.pointerId !== d.id) return; cancelAnimationFrame(raf); raf = 0; ponEn(px, py); vm.style.removeProperty('transform'); d = null; vm.classList.remove('moviendo'); vigia(false); };
+    vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta); vm.addEventListener('lostpointercapture', suelta);
   }
   $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
   // Arriba, cómo va la llamada (dueño, 16:44): «Encriptado poscuántico de extremo a extremo» solo cuando la capa ya está descifrando

@@ -463,8 +463,12 @@
   // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)
   if (window.visualViewport) {
     const vv = window.visualViewport;
-    const teclado = () => raiz.style.setProperty('--teclado', Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop)) + 'px');
-    vv.addEventListener('resize', teclado); vv.addEventListener('scroll', teclado); teclado();
+    // (dueño, 22 nov 17:56: «el cuadro de llamando se ve como muy arriba»): al volver de WhatsApp, Safari puede dejar un desfase sin
+    // teclado; ahora solo cuenta si hay un campo de texto con el foco y el hueco es de teclado (más de 100 px)
+    const campo = () => { const a = document.activeElement; return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable); };
+    const teclado = () => { const k = Math.round(innerHeight - vv.height - vv.offsetTop); raiz.style.setProperty('--teclado', (campo() && k > 100 ? k : 0) + 'px'); };
+    vv.addEventListener('resize', teclado); vv.addEventListener('scroll', teclado);
+    document.addEventListener('focusin', teclado); document.addEventListener('focusout', () => setTimeout(teclado, 80)); document.addEventListener('visibilitychange', teclado); teclado();
   }
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta && abierta !== 'sala') cierra(); });

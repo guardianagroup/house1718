@@ -151,16 +151,16 @@
       if (cf && S.prevCaraF) { S.quietas.push({ t, q: mad(cf, S.prevCaraF) < 0.45 ? 1 : 0 }); corta(S.quietas, t, 12000); }
       S.prevCaraF = cf;
       // la piel, para el pulso: frente y mejillas
-      if (cara.piel) { const z = cara.piel.map(([x, y, r]) => colorZona(x, y, r)); if (z.every(Boolean)) { S.piel.push({ t, z }); corta(S.piel, t, 12000); } }
+      if (cara.piel) { const z = cara.piel.map(([x, y, r]) => colorZona(x, y, r)); if (z.every(Boolean)) { S.piel.push({ t, z, f: t - cara.t < 450 }); corta(S.piel, t, 12000); } }
     } else { S.prevCaraF = null; if (!S.ultima) S.quietas.length = 0; }
     // la voz que llega
     const nv = M.nivelVoz ? M.nivelVoz() : null; if (nv != null) { S.voz.push({ t, v: nv }); corta(S.voz, t, 45000); }
   }
   // al ritmo de los fotogramas que llegan de verdad (si el navegador lo permite); si no, cada 100 ms
-  let rvfc = 0, tMuestra = 0, iv = 0;
+  let rvfc = 0, tMuestra = 0, iv = 0, enPausa = 0;
   function arrancaMuestreo() {
     if (video.requestVideoFrameCallback) {
-      const cb = (now) => { if (!S) return; S.frames++; S.ultFrame = performance.now(); if (now - tMuestra >= 90 && !document.hidden) { tMuestra = now; muestra(performance.now()); } rvfc = video.requestVideoFrameCallback(cb); };
+      const cb = (now) => { if (!S) return; S.frames++; S.ultFrame = performance.now(); if (now - tMuestra >= 90 && !document.hidden && performance.now() > enPausa) { tMuestra = now; muestra(performance.now()); } rvfc = video.requestVideoFrameCallback(cb); };
       rvfc = video.requestVideoFrameCallback(cb);
     } else {
       let ant = -1;
@@ -174,6 +174,7 @@
   async function detecta() {
     if (!S || !humano) return;
     const t = performance.now();
+    if (t < enPausa) { tDet = setTimeout(detecta, 120); return; }
     if (document.hidden || !video.videoWidth || video.readyState < 2 || (S.brillo != null && S.brillo < 12)) { tDet = setTimeout(detecta, 700); return; }
     let r = null; try { r = await humano.detect(video); } catch (e) { fallo = String(e && e.message || e); }
     if (!S) return;
@@ -255,7 +256,8 @@
     congelada: 'vg_congelada', bucle: 'vg_bucle', virtual: 'vg_virtual', sinParpadeo: 'vg_sinParpadeo', labios: 'vg_labios', plano: 'vg_plano',
     cortes: 'vg_cortes', sinGestos: 'vg_sinGestos', metronomo: 'vg_metronomo', modelos: 'vg_modelos', sinPulso: 'vg_sinPulso',
   };
-  const FUERZA = { congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 2, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1 };
+  // (22 nov 17:56: los cortes pasan a débiles: en una prueba real, mover el móvil deprisa o dejar de mirar los imitaba)
+  const FUERZA = { congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 1, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1 };
   function evalua() {
     if (!S) return;
     const t = performance.now(), mirado = t - S.t0, I = {}, vida = [];
@@ -296,9 +298,12 @@
     }
     if (S.pulso.ok >= 2) vida.push('pulso');
     if (S.pulso.no >= 25 && S.pulso.ok === 0 && (S.brilloCara || 0) > 60) I.sinPulso = 1;
-    S.indicios = I; S.vida = vida; S.minOjos = minOjos;
+    if (S.reflejo === 'si') vida.push('reflejo');
+    const J = {}; S.cuenta = S.cuenta || {};
+    for (const x of Object.keys(FUERZA)) { S.cuenta[x] = I[x] ? (S.cuenta[x] || 0) + 1 : 0; if (I[x] && (FUERZA[x] !== 2 || S.cuenta[x] >= 8)) J[x] = 1; }
+    S.indicios = J; S.crudos = I; S.vida = vida; S.minOjos = minOjos;
     // el nivel
-    const k = Object.keys(I), fuertes = k.filter((x) => FUERZA[x] === 3), medias = k.filter((x) => FUERZA[x] === 2), debiles = k.filter((x) => FUERZA[x] === 1);
+    const k = Object.keys(J), fuertes = k.filter((x) => FUERZA[x] === 3), medias = k.filter((x) => FUERZA[x] === 2), debiles = k.filter((x) => FUERZA[x] === 1);
     let nivel = null;
     if (fuertes.length || medias.length >= 3) nivel = 'riesgo';
     // (de momento, las débiles solo se ven en el modo diagnóstico: sin calibrar con móviles de verdad, no bastan para avisar)
@@ -332,7 +337,7 @@
     if (nivel === 'riesgo') { try { if (navigator.vibrate) navigator.vibrate([70, 60, 70]); } catch (_) {} }
   }
   function decide(nivel, motivos) {
-    if (compr) { if (compr.fase === 'fin') fin(); return; }
+    if (compr) { if (compr.fase === 'fin' && !compr.poco) { const p = porcentaje(); if (p != null && p <= 8 && p !== compr.pct) fin(true); } return; }
     const t = performance.now(), clave = motivos.join();
     if (nivel) {
       const c = S.cerradoPor; // lo cerró: no se repite lo mismo hasta pasados 3 minutos, salvo que suba a rojo o cambie el motivo
@@ -358,7 +363,7 @@
       'voz habla ' + (S.hablaN || 0) + ' · desv boca ' + f(S.sb, 4) + ' · corr ' + f(S.corr, 2),
       'plano si ' + S.plano.si + ' no ' + S.plano.no + ' últ ' + f(S.plano.ultimo, 3) + '/' + f(S.plano.sem, 3) + ' · gestos p90 ' + f(S.g90, 3),
       'redes real ' + f(S.real) + ' vivo ' + f(S.live) + ' · pulso ok ' + S.pulso.ok + ' no ' + S.pulso.no + (S.pz ? ' [' + S.pz.map((z) => f(z.f * 60, 0) + 'lpm ' + f(z.snr, 1) + 'dB').join(' · ') + ']' : ''),
-      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–'),
+      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–') + ' · luz ' + (S.reflejo || '–') + ' ' + f(S.reflejoDif, 4) + '/' + f(S.reflejoRuido, 4),
       'INDICIOS ' + (Object.keys(S.indicios).join(', ') || '–') + ' · VIDA ' + (S.vida.join(', ') || '–') + ' · AVISO ' + (S.mostrado || '–'),
     ].join('\n');
   }
@@ -378,7 +383,7 @@
   // que sea una persona real, con una frase. El número sale de las mismas pruebas de la vigilancia (sin pruebas de engaño y con señales
   // de vida, alto; con una prueba fuerte, muy bajo); no se inventa: si falta información, lo dice.
   let compr = null, tri = null;
-  const DUR_COMPR = 8000, PI2 = Math.PI * 2;
+  const DUR_COMPR = 8000, PI2 = Math.PI * 2; let rayas = null;
   const lienzo = document.createElement('canvas'); lienzo.className = 'vg-escaner'; lienzo.setAttribute('aria-hidden', 'true'); lienzo.hidden = true;
   const cabecera = document.createElement('div'); cabecera.className = 'vg-analiza'; cabecera.setAttribute('role', 'status'); cabecera.hidden = true;
   cabecera.innerHTML = '<i class="vg-a-punto" aria-hidden="true"></i><b class="vg-a-texto"></b><i class="vg-a-barra" aria-hidden="true"><i></i></i>';
@@ -395,10 +400,16 @@
   function porcentaje() {
     if (!S || !S.ultima || S.conCara < 3) return null;
     const I = S.indicios, k = Object.keys(I), medias = k.filter((x) => FUERZA[x] === 2).length, debiles = k.filter((x) => FUERZA[x] === 1).length, vida = S.vida.length;
-    if (I.congelada || I.bucle) return 3;
-    if (I.virtual) return 8;
-    if (vida >= 4 && !medias && !debiles) return 97;
-    return Math.max(2, Math.min(96, Math.round(80 + Math.min(vida, 3) * 5 - medias * 30 - debiles * 4)));
+    // una prueba fuerte (una foto puesta como cámara, un vídeo en bucle, un programa que hace de cámara): casi cero
+    if (I.congelada) return 1; if (I.bucle) return 2; if (I.virtual) return 4;
+    if (medias >= 2) return Math.max(3, 14 - debiles * 3);
+    if (medias === 1) return Math.max(12, Math.min(58, 34 + vida * 7 - debiles * 5));
+    // sin nada raro: cuantas más señales de vida, más alto; nunca 100 % (dueño, 22 nov 18:02: «puedes dar el 97, el 98 %»)
+    const base = [74, 87, 93, 97, 98][Math.min(vida, 4)];
+    if (vida >= 3) return base;
+    // su pantalla se reflejó en su cara (la prueba de luz): muy difícil de imitar con un vídeo grabado o un avatar
+    if (S.reflejo === 'si') return Math.max(90, (vida >= 2 ? 96 : 93) - debiles * 2);
+    return Math.max(60, base - debiles * 4);
   }
   // ---- el escáner, dibujado sobre toda la pantalla de la llamada ----
   function esquinas(g, x, y, w, h, l) {
@@ -432,6 +443,12 @@
     // el velo y las esquinas de la pantalla
     g.fillStyle = 'rgba(3,7,12,' + (0.32 * aparece + (fin ? 0.25 * facil(tf / 0.5) : 0)) + ')'; g.fillRect(0, 0, W, H);
     g.lineWidth = 1.5 * d; g.strokeStyle = 'rgba(' + col + ',' + 0.7 * aparece + ')'; esquinas(g, 16 * d, 16 * d, W - 32 * d, H - 32 * d, 30 * d);
+    // líneas de barrido finas, como en un monitor (muy suaves)
+    if (!rayas) { rayas = document.createElement('canvas'); rayas.width = 1; rayas.height = 4; const q = rayas.getContext('2d'); q.fillStyle = 'rgba(0,0,0,.55)'; q.fillRect(0, 0, 1, 1); }
+    g.save(); g.globalAlpha = 0.18 * aparece; g.fillStyle = g.createPattern(rayas, 'repeat'); g.fillRect(0, 0, W, H); g.restore();
+    // la prueba de luz: su pantalla se enciende en magenta o en cian; aquí, un pulso del mismo color
+    const fl = compr.flash, ef = fl ? (performance.now() - fl.t) / 1000 : 9;
+    if (ef < 1.2) { g.fillStyle = (fl.c ? 'rgba(0,229,255,' : 'rgba(255,64,255,') + (Math.sin(Math.min(1, ef / 1.2) * Math.PI) * 0.13).toFixed(3) + ')'; g.fillRect(0, 0, W, H); }
     // los barridos: de arriba a abajo y de izquierda a derecha, uno tras otro
     if (!fin) { const c = t % 3.3; if (c < 1.55) barrido(g, W, H, d, H * suave(c / 1.55), false); else if (c >= 1.65 && c < 3.1) barrido(g, W, H, d, W * suave((c - 1.65) / 1.45), true); }
     // la cara: el enfoque que se cierra sobre ella, los ojos y la malla de luz
@@ -461,14 +478,22 @@
         // la malla de luz: las líneas, finas; los puntos, que se encienden en ámbar al pasar la banda de análisis
         const om = facil((t - 1.9) / 0.8) * (fin ? 0.5 : 1);
         if (om > 0) {
-          if (tri) { g.lineWidth = 0.6 * d; g.strokeStyle = 'rgba(207,230,250,' + 0.16 * om + ')'; g.beginPath(); for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } g.stroke(); }
-          const banda = y0 + (y1 - y0) * ((t * 0.55) % 1);
+          const banda = y0 + (y1 - y0) * ((t * 0.55) % 1), ancho = 26 * d;
+          if (tri) {
+            g.lineWidth = 0.6 * d; g.strokeStyle = 'rgba(207,230,250,' + 0.16 * om + ')'; g.beginPath(); for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } g.stroke();
+            // donde pasa la banda, la malla se enciende (como un escáner 3D que va «leyendo» la cara)
+            if (!fin) { g.save(); g.lineWidth = 0.9 * d; g.shadowColor = 'rgba(240,199,127,.7)'; g.shadowBlur = 6 * d; g.strokeStyle = 'rgba(240,199,127,' + (0.5 * om).toFixed(3) + ')'; g.beginPath();
+              for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; if (Math.abs((a[1] + b[1] + c[1]) / 3 - banda) < ancho) { g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } }
+              g.stroke(); g.restore(); }
+          }
           for (const [x, y] of pts) { const cerca = fin ? 0 : Math.max(0, 1 - Math.abs(y - banda) / (18 * d)); g.fillStyle = cerca > 0.05 ? 'rgba(240,199,127,' + (0.5 + 0.5 * cerca) * om + ')' : 'rgba(214,236,252,' + 0.7 * om + ')'; g.fillRect(x - 0.9 * d, y - 0.9 * d, 1.8 * d, 1.8 * d); }
         }
         // el rótulo, pequeño, bajo el enfoque
         g.font = 600 + ' ' + Math.round(10 * d) + 'px Inter, system-ui, sans-serif'; g.fillStyle = 'rgba(' + col + ',' + 0.85 * op + ')'; g.textAlign = 'center';
         if ('letterSpacing' in g) g.letterSpacing = (2.5 * d) + 'px';
-        g.fillText(tr(fin ? 'vc_rostroFin' : 'vc_rostro'), cx, y1 + 22 * d);
+        g.fillText(tr(fin ? 'vc_rostroFin' : ef < 1.2 ? 'vc_luz' : 'vc_rostro'), cx, y1 + 22 * d);
+        // al fijar el resultado: un fogonazo que se abre desde la cara
+        if (fin && tf < 0.7) { const e = tf / 0.7; g.save(); g.strokeStyle = 'rgba(' + col + ',' + (0.85 * (1 - e)).toFixed(3) + ')'; g.lineWidth = 2.5 * d * (1 - e) + 0.5 * d; g.shadowColor = 'rgba(' + col + ',.9)'; g.shadowBlur = 16 * d; g.beginPath(); g.arc(cx, cy, R * (1 + e * 1.4), 0, PI2); g.stroke(); g.restore(); }
       }
     }
     compr.raf = requestAnimationFrame(pintaEscaner);
@@ -478,8 +503,8 @@
     const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando') return;
     compr = { t0: performance.now(), fase: 'prepara' };
     res.hidden = true; res.classList.remove('visible');
-    cabecera.querySelector('.vg-a-texto').textContent = tr('vc_analizando'); cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
-    lienzo.hidden = false; pintaEscaner();
+    cabecera.querySelector('.vg-a-texto').textContent = tr('vc_analizando'); cabecera.querySelector('.vg-a-texto').dataset.k = 'vc_analizando'; cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
+    lienzo.hidden = false; const sl = video.closest('.sala'); if (sl) sl.classList.add('comprobando'); pintaEscaner(); // (pantalla limpia: sin el recuadro propio ni la cabecera)
     try { if (navigator.vibrate) navigator.vibrate(20); } catch (_) {}
     arranca(); // por si la vigilancia aún no había empezado
     const hasta = performance.now() + 15000;
@@ -487,37 +512,84 @@
     if (!compr) return;
     if (!humano || !S) { fin(); return; }
     if (!tri && humano.faceTriangulation) tri = Array.from(humano.faceTriangulation);
-    compr.fase = 'analiza'; compr.tA = performance.now();
+    compr.fase = 'analiza'; compr.tA = performance.now(); compr.frontalMs = 0; compr.sinMirar = 0;
+    reflejo(); // la prueba de luz, en paralelo
+    const txt = cabecera.querySelector('.vg-a-texto');
     const paso = () => {
       if (!compr || compr.fase !== 'analiza') return;
-      const el = performance.now() - compr.tA, listo = datosListos(), acaba = el >= DUR_COMPR && (listo || el >= 20000);
-      cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / (listo ? DUR_COMPR : 20000))).toFixed(3));
+      // cuánto tiempo se le ha visto la cara de frente (si deja de mirar, no se le juzga: se espera y se le pide que mire)
+      const u = S && S.ultima, vista = u && u.frontal && performance.now() - u.t < 2500;
+      if (vista) { compr.frontalMs += 250; compr.sinMirar = 0; } else compr.sinMirar += 250;
+      const k = compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
+      const el = performance.now() - compr.tA, listo = datosListos() && compr.frontalMs >= 4500 && !compr.luz && (el >= 14000 || (S && (S.vida.length >= 3 || Object.keys(S.indicios).length > 0))), acaba = el >= DUR_COMPR && (listo || el >= 22000);
+      cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / (listo ? DUR_COMPR : 22000))).toFixed(3));
       if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
     };
     paso();
   }
+  // La prueba de luz (dueño, 19 nov 20:55: «añádelo, cuando se hace la prueba»): su pantalla se ilumina un instante en magenta y en
+  // cian, en orden al azar. En una cara de verdad, delante de su móvil, esa luz se refleja: el rojo frente al verde sube con el magenta
+  // y baja con el cian, a la vez que su pantalla. Una cara puesta por un programa no lo hace igual. Solo suma: a pleno sol casi no se
+  // nota, así que no verlo no acusa a nadie. A él le sale «Comprobación de seguridad · Mira a la pantalla» (js/sala.js).
+  async function reflejo() {
+    // cuatro destellos (dos parejas magenta/cian, cada una en orden al azar). Para contar, los cuatro tienen que mover el color de su
+    // cara hacia donde toca (el magenta sube el rojo frente al verde; el cian lo baja), contra lo que había justo antes, y con fuerza
+    // de sobra frente al ruido. Solo con muestras de piel recién medidas (la malla de hace menos de medio segundo): si la cara se mueve
+    // y la malla llega tarde, no se juzga. Un vídeo grabado, una foto o un avatar no reciben esa luz.
+    const yo = compr; if (!M.gesto || !S || !yo) return;
+    yo.luz = true; S.reflejo = 'nd'; S.reflejoDif = S.reflejoRuido = null;
+    const espera = (ms) => new Promise((r) => setTimeout(r, ms)), vivo = () => compr === yo && !!S;
+    const az = crypto.getRandomValues(new Uint8Array(2)), orden = [az[0] & 1, 1 - (az[0] & 1), az[1] & 1, 1 - (az[1] & 1)], marcas = [];
+    try {
+      await espera(2200); if (!vivo()) return;
+      for (const c of orden) { if (!vivo()) return; if (M.gesto('luz', c, 0) === false) return; const t = performance.now(); marcas.push({ c, t }); yo.flash = { c, t }; await espera(1700); }
+    } catch (_) { return; } finally { try { M.gesto('fin', 0, 0); } catch (_) {} yo.luz = false; }
+    if (!vivo() || marcas.length < 4) return;
+    const rg = (x) => { let r = 0; for (const z of x.z) r += (z[0] - z[1]) / ((z[0] + z[1] + z[2]) || 1); return r / x.z.length; };
+    const ok = S.piel.filter((x) => x.f), tramo = (a, b) => { const v = ok.filter((x) => x.t >= a && x.t <= b).map(rg); return v.length >= 2 ? media(v) : null; };
+    // el ruido: cuánto baila ese color sin destellos (los 2 s de antes)
+    const quieto = ok.filter((x) => x.t >= marcas[0].t - 2200 && x.t < marcas[0].t + 100).map(rg); if (quieto.length < 6) return;
+    const ruido = desv(quieto); let mejor = null;
+    for (let L = 150; L <= 1200; L += 150) {
+      const d = marcas.map((m) => { const antes = tramo(m.t - 450, m.t + 100), luz = tramo(m.t + L, m.t + L + 600); return antes == null || luz == null ? null : (luz - antes) * (m.c ? -1 : 1); });
+      if (d.some((x) => x == null)) continue;
+      const prom = media(d), minimo = Math.min(...d); if (!mejor || prom > mejor.prom) mejor = { prom, minimo };
+    }
+    S.reflejoRuido = ruido; if (!mejor) return; S.reflejoDif = mejor.prom;
+    if (mejor.minimo > 0 && mejor.prom >= Math.max(0.005, 2.2 * ruido)) S.reflejo = 'si';
+  }
   // el resultado: un número grande y una frase
-  function fin() {
+  function fin(forzar) {
     if (!compr) return;
-    const pct = porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).sort((a, b) => FUERZA[b] - FUERZA[a]);
+    if (compr.fase === 'fin' && !forzar) return;
+    const poco = compr.frontalMs != null && compr.frontalMs < 2500;
+    const pct = poco ? null : porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).filter((x) => FUERZA[x] >= 2).sort((a, b) => FUERZA[b] - FUERZA[a]);
     const nivel = pct == null ? 'nd' : pct >= 85 ? 'real' : pct >= 60 ? 'bien' : pct >= 30 ? 'raro' : 'falso';
     if (compr.fase === 'fin' && compr.pct === pct) return;
-    compr.fase = 'fin'; compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
+    compr.fase = 'fin'; compr.poco = poco; compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
     compr.color = { real: '143,224,174', bien: '207,230,250', raro: '240,199,127', falso: '242,160,148', nd: '207,230,250' }[nivel];
     cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
-    res.dataset.n = nivel; res.querySelector('.vg-r-pct').textContent = pct == null ? '—' : pct + '%';
-    res.querySelector('.vg-r-valor').style.setProperty('--v', String(pct == null ? 0 : pct));
+    res.dataset.n = nivel; cuentaPct(pct);
     res.querySelector('.vg-r-et').textContent = tr('vc_probabilidad');
     const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : '';
-    res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr('vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? tr('vc_bien') : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
+    res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr(poco ? 'vc_noMira' : 'vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? tr('vc_bien') : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
     res.querySelector('.vg-r-cerrar').textContent = tr('vc_cerrar');
     res.hidden = false; requestAnimationFrame(() => res.classList.add('visible'));
     if (nivel === 'falso') { try { if (navigator.vibrate) navigator.vibrate([70, 60, 70]); } catch (_) {} }
   }
+  function cuentaPct(pct) {
+    const el = res.querySelector('.vg-r-pct'), anillo = res.querySelector('.vg-r-valor'), yo = compr;
+    cancelAnimationFrame(yo.rafPct); anillo.style.setProperty('--v', String(pct == null ? 0 : pct));
+    if (pct == null) { el.textContent = '—'; return; }
+    const desde = yo.pctVisto || 0, t0 = performance.now() + 150, dur = 1400;
+    const paso = (t) => { if (compr !== yo) return; const u = Math.max(0, Math.min(1, (t - t0) / dur)), e = 1 - Math.pow(1 - u, 3.2), v = Math.round(desde + (pct - desde) * e); el.textContent = v + '%'; yo.pctVisto = v; if (u < 1) yo.rafPct = requestAnimationFrame(paso); };
+    el.textContent = desde + '%'; yo.rafPct = requestAnimationFrame(paso);
+  }
   function cierraComprobacion() {
     // lo que ya ha visto en pantalla no se repite enseguida como aviso
     if (compr && compr.r === 'riesgo' && S) S.cerradoPor = { nivel: S.mostrado || 'riesgo', motivos: (S.motivos || []).join(), t: performance.now() };
-    if (compr) { clearTimeout(compr.tp); cancelAnimationFrame(compr.raf); }
+    if (compr) { clearTimeout(compr.tp); cancelAnimationFrame(compr.raf); cancelAnimationFrame(compr.rafPct); if (compr.luz) { try { M.gesto('fin', 0, 0); } catch (_) {} } }
+    { const sl = video.closest('.sala'); if (sl) sl.classList.remove('comprobando'); }
     compr = null; lienzo.hidden = true; cabecera.classList.remove('visible'); cabecera.hidden = true; res.classList.remove('visible'); res.hidden = true;
   }
   const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => (compr ? cierraComprobacion() : comprueba()));
@@ -543,5 +615,5 @@
   }
   M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) arranca(); else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });
   M.on('fin', () => para());
-  window.ElixireVigia = { get estado() { return S ? { indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); }, comprueba: () => comprueba(), cierra: () => cierraComprobacion() };
+  window.ElixireVigia = { pausa(si) { enPausa = si ? performance.now() + 8000 : 0; }, get estado() { return S ? { reflejo: S.reflejo, reflejoDif: S.reflejoDif, indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); }, comprueba: () => comprueba(), cierra: () => cierraComprobacion() };
 })();

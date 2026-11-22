@@ -39,8 +39,10 @@
       if (r.bottom < -alto || r.top > alto * 1.5) continue;
       const total = Math.max(1, r.height - alto), p = Math.max(0, Math.min(1, -r.top / total)), n = +e.dataset.pasos || 1;
       e.style.setProperty('--p', p.toFixed(4));
-      // el primer paso ya se ve al llegar la escena; los demás, repartidos a lo largo del recorrido
-      const paso = r.top > alto * 0.35 ? -1 : Math.min(n - 1, Math.floor(p * n * 0.999 + 0.0001));
+      // (dueño, 22 nov 18:06: «tarda mucho en salir… que aparezca todo en el momento perfecto y exacto»): el titular sale mientras la
+      // escena entra por abajo; el texto y la imagen, justo cuando se queda fija; los demás pasos, en los primeros tres cuartos del
+      // recorrido (el último queda a la vista el resto)
+      const paso = r.top > alto * 0.72 ? -1 : r.top > alto * 0.2 ? 0 : Math.min(n - 1, 1 + Math.floor(Math.min(0.999, p / 0.75) * (n - 1)));
       if (e._paso === paso) continue;
       e._paso = paso; e.dataset.paso = String(paso);
       for (const el of e.querySelectorAll('[data-desde]')) {

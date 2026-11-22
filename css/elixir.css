@@ -447,8 +447,10 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   .t-pc{display:none}
   .t-movil{display:inline}
   /* en el móvil la página ni se amplía ni se mueve de lado (dueño, 14:37) */
-  html{overflow-x:clip;touch-action:pan-y;overscroll-behavior-x:none}
-  body{overflow-x:clip}
+  /* (22 nov 18:06) sin overflow-x:clip en html/body: en Safari recorta también en vertical y deja las escenas sin fijar
+     (el titular se iba y quedaba un hueco negro); solo se recorta lo que sobresalía (los pasos, en pantallas de 320 px) */
+  html{touch-action:pan-y;overscroll-behavior-x:none}
+  #pasos{overflow-x:clip}
   /* con el vídeo en grande, las cuatro palabras salen encima hasta que se comprueban */
   .sala.video-grande.por-comprobar .sala-palabras{position:fixed;left:0;right:0;top:0;z-index:45;padding-top:calc(env(safe-area-inset-top) + 12px);background:rgba(5,7,10,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--hilo-2)}
   .sala.video-grande.por-comprobar .video-mio,.sala.video-grande.por-comprobar .video-capa{top:calc(env(safe-area-inset-top) + 204px)}
@@ -853,7 +855,7 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
 .escena-fija{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;justify-content:safe center;gap:clamp(22px,3.4vh,40px);
   padding:calc(env(safe-area-inset-top) + 84px) var(--margen) calc(env(safe-area-inset-bottom) + 44px);overflow:hidden}
 .escenas-vivas .escena-fija{position:sticky;top:0;height:100svh;min-height:0}
-.escenas-vivas .escena [data-desde]{opacity:0;transform:translateY(22px);filter:blur(6px);transition:opacity .8s ease,transform 1s cubic-bezier(.2,.7,.2,1),filter .8s ease;pointer-events:none}
+.escenas-vivas .escena [data-desde]{opacity:0;transform:translateY(18px);filter:blur(4px);transition:opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1),filter .45s ease;pointer-events:none}
 .escenas-vivas .escena [data-desde].ya{opacity:1;transform:none;filter:none;pointer-events:auto}
 .escena-texto{display:flex;flex-direction:column;gap:18px;max-width:1100px}
 .escena-texto.centro{align-items:center;text-align:center;margin:0 auto}
@@ -1397,9 +1399,9 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .cierre .ventas a{color:#9CC3E4;text-decoration:none;border-bottom:1px solid rgba(156,195,228,.45);margin-left:8px}
 @media (max-width:760px){.preguntas summary{font-size:16px}.preguntas details p{font-size:15px}}
 /* las escenas, más ágiles (dueño, 23:10: «tarda mucho en salir lo siguiente»): unos 35 % de pantalla de recorrido por paso, no 70 % */
-.escenas-vivas .escena[data-pasos="4"]{height:240svh}
-.escenas-vivas .escena[data-pasos="5"]{height:280svh}
-.escenas-vivas .escena[data-pasos="6"]{height:320svh}
+.escenas-vivas .escena[data-pasos="4"]{height:215svh}
+.escenas-vivas .escena[data-pasos="5"]{height:250svh}
+.escenas-vivas .escena[data-pasos="6"]{height:285svh}
 /* al bajar, el botón de la portada se desvanece (no se monta sobre la marca) y la cabecera gana un fondo suave para leerse bien */
 .bajado .consola{opacity:0!important;pointer-events:none}
 .cabecera{transition:background .35s ease}
@@ -1577,3 +1579,9 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .vg-r-cerrar:hover,.vg-r-cerrar:focus-visible{border-color:rgba(207,226,243,.7);outline:none}
 @media (max-width:760px){.vg-analiza{top:calc(env(safe-area-inset-top) + 104px)}}
 @media (prefers-reduced-motion:reduce){.vg-analiza,.vg-resultado{transition:none}.vg-a-punto,.vg-a-texto::after{animation:none}}
+
+/* (22 nov 17:56) el recuadro propio, por encima de los botones (si se deja abajo, los tapa) y sin transiciones mientras se arrastra */
+@media (max-width:760px){
+  .sala:not(.en-chat) .video-mio{z-index:4!important}
+  .sala .video-mio.moviendo{transition:none!important;will-change:transform}
+}
