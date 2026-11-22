@@ -179,7 +179,7 @@
     if (!S) return;
     const dt = performance.now() - t; S.dtMedio = S.dtMedio ? S.dtMedio * 0.9 + dt * 0.1 : dt; S.n++;
     procesa(r, performance.now());
-    tDet = setTimeout(detecta, Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo: la llamada va primero
+    tDet = setTimeout(detecta, compr ? Math.max(60, S.dtMedio * 0.6) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
   }
   function procesa(r, t) {
     const f = r && r.face && r.face[0];
@@ -190,7 +190,7 @@
     const centro = [(m[33][0] + m[263][0]) / 2, (m[33][1] + m[263][1]) / 2];
     const piel = [[m[151][0], m[151][1], Math.max(3, io * 0.22)], [m[50][0], m[50][1], Math.max(3, io * 0.16)], [m[280][0], m[280][1], Math.max(3, io * 0.16)]];
     const frontal = Math.abs(yaw) < 0.45 && Math.abs(pitch) < 0.4, grande = io >= 26, luz = S.brilloCara == null || S.brilloCara > 45;
-    S.ultima = { t, caja, centro, io, yaw, pitch, piel, frontal };
+    S.ultima = { t, caja, centro, io, yaw, pitch, piel, frontal, malla: m };
     const k = t - (S.tPrev || t); S.tPrev = t;
     // las redes de antisuplantación (cada pocos segundos)
     if (typeof f.real === 'number' || typeof f.live === 'number') { S.modelos.push({ t, real: f.real, live: f.live }); corta(S.modelos, t, 40000); }
@@ -332,6 +332,7 @@
     if (nivel === 'riesgo') { try { if (navigator.vibrate) navigator.vibrate([70, 60, 70]); } catch (_) {} }
   }
   function decide(nivel, motivos) {
+    if (compr) { if (compr.fase === 'fin') fin(); return; }
     const t = performance.now(), clave = motivos.join();
     if (nivel) {
       const c = S.cerradoPor; // lo cerró: no se repite lo mismo hasta pasados 3 minutos, salvo que suba a rojo o cambie el motivo
@@ -362,10 +363,164 @@
     ].join('\n');
   }
   (() => {
+    if (!diagOn) return; // (solo para calibrar: ?diag)
     const tiempo = $('#video-tiempo'); if (!tiempo) return; let tp = 0;
     tiempo.addEventListener('pointerdown', () => { clearTimeout(tp); tp = setTimeout(() => { diagVisible = !diagVisible; if (!diagVisible && pre) pre.hidden = true; else pintaDiag(); }, 1500); });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) tiempo.addEventListener(ev, () => clearTimeout(tp));
   })();
+
+
+  // ---------- «Comprobar» (dueño, 22 nov 17:34 y 17:40–17:41: «cuando la persona le da a analizar, tiene que aparecer arriba
+  // "analizando", y una especie de escáner que recorra toda la pantalla, de arriba a abajo, de izquierda a derecha… lo más real posible…
+  // como una película de Agente 007… detectar la cara, ojos… y cuando entregas la información, con la posibilidad de que sea humano, con
+  // un tanto por ciento… simple y fácil»). La vigilancia sigue siempre; el botón la hace visible: «Analizando» arriba, el barrido por toda
+  // la pantalla, el enfoque que se cierra sobre su cara y sus ojos con la malla de luz, y al final un número grande: la probabilidad de
+  // que sea una persona real, con una frase. El número sale de las mismas pruebas de la vigilancia (sin pruebas de engaño y con señales
+  // de vida, alto; con una prueba fuerte, muy bajo); no se inventa: si falta información, lo dice.
+  let compr = null, tri = null;
+  const DUR_COMPR = 8000, PI2 = Math.PI * 2;
+  const lienzo = document.createElement('canvas'); lienzo.className = 'vg-escaner'; lienzo.setAttribute('aria-hidden', 'true'); lienzo.hidden = true;
+  const cabecera = document.createElement('div'); cabecera.className = 'vg-analiza'; cabecera.setAttribute('role', 'status'); cabecera.hidden = true;
+  cabecera.innerHTML = '<i class="vg-a-punto" aria-hidden="true"></i><b class="vg-a-texto"></b><i class="vg-a-barra" aria-hidden="true"><i></i></i>';
+  const res = document.createElement('div'); res.className = 'vg-resultado'; res.setAttribute('role', 'status'); res.hidden = true;
+  res.innerHTML = '<svg class="vg-r-anillo" viewBox="0 0 120 120" aria-hidden="true"><circle class="vg-r-fondo" cx="60" cy="60" r="52"/><circle class="vg-r-valor" cx="60" cy="60" r="52" pathLength="100"/></svg>' +
+    '<b class="vg-r-pct"></b><span class="vg-r-et"></span><p class="vg-r-txt"></p><button type="button" class="vg-r-cerrar"></button>';
+  caja.append(lienzo, cabecera, res);
+  res.querySelector('.vg-r-cerrar').addEventListener('click', () => cierraComprobacion());
+  const facil = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3), suave = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+  function imagenViva() { const q = S ? S.quietas : []; return q.length >= 15 && q[q.length - 1].t - q[0].t >= 5000 && media(q.map((x) => x.q)) < 0.5; }
+  // ¿hay datos para concluir? (la imagen congelada se juzga con 9,5 s de su cara)
+  function datosListos() { const q = S ? S.quietas : []; return (q.length >= 20 && q[q.length - 1].t - q[0].t >= 9500) || (S && !S.ultima && S.conCara > 0); }
+  // la probabilidad de que sea una persona real, a partir de las pruebas (null: no se ve la cara)
+  function porcentaje() {
+    if (!S || !S.ultima || S.conCara < 3) return null;
+    const I = S.indicios, k = Object.keys(I), medias = k.filter((x) => FUERZA[x] === 2).length, debiles = k.filter((x) => FUERZA[x] === 1).length, vida = S.vida.length;
+    if (I.congelada || I.bucle) return 3;
+    if (I.virtual) return 8;
+    if (vida >= 4 && !medias && !debiles) return 97;
+    return Math.max(2, Math.min(96, Math.round(80 + Math.min(vida, 3) * 5 - medias * 30 - debiles * 4)));
+  }
+  // ---- el escáner, dibujado sobre toda la pantalla de la llamada ----
+  function esquinas(g, x, y, w, h, l) {
+    g.beginPath();
+    g.moveTo(x, y + l); g.lineTo(x, y); g.lineTo(x + l, y); g.moveTo(x + w - l, y); g.lineTo(x + w, y); g.lineTo(x + w, y + l);
+    g.moveTo(x + w, y + h - l); g.lineTo(x + w, y + h); g.lineTo(x + w - l, y + h); g.moveTo(x + l, y + h); g.lineTo(x, y + h); g.lineTo(x, y + h - l); g.stroke();
+  }
+  function barrido(g, W, H, d, pos, vertical) {
+    // la banda que deja detrás (una rejilla fina que se enciende al pasar) y la línea de luz
+    const ancho = 70 * d, a = vertical ? pos : pos;
+    g.save();
+    const gr = vertical ? g.createLinearGradient(pos - ancho, 0, pos, 0) : g.createLinearGradient(0, pos - ancho, 0, pos);
+    gr.addColorStop(0, 'rgba(156,195,228,0)'); gr.addColorStop(1, 'rgba(156,195,228,.22)'); g.fillStyle = gr;
+    if (vertical) g.fillRect(pos - ancho, 0, ancho, H); else g.fillRect(0, pos - ancho, W, ancho);
+    g.beginPath(); g.strokeStyle = 'rgba(214,236,252,.13)'; g.lineWidth = 1;
+    const paso = 22 * d;
+    if (vertical) { for (let y = 0; y < H; y += paso) { g.moveTo(Math.max(0, pos - ancho), y); g.lineTo(pos, y); } for (let x = pos - (pos % paso); x > pos - ancho; x -= paso) { g.moveTo(x, 0); g.lineTo(x, H); } }
+    else { for (let x = 0; x < W; x += paso) { g.moveTo(x, Math.max(0, pos - ancho)); g.lineTo(x, pos); } for (let y = pos - (pos % paso); y > pos - ancho; y -= paso) { g.moveTo(0, y); g.lineTo(W, y); } }
+    g.stroke();
+    g.shadowColor = 'rgba(156,195,228,.95)'; g.shadowBlur = 22 * d; g.strokeStyle = 'rgba(232,245,255,.95)'; g.lineWidth = 2 * d;
+    g.beginPath(); if (vertical) { g.moveTo(a, 0); g.lineTo(a, H); } else { g.moveTo(0, a); g.lineTo(W, a); } g.stroke();
+    g.restore();
+  }
+  function pintaEscaner() {
+    if (!compr) return;
+    const rc = caja.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
+    if (lienzo.width !== W || lienzo.height !== H) { lienzo.width = W; lienzo.height = H; }
+    const g = lienzo.getContext('2d'); g.clearRect(0, 0, W, H);
+    const t = (performance.now() - compr.t0) / 1000, fin = compr.fase === 'fin', tf = fin ? (performance.now() - compr.tFin) / 1000 : 0;
+    const col = fin ? compr.color : '207,230,250', aparece = facil(t / 0.6);
+    // el velo y las esquinas de la pantalla
+    g.fillStyle = 'rgba(3,7,12,' + (0.32 * aparece + (fin ? 0.25 * facil(tf / 0.5) : 0)) + ')'; g.fillRect(0, 0, W, H);
+    g.lineWidth = 1.5 * d; g.strokeStyle = 'rgba(' + col + ',' + 0.7 * aparece + ')'; esquinas(g, 16 * d, 16 * d, W - 32 * d, H - 32 * d, 30 * d);
+    // los barridos: de arriba a abajo y de izquierda a derecha, uno tras otro
+    if (!fin) { const c = t % 3.3; if (c < 1.55) barrido(g, W, H, d, H * suave(c / 1.55), false); else if (c >= 1.65 && c < 3.1) barrido(g, W, H, d, W * suave((c - 1.65) / 1.45), true); }
+    // la cara: el enfoque que se cierra sobre ella, los ojos y la malla de luz
+    const u = S && S.ultima, vw = video.videoWidth, vh = video.videoHeight;
+    if (u && u.malla && vw) {
+      const r = video.getBoundingClientRect(), ajuste = getComputedStyle(video).objectFit === 'contain' ? Math.min : Math.max, k = ajuste(r.width / vw, r.height / vh) * d;
+      const ox = (r.left - rc.left) * d + (r.width * d - vw * k) / 2, oy = (r.top - rc.top) * d + (r.height * d - vh * k) / 2, P = (q) => [ox + q[0] * k, oy + q[1] * k];
+      const pts = u.malla.map(P), xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+      let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys); const mw = (x1 - x0) * 0.14, mh = (y1 - y0) * 0.12; x0 -= mw; x1 += mw; y0 -= mh; y1 += mh;
+      const cierre = facil((t - 0.4) / 0.9), bx = 16 * d + (x0 - 16 * d) * cierre, by = 16 * d + (y0 - 16 * d) * cierre, bw = (W - 32 * d) + ((x1 - x0) - (W - 32 * d)) * cierre, bh = (H - 32 * d) + ((y1 - y0) - (H - 32 * d)) * cierre;
+      const late = 0.75 + 0.25 * Math.sin(t * 5);
+      g.save(); g.shadowColor = 'rgba(' + col + ',.8)'; g.shadowBlur = 12 * d; g.lineWidth = 2 * d; g.strokeStyle = 'rgba(' + col + ',' + (0.95 * late) + ')';
+      esquinas(g, bx, by, bw, bh, Math.min(bw, bh) * 0.16); g.restore();
+      if (cierre > 0.98) {
+        const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.max(x1 - x0, y1 - y0) * 0.62, op = facil((t - 1.3) / 0.6);
+        // el anillo de enfoque, que gira despacio, con sus marcas
+        g.save(); g.translate(cx, cy); g.rotate(t * 0.35); g.strokeStyle = 'rgba(' + col + ',' + 0.45 * op + ')'; g.lineWidth = 1 * d; g.setLineDash([6 * d, 10 * d]);
+        g.beginPath(); g.arc(0, 0, R, 0, PI2); g.stroke(); g.setLineDash([]);
+        for (let a = 0; a < 24; a++) { const an = a / 24 * PI2, l = a % 6 ? 6 * d : 13 * d; g.beginPath(); g.moveTo(Math.cos(an) * (R + 3 * d), Math.sin(an) * (R + 3 * d)); g.lineTo(Math.cos(an) * (R + 3 * d + l), Math.sin(an) * (R + 3 * d + l)); g.stroke(); }
+        g.restore();
+        // los ojos
+        const ojo = (ids) => { let x = 0, y = 0; for (const i of ids) { x += pts[i][0]; y += pts[i][1]; } return [x / ids.length, y / ids.length]; };
+        const ojos = [ojo([33, 133, 159, 145]), ojo([362, 263, 386, 374])], ro = (x1 - x0) * 0.085, oo = facil((t - 1.6) / 0.5);
+        g.save(); g.strokeStyle = 'rgba(' + (fin ? col : '240,199,127') + ',' + 0.9 * oo + ')'; g.lineWidth = 1.4 * d; g.shadowColor = 'rgba(240,199,127,.7)'; g.shadowBlur = 8 * d;
+        for (const [ex, ey] of ojos) { const rr = ro * (1.4 - 0.4 * oo); g.beginPath(); g.arc(ex, ey, rr, 0, PI2); g.stroke(); g.beginPath(); g.moveTo(ex - rr * 1.5, ey); g.lineTo(ex - rr * 0.6, ey); g.moveTo(ex + rr * 0.6, ey); g.lineTo(ex + rr * 1.5, ey); g.moveTo(ex, ey - rr * 1.5); g.lineTo(ex, ey - rr * 0.6); g.moveTo(ex, ey + rr * 0.6); g.lineTo(ex, ey + rr * 1.5); g.stroke(); }
+        g.restore();
+        // la malla de luz: las líneas, finas; los puntos, que se encienden en ámbar al pasar la banda de análisis
+        const om = facil((t - 1.9) / 0.8) * (fin ? 0.5 : 1);
+        if (om > 0) {
+          if (tri) { g.lineWidth = 0.6 * d; g.strokeStyle = 'rgba(207,230,250,' + 0.16 * om + ')'; g.beginPath(); for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } g.stroke(); }
+          const banda = y0 + (y1 - y0) * ((t * 0.55) % 1);
+          for (const [x, y] of pts) { const cerca = fin ? 0 : Math.max(0, 1 - Math.abs(y - banda) / (18 * d)); g.fillStyle = cerca > 0.05 ? 'rgba(240,199,127,' + (0.5 + 0.5 * cerca) * om + ')' : 'rgba(214,236,252,' + 0.7 * om + ')'; g.fillRect(x - 0.9 * d, y - 0.9 * d, 1.8 * d, 1.8 * d); }
+        }
+        // el rótulo, pequeño, bajo el enfoque
+        g.font = 600 + ' ' + Math.round(10 * d) + 'px Inter, system-ui, sans-serif'; g.fillStyle = 'rgba(' + col + ',' + 0.85 * op + ')'; g.textAlign = 'center';
+        if ('letterSpacing' in g) g.letterSpacing = (2.5 * d) + 'px';
+        g.fillText(tr(fin ? 'vc_rostroFin' : 'vc_rostro'), cx, y1 + 22 * d);
+      }
+    }
+    compr.raf = requestAnimationFrame(pintaEscaner);
+  }
+  async function comprueba() {
+    if (compr) return;
+    const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando') return;
+    compr = { t0: performance.now(), fase: 'prepara' };
+    res.hidden = true; res.classList.remove('visible');
+    cabecera.querySelector('.vg-a-texto').textContent = tr('vc_analizando'); cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
+    lienzo.hidden = false; pintaEscaner();
+    try { if (navigator.vibrate) navigator.vibrate(20); } catch (_) {}
+    arranca(); // por si la vigilancia aún no había empezado
+    const hasta = performance.now() + 15000;
+    while (compr && (!humano || !S || !S.n) && performance.now() < hasta) await new Promise((r) => setTimeout(r, 250));
+    if (!compr) return;
+    if (!humano || !S) { fin(); return; }
+    if (!tri && humano.faceTriangulation) tri = Array.from(humano.faceTriangulation);
+    compr.fase = 'analiza'; compr.tA = performance.now();
+    const paso = () => {
+      if (!compr || compr.fase !== 'analiza') return;
+      const el = performance.now() - compr.tA, listo = datosListos(), acaba = el >= DUR_COMPR && (listo || el >= 20000);
+      cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / (listo ? DUR_COMPR : 20000))).toFixed(3));
+      if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
+    };
+    paso();
+  }
+  // el resultado: un número grande y una frase
+  function fin() {
+    if (!compr) return;
+    const pct = porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).sort((a, b) => FUERZA[b] - FUERZA[a]);
+    const nivel = pct == null ? 'nd' : pct >= 85 ? 'real' : pct >= 60 ? 'bien' : pct >= 30 ? 'raro' : 'falso';
+    if (compr.fase === 'fin' && compr.pct === pct) return;
+    compr.fase = 'fin'; compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
+    compr.color = { real: '143,224,174', bien: '207,230,250', raro: '240,199,127', falso: '242,160,148', nd: '207,230,250' }[nivel];
+    cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
+    res.dataset.n = nivel; res.querySelector('.vg-r-pct').textContent = pct == null ? '—' : pct + '%';
+    res.querySelector('.vg-r-valor').style.setProperty('--v', String(pct == null ? 0 : pct));
+    res.querySelector('.vg-r-et').textContent = tr('vc_probabilidad');
+    const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : '';
+    res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr('vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? tr('vc_bien') : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
+    res.querySelector('.vg-r-cerrar').textContent = tr('vc_cerrar');
+    res.hidden = false; requestAnimationFrame(() => res.classList.add('visible'));
+    if (nivel === 'falso') { try { if (navigator.vibrate) navigator.vibrate([70, 60, 70]); } catch (_) {} }
+  }
+  function cierraComprobacion() {
+    // lo que ya ha visto en pantalla no se repite enseguida como aviso
+    if (compr && compr.r === 'riesgo' && S) S.cerradoPor = { nivel: S.mostrado || 'riesgo', motivos: (S.motivos || []).join(), t: performance.now() };
+    if (compr) { clearTimeout(compr.tp); cancelAnimationFrame(compr.raf); }
+    compr = null; lienzo.hidden = true; cabecera.classList.remove('visible'); cabecera.hidden = true; res.classList.remove('visible'); res.hidden = true;
+  }
+  const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => (compr ? cierraComprobacion() : comprueba()));
 
   // ---------- en marcha durante toda la llamada ----------
   let tEval = 0, tFuente = 0, tArranca = 0;
@@ -384,9 +539,9 @@
   }
   function para() {
     clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); clearTimeout(tBien); paraMuestreo();
-    S = null; oculta(); if (pre) pre.hidden = true;
+    cierraComprobacion(); S = null; oculta(); if (pre) pre.hidden = true;
   }
   M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) arranca(); else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });
   M.on('fin', () => para());
-  window.ElixireVigia = { get estado() { return S ? { indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); } };
+  window.ElixireVigia = { get estado() { return S ? { indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); }, comprueba: () => comprueba(), cierra: () => cierraComprobacion() };
 })();

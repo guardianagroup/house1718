@@ -865,7 +865,7 @@
   }
   const vibra = () => { try { if (navigator.vibrate) navigator.vibrate(30); } catch (_) {} };
 
-  $('#b-comprobar').addEventListener('click', comprueba);
+  // (22 nov: el botón «Comprobar» lo lleva ahora js/vigia.js, con el motor nuevo; este análisis antiguo ya no se usa)
   $('#comprobacion-cerrar').addEventListener('click', termina);
   $('#comprobacion-cancelar').addEventListener('click', termina);
   $('#comprobacion-giro').addEventListener('click', () => pruebaGesto(false));
