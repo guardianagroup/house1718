@@ -759,8 +759,9 @@ function arranca() {
     mira.x += (mira.tx - mira.x) * 0.035; mira.y += (mira.ty - mira.y) * 0.035;
     const d = estado.dolly;
     const dx = quieto ? 0 : Math.sin(ahora * 0.19) * 0.06, dy = quieto ? 0 : Math.cos(ahora * 0.15) * 0.035;
-    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * 0.32, CAM.z - d * (retrato ? 0.5 : 2.0));
-    camara.lookAt(0, 1.95 + d * 0.06, Z0 - 0.4);
+    camara.position.set(CAM.x + mira.x * 0.5 * (1 - d) + dx * (1 - d), CAM.y - mira.y * 0.3 * (1 - d) + dy * (1 - d) + d * (retrato ? 0.32 : 0), CAM.z - d * (retrato ? 0.5 : 0));
+    // (en el ordenador, sin acercarse al abrir: dueño, 22 nov 17:11, «que se mantenga todo en la versión inicial, sin el zoom»)
+    camara.lookAt(0, 1.95 + d * (retrato ? 0.06 : 0), Z0 - 0.4);
     if (N) { const a = polvoG.attributes.position; for (let i = 0; i < N; i++) { let y = a.array[i * 3 + 1] + vel[i] * dt * 0.3; if (y > AL - 0.2) y = 0.1; a.array[i * 3 + 1] = y; a.array[i * 3] += Math.sin(ahora * 0.25 + i) * 0.0003; } a.needsUpdate = true; }
     if (!quieto) { grano.uniforms.semilla.value = (ahora * 61.7) % 997; uHolo.t.value = ahora; }
     uHolo.brillo.value = 1 + 0.6 * estado.sello;
