@@ -27,7 +27,8 @@
   const HUMAN = { src: 'js/terceros/human.js?v=3.3.6', sri: 'sha384-vASLsXJSh9FIgw41jM2fwBSF2MoEPlegwV4SO9G3NeyRMcWf7XjSdYvU6MlwOfQl' };
   const CONFIG = {
     debug: false, backend: /[?&]motor=cpu\b/.test(location.search) ? 'cpu' : 'humangl', modelBasePath: 'modelos/human/', warmup: 'none', cacheSensitivity: 0, deallocate: false,
-    filter: { enabled: false }, gesture: { enabled: false }, body: { enabled: false }, hand: { enabled: false }, object: { enabled: false }, segmentation: { enabled: false },
+    filter: { enabled: false }, gesture: { enabled: false }, body: { enabled: false },
+    hand: { enabled: false, rotation: false, landmarks: false, skipFrames: 0, skipTime: 0, minConfidence: 0.4, iouThreshold: 0.2, maxDetected: 2, detector: { modelPath: 'handtrack.json' } }, object: { enabled: false }, segmentation: { enabled: false },
     face: {
       enabled: true,
       detector: { modelPath: 'blazeface.json', rotation: false, maxDetected: 1, minConfidence: 0.3, skipFrames: 10, skipTime: 1200, return: false },
@@ -139,7 +140,7 @@
   const nuevo = () => ({
     t0: performance.now(), n: 0, conCara: 0, ultima: null, dtMedio: 0, analizado: 0,
     ear: [], parpadeos: [], cerrado: false, ojosMs: 0, tOjos: 0,
-    boca: [], voz: [], piel: [], fondo: [], cuello: [], ojos: [], tex: [], temblor: [], pulso: { ok: 0, no: 0, ultimo: null },
+    boca: [], voz: [], piel: [], fondo: [], cuello: [], ojos: [], tex: [], temblor: [], manos: [], pulso: { ok: 0, no: 0, ultimo: null },
     poses: [], plano: { si: 0, no: 0, ultimo: null }, gestos: [], refGestos: null,
     modelos: [], firmas: [], quietas: [], repes: [], prevFirma: null, prevCaraF: null, bucle: { racha: 0, lag: 0 },
     cortes: [], fuente: null, fuenteT: 0, frames: 0, ultFrame: 0, indicios: {}, vida: [], nivel: null, mostrado: null, cerradoPor: null,
@@ -239,6 +240,7 @@
     if (!S) return;
     const dt = performance.now() - t; S.dtMedio = S.dtMedio ? S.dtMedio * 0.9 + dt * 0.1 : dt; S.n++;
     S.tFrame = t; procesa(r, performance.now());
+    if (compr && compr.manoReto && humano.config.hand.enabled) { S.manos.push({ t, cajas: ((r && r.hand) || []).filter((h) => (h.score || 0) >= 0.45 && h.box).map((h) => h.box) }); corta(S.manos, t, 15000); }
     tDet = setTimeout(detecta, compr ? Math.max(60, S.dtMedio * 0.6) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
   }
   function procesa(r, t) {
@@ -455,7 +457,7 @@
       'voz habla ' + (S.hablaN || 0) + ' · desv boca ' + f(S.sb, 4) + ' · corr ' + f(S.corr, 2),
       'plano si ' + S.plano.si + ' no ' + S.plano.no + ' últ ' + f(S.plano.ultimo, 3) + '/' + f(S.plano.sem, 3) + ' · gestos p90 ' + f(S.g90, 3),
       'redes real ' + f(S.real) + ' vivo ' + f(S.live) + ' · pulso ok ' + S.pulso.ok + ' no ' + S.pulso.no + (S.pz ? ' [' + S.pz.map((z) => f(z.f * 60, 0) + 'lpm ' + f(z.snr, 1) + 'dB').join(' · ') + ']' : ''),
-      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–') + ' · luz ' + (S.reflejo || '–') + ' ' + f(S.reflejoDif, 4) + '/' + f(S.reflejoRuido, 4) + ' fondo ' + f(S.reflejoFondo, 4) + ' cuello ' + f(S.reflejoCuello, 4) + ' ojos ' + f(S.reflejoOjos, 4) + (S.reflejoGafas ? ' (gafas)' : '') + ' espectro ' + f(S.reflejoEspectro, 2) + (S.pantalla ? ' PANTALLA' : '') + ' · A/F/L ' + Object.values(cuentas()).join('/') + ' · giro ' + (S.giro || '–') + ' ' + f(S.giroBueno, 2) + '/' + f(S.giroContra, 2) + (S.perfil ? ' temblor ' + f(S.perfil.rg, 3) + '/' + f(S.perfil.rf, 3) : '') + ' · mano ' + (S.mano || '–') + (S.manoDatos ? ' ' + f(S.manoDatos.pc, 0) + '/' + f(S.manoDatos.pl, 0) + '/' + f(S.manoDatos.pr, 0) + ' q' + f(S.manoDatos.quieto, 0) : '') + ' · textura ' + f(S.texR, 2) + ' · desfase ' + (S.desfase == null ? '–' : S.desfase + ' ms ' + f(S.desfaseCorr, 2)),
+      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–') + ' · luz ' + (S.reflejo || '–') + ' ' + f(S.reflejoDif, 4) + '/' + f(S.reflejoRuido, 4) + ' fondo ' + f(S.reflejoFondo, 4) + ' cuello ' + f(S.reflejoCuello, 4) + ' ojos ' + f(S.reflejoOjos, 4) + (S.reflejoGafas ? ' (gafas)' : '') + ' espectro ' + f(S.reflejoEspectro, 2) + (S.pantalla ? ' PANTALLA' : '') + ' · A/F/L ' + Object.values(cuentas()).join('/') + ' · giro ' + (S.giro || '–') + ' ' + f(S.giroBueno, 2) + '/' + f(S.giroContra, 2) + (S.perfil ? ' temblor ' + f(S.perfil.rg, 3) + '/' + f(S.perfil.rf, 3) : '') + ' · mano ' + (S.mano || '–') + (S.manoDatos ? ' ' + f(S.manoDatos.pc, 0) + '/' + f(S.manoDatos.pl, 0) + '/' + f(S.manoDatos.pr, 0) + ' q' + f(S.manoDatos.quieto, 0) + ' cubre ' + f(S.manoDatos.cubre, 2) : '') + ' · textura ' + f(S.texR, 2) + ' · desfase ' + (S.desfase == null ? '–' : S.desfase + ' ms ' + f(S.desfaseCorr, 2)),
       'INDICIOS ' + (Object.keys(S.indicios).join(', ') || '–') + ' · VIDA ' + (S.vida.join(', ') || '–') + ' · AVISO ' + (S.mostrado || '–'),
     ].join('\n');
   }
@@ -614,7 +616,8 @@
     if (!humano || !S) { fin(); return; }
     if (!tri && humano.faceTriangulation) tri = Array.from(humano.faceTriangulation);
     compr.fase = 'analiza'; compr.tA = performance.now(); compr.frontalMs = 0; compr.sinMirar = 0;
-    retos(); // las pruebas activas (luz y giro), mientras el escáner analiza
+    precargaManos();
+    retos(); // las pruebas activas (luz, mano y giro), mientras el escáner analiza
     const txt = cabecera.querySelector('.vg-a-texto');
     const paso = () => {
       if (!compr || compr.fase !== 'analiza') return;
@@ -669,13 +672,14 @@
     const espera = (ms) => new Promise((r) => setTimeout(r, ms)), vivo = () => compr === yo && !!S;
     const u0 = S.ultima && performance.now() - S.ultima.t < 900 ? S.ultima : null;
     if (M.gesto(lado, 0, 0) === false) return { estado: 'nd' };
-    const t0 = performance.now(); let pos = 0, neg = 0, maximo = 0, visto = 0, tPerd = 0, previo = 0, perdPos = 0, perdNeg = 0;
+    const t0 = performance.now(); let pos = 0, neg = 0, maximo = 0, visto = 0, tPerd = 0, previo = 0, perdPos = 0, perdNeg = 0, ultT = 0, seFue = false;
     const vale = (sg) => !signoExigido || sg === signoExigido;
     while (performance.now() - t0 < 5500) {
       await espera(120); if (!vivo()) return { estado: 'nd' };
       if (performance.now() - t0 < 400) continue; // nadie reacciona antes
       const u = S.ultima, fresca = u && performance.now() - u.t < 700;
-      if (!fresca) { if (!tPerd) tPerd = performance.now(); continue; }
+      if (!fresca) { if (!tPerd) tPerd = performance.now(); seFue = true; continue; }
+      if (u.t === ultT) continue; ultT = u.t; // cada análisis cuenta una vez
       // la cara se perdió al girar (de perfil el detector deja de verla) y vuelve en el mismo sitio (no un corte de vídeo)
       if (tPerd) { if (performance.now() - tPerd >= 400 && Math.abs(previo) >= 0.1 && (!u0 || d2(u.centro, u0.centro) < 0.8 * u0.io)) { if (previo > 0) perdPos++; else perdNeg++; } tPerd = 0; }
       visto++; const g = u.giro || 0; previo = g; maximo = Math.max(maximo, Math.abs(g)); pos = Math.max(pos, g); neg = Math.max(neg, -g);
@@ -685,7 +689,7 @@
     S.giroMax = Math.max(S.giroMax || 0, maximo); S.giroBueno = Math.max(S.giroBueno || 0, signoExigido ? (signoExigido > 0 ? pos : neg) : Math.max(pos, neg)); S.giroPerdida = (S.giroPerdida || 0) + perdPos + perdNeg;
     const okPos = vale(1) && (pos >= 0.22 || perdPos), okNeg = vale(-1) && (neg >= 0.22 || perdNeg);
     if (okPos || okNeg) return { estado: 'si', signo: okPos && (!okNeg || pos >= neg) ? 1 : -1 };
-    if (visto >= 8 && maximo < 0.12) return { estado: 'no' }; // con la cara a la vista, no se movió
+    if (visto >= 6 && !seFue && maximo < 0.12) return { estado: 'no' }; // con la cara siempre a la vista (6 análisis o más), no se movió nada
     if (signoExigido) S.giroContra = Math.max(S.giroContra || 0, signoExigido > 0 ? neg : pos);
     return { estado: 'nd' };
   }
@@ -695,20 +699,25 @@
   // franja a cada lado de su cara, a la altura de ojos y nariz, y la cara. Si la mano cruza de un lado al otro (cambian las dos
   // franjas) y la cara no cambia nada, la cara está superpuesta. Si la cara se tapa, es lo normal. Antes, todo quieto (si ya se movía
   // mucho, no se juzga) y sin mover la cabeza durante la prueba (eso no sería la mano).
+  let manosListas = false;
+  function precargaManos() {
+    if (manosListas || !humano || CONFIG.backend === 'cpu') return;
+    humano.config.hand.enabled = true; humano.load().then(() => { const reg = humano.models && (humano.models.models || humano.models); manosListas = !!(reg && (reg.handtrack || reg.handdetect)); }).catch(() => {}).finally(() => { if (!(compr && compr.manoReto)) humano.config.hand.enabled = false; });
+  }
   async function manoReto() {
     const yo = compr; if (!M.gesto || !S || !yo) return;
     S.mano = 'nd'; S.manoDatos = null;
     const u = S.ultima; if (!u || performance.now() - u.t > 1500) return;
     const [bx, by, bw, bh] = u.caja, y0 = by + bh * 0.2, h0 = bh * 0.6;
-    yo.manoZ = { c: [bx + bw * 0.12, y0, bw * 0.76, h0], l: [bx - bw * 0.62, y0, bw * 0.5, h0], r: [bx + bw * 1.12, y0, bw * 0.5, h0], centro: u.centro, ancho: bw };
-    yo.manoM = []; yo.manoReto = true;
+    yo.manoZ = { cara0: [bx, by, bw, bh], c: [bx + bw * 0.12, y0, bw * 0.76, h0], l: [bx - bw * 0.62, y0, bw * 0.5, h0], r: [bx + bw * 1.12, y0, bw * 0.5, h0], centro: u.centro, ancho: bw };
+    yo.manoM = []; yo.manoReto = true; S.manos.length = 0; if (manosListas) humano.config.hand.enabled = true;
     const espera = (ms) => new Promise((r) => setTimeout(r, ms)), vivo = () => compr === yo && !!S;
     try {
       await espera(900); if (!vivo()) return; // la base: la imagen quieta de antes
       if (M.gesto('mano', 0, 0) === false) return;
       const t0 = performance.now(); yo.manoT0 = t0;
       while (performance.now() - t0 < 5500) { await espera(150); if (!vivo()) return; if (performance.now() - t0 > 2200 && manoPasada(yo)) break; }
-    } catch (_) {} finally { try { M.gesto('fin', 0, 0); } catch (_) {} yo.manoReto = false; }
+    } catch (_) {} finally { try { M.gesto('fin', 0, 0); } catch (_) {} yo.manoReto = false; if (humano) humano.config.hand.enabled = false; }
     if (vivo()) manoDecide(yo);
   }
   function manoMuestra(t) {
@@ -732,10 +741,18 @@
     const vuelve = ult.length >= 3 && ult.slice(-3).every((v) => v < Math.max(8, 0.5 * pc)), perdio = !!(S.tSinCara && S.tSinCara >= yo.manoT0 && S.tSinCara <= yo.manoT0 + 6500);
     S.manoDatos = { quieto, pc, pl, pr, validas, vuelve, perdio };
     if (quieto > 14 || validas < 8) return; // se movía mucho antes, o pocas muestras: no se juzga
+    // lo que vio el detector de manos: cuánto de su cara llegó a cubrir una mano (0–1)
+    const [fx, fy, fw, fh] = yo.manoZ.cara0 || [0, 0, 0, 0]; let cubre = 0, vista = 0;
+    for (const x of S.manos) { if (x.t < yo.manoT0) continue; for (const [hx, hy, hw, hh] of x.cajas) { vista++; const ix = Math.max(0, Math.min(fx + fw, hx + hw) - Math.max(fx, hx)), iy = Math.max(0, Math.min(fy + fh, hy + hh) - Math.max(fy, hy)); if (fw && fh) cubre = Math.max(cubre, (ix * iy) / (fw * fh)); } }
+    S.manoDatos.cubre = cubre; S.manoDatos.vista = vista;
     const U = Math.max(16, 2.2 * quieto), lado = (pl >= U * 0.8 && Math.abs(tl - tc) < 1200) || (pr >= U * 0.8 && Math.abs(tr2 - tc) < 1200);
+    if (cubre >= 0.2) { // con el detector de manos: lo más fiable
+      if (pc >= U * 0.8 || perdio) { S.mano = 'si'; return; }
+      if (pc < 0.35 * U && !perdio) { S.mano = 'oculta'; return; }
+    }
     if ((pc >= U && lado && vuelve) || (perdio && Math.max(pl, pr, pc) >= U * 0.8)) S.mano = 'si';
     else if (!perdio && pl >= U && pr >= U && Math.abs(tl - tr2) >= 150 && pc < 0.45 * Math.min(pl, pr)) S.mano = 'oculta';
-    else if (Math.max(pl, pr, pc) < U * 0.6) S.mano = 'no';
+    else if (Math.max(pl, pr, pc) < U * 0.6 && !vista) S.mano = 'no';
   }
   async function reflejo() {
     // cuatro destellos (dos parejas magenta/cian, cada una en orden al azar). Para contar, los cuatro tienen que mover el color de su
