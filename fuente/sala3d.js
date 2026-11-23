@@ -577,8 +577,8 @@ function arranca() {
     // y más cerca: el holograma, a pantalla completa (dueño, 16:05)
     CAM.z = retrato ? 4.2 : 4.7;
     // (dueño, 22 nov: «en la versión pc el botón tapa la parte inferior del holograma»): la sala, algo más arriba, para que el botón
-    // y la flecha de bajar queden debajo de la base del proyector
-    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.105 : 0.1)), w, h);
+    // y la flecha de bajar queden debajo de la base del proyector (23 nov: en el móvil, algo más, por «Tengo un código» debajo)
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.14 : 0.1)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;

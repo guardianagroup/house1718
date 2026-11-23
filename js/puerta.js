@@ -64,9 +64,11 @@
     document.addEventListener('elixire-idioma', pintaPantalla);
     pintaPantalla();
   }
-  async function abre() {
+  // abre la roca y, dentro, lo que se pidió desde la portada (boton: «#crear», el código en pantalla; «#tengo», escribir el código)
+  async function abre(boton) {
     if (ocupado || abierta) return; ocupado = true;
     pantallaCompleta();
+    let hecho = false;
     try {
       if (scrollY > 4) { scrollTo({ top: 0, behavior: quieto ? 'auto' : 'smooth' }); await espera(quieto ? 0 : 800); }
       document.body.classList.add('cerrado');
@@ -74,8 +76,10 @@
       $('#consola').classList.add('fuera');
       if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
       ponError('elige', '');
-      muestra('elige');
+      if (!boton) muestra('elige');
+      hecho = true;
     } finally { ocupado = false; }
+    if (hecho && boton && $(boton)) $(boton).click();
   }
   async function cierra() {
     if (ocupado || !abierta) return; ocupado = true; suena(false);
@@ -93,16 +97,18 @@
   // enlace). Dueño, 22 nov: «en la versión del PC… pon también invitar a una llamada… como lo tenemos en la versión móvil»
   // (dueño, 23 nov 08:38: «desde el PC… mejor "Invitar a videollamada" o "Tengo un código", como teníamos antes, y sale el código en
   // pantalla; que sea fácil») en el ordenador, el botón abre las dos opciones; en el móvil sigue igual (la invitación por WhatsApp)
-  const eligePC = () => { if (!M || ocupado || abierta) return; ponError('elige', ''); muestra('elige'); };
-  const empieza = () => (enMovil() ? invitaMovil() : eligePC());
+  // (dueño, 23 nov 08:50: «lo de "Tengo un código" también tiene que salir en la pantalla principal, para que mi amigo no tenga que
+  // entrar a invitar una llamada; así es más fácil»): en la portada, las dos entradas. «Invitar a videollamada» (en el ordenador, el
+  // código sale ya en pantalla; en el móvil, la invitación por WhatsApp) y «Tengo un código» (directamente a escribirlo).
+  const empieza = () => { if (!M || ocupado || abierta) return; if (enMovil()) invitaMovil(); else abre('#crear'); };
   $('#empezar').addEventListener('click', empieza);
   for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', empieza);
+  $('#empezar-codigo').addEventListener('click', () => { if (!M || ocupado || abierta) return; abre('#tengo'); });
   for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', () => { olvidaInvitacion(); cierra(); });
-  // «Cancelar» y «Volver»: en el móvil, a la portada (no hay más pasos); en el ordenador, a elegir
+  // «Cancelar» y «Volver»: a la portada, donde están las dos entradas
   for (const b of document.querySelectorAll('[data-volver-elige]')) b.addEventListener('click', () => {
     if (M && M.activa) M.termina('cancela'); paraReloj(); olvidaInvitacion();
-    if (enMovil() || $('#panel-crear').classList.contains('invita')) { cierra(); return; }
-    ponError('elige', ''); muestra('elige');
+    cierra();
   });
 
   const ERRORES = { formato: 'faltan', 'no-vale': 'eNoVale', 'sin-rele': 'eSinRele', 'sin relé': 'eSinRele', 'sin respuesta': 'eSinRele', 'sin-pq': 'eSinPq', 'demasiados intentos': 'eDemasiados', 'sin-codigo': 'eSinCodigo' };
@@ -461,6 +467,32 @@
       const va = () => setTimeout(() => { if (invitacion) abreInvitacion(deB64u(invitacion.s), textoInvitacion(invitacion.s), true); }, 300);
       if (document.readyState === 'complete') va(); else addEventListener('load', va);
     } else if (g) { try { sessionStorage.removeItem(GUARDA); } catch (_) {} }
+  }
+
+  // ---- siempre la última versión (dueño, 23 nov 08:49: «a mi amigo… está recargando la página, refrescando y nada») ----
+  // Al cargar, al volver a la pestaña y cada 5 minutos se mira /version.txt (sin caché). Si hay una versión nueva y la página está
+  // tranquila en la portada (sin llamada, sin invitación, sin panel abierto), se carga la nueva con una dirección que ninguna caché
+  // tiene. Una sola vez por versión y pestaña: nunca en bucle. Nada que ver con la llamada: en ella no se mira.
+  {
+    const s = document.querySelector('script[src*="js/puerta.js"]');
+    const VERSION = ((s && /[?&]v=([\w-]+)/.exec(s.getAttribute('src') || '')) || [])[1];
+    try { const q = new URLSearchParams(location.search); if (q.has('v')) { q.delete('v'); const t = q.toString(); history.replaceState(history.state, '', location.pathname + (t ? '?' + t : '') + location.hash); } } catch (_) {}
+    let mirada = 0;
+    const tranquila = () => !abierta && !ocupado && !(M && M.activa) && !invitacion && !codigoEnlace && !semillaMovil && !document.body.classList.contains('cerrado') && scrollY < innerHeight * 0.5;
+    const miraVersion = async () => {
+      if (!VERSION || document.hidden || Date.now() - mirada < 30000 || !tranquila()) return;
+      mirada = Date.now();
+      let v = '';
+      try { const r = await fetch('/version.txt?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }); if (r.ok) v = (await r.text()).trim(); } catch (_) { return; }
+      if (!/^\d{8}-\d{2}$/.test(v) || v === VERSION || !tranquila()) return;
+      try { if (sessionStorage.getItem('elixire-version') === v) return; sessionStorage.setItem('elixire-version', v); } catch (_) { return; }
+      const q = new URLSearchParams(location.search); q.set('v', v);
+      location.replace(location.pathname + '?' + q.toString());
+    };
+    addEventListener('load', () => setTimeout(miraVersion, 2500));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) miraVersion(); });
+    addEventListener('pageshow', (e) => { if (e.persisted) miraVersion(); });
+    setInterval(miraVersion, 5 * 60 * 1000);
   }
 
   for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault());

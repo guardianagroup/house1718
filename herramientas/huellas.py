@@ -20,4 +20,9 @@ nuevo = re.sub(r'<script[^>]*\b(src)="([^"]+)"[^>]*>', pon, html)
 nuevo = re.sub(r'<link[^>]*rel="stylesheet"[^>]*\b(href)="([^"]+)"[^>]*>', pon, nuevo)
 if nuevo != html:
     (raiz / 'index.html').write_text(nuevo, encoding='utf-8')
+# /version.txt: la versión publicada (la de las hojas y los scripts de index.html). Las páginas abiertas la miran al cargar y al
+# volver a la pestaña; si es otra, se cargan de nuevo (js/puerta.js), para que nadie se quede con una versión vieja
+v = re.search(r'css/elixir\.css\?v=([\w-]+)', nuevo)
+if v:
+    (raiz / 'version.txt').write_text(v.group(1) + '\n', encoding='utf-8')
 print('\n'.join(re.findall(r'(?:src|href)="([^"]+)" integrity="(sha384-[^"]+)"', nuevo) and [f'{a}  {b}' for a, b in re.findall(r'(?:src|href)="([^"]+)" integrity="(sha384-[^"]+)"', nuevo)]))
