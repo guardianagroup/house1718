@@ -1837,13 +1837,21 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala .controles .cuenta[hidden]{display:none}
   .sala .controles .seg{position:relative}
 }
-/* el vídeo a toda la pantalla: sin la conversación ni la cabecera; lo que llega, en avisos arriba */
+/* ---------- la videollamada en grande o en pequeño, como en GUARDIANA (dueño, 23 nov 10:10) ---------- */
 @media (min-width:761px){
-  .sala.amplia{grid-template-rows:minmax(0,1fr)}
-  .sala.amplia>.sala-cuerpo{grid-row:1}
-  .sala.amplia .sala-cab,.sala.amplia .sala-palabras,.sala.amplia .chat{display:none!important}
-  .sala.amplia .sala-cuerpo{grid-template-columns:minmax(0,1fr)}
-  .sala.amplia .avisos-llamada{display:flex;position:absolute;z-index:6;top:20px;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 40px));flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;pointer-events:none}
+  /* en grande: a toda la ventana; la barra de arriba, encima de la imagen, con su degradado */
+  .sala.grande{grid-template-rows:minmax(0,1fr)}
+  .sala.grande>.sala-cuerpo{grid-row:1;grid-template-columns:minmax(0,1fr)}
+  .sala.grande>.sala-cab{position:absolute;left:0;right:0;top:0;z-index:8;border-bottom:0;background:linear-gradient(180deg,rgba(6,8,12,.84) 0%,rgba(6,8,12,.5) 58%,rgba(6,8,12,0) 100%);transition:opacity .35s ease}
+  .sala.grande .chat{display:none!important}
+  .sala.grande .vigia-estado,.sala.grande .video-tiempo{top:96px}
+  .sala.grande .vigia-panel{top:138px}
+  .sala.grande .controles,.sala.grande .vigia-estado,.sala.grande .video-tiempo{transition:opacity .35s ease}
+  /* a los 3 s sin mover el ratón, todo se esconde y queda la imagen entera */
+  .sala.grande.reposo>.sala-cab,.sala.grande.reposo .controles,.sala.grande.reposo .vigia-estado,.sala.grande.reposo .video-tiempo{opacity:0;pointer-events:none}
+  .sala.grande.reposo,.sala.grande.reposo *{cursor:none!important}
+  /* lo que llega mientras la conversación no está a la vista: en avisos, arriba */
+  .sala.grande .avisos-llamada{display:flex;position:absolute;z-index:6;top:96px;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 40px));flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;pointer-events:none}
   .sala .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 8px;border-radius:18px;background:rgba(12,16,22,.94);border:1px solid rgba(255,255,255,.12);
     box-shadow:0 14px 40px rgba(0,0,0,.55);color:#F4F6F8;animation:aparece .3s cubic-bezier(.2,.7,.2,1) both;transition:opacity .3s,transform .3s;cursor:pointer}
   .sala .toast.se-va{opacity:0;transform:translateY(-8px)}
@@ -1857,6 +1865,30 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala .t-barra{display:block;height:3px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
   .sala .t-barra > i{display:block;height:100%;width:0;background:#9CC3E4;transition:width .25s}
   .sala .t-accion{flex:0 0 auto;display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;border:0;background:#9CC3E4;color:#05070A;font:600 13px/1 var(--ui);text-decoration:none;cursor:pointer}
+  /* «Ver el chat», arriba, con lo que haya llegado sin leer */
+  .sala-botones #b-verchat .ico{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+  .sala-botones #b-verchat{overflow:visible}
+  .sala-botones #b-verchat .cuenta{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#E07A6C;color:#05070A;font:700 11px/20px var(--ui);letter-spacing:0;text-align:center;box-shadow:0 0 0 2px #05070A}
+  .sala-botones #b-verchat .cuenta[hidden]{display:none}
+  /* en pequeño: la conversación a todo el ancho y la llamada en una tarjeta, arriba a la derecha (se mueve con el ratón) */
+  .sala.mini>.sala-cuerpo{grid-template-columns:minmax(0,1fr)}
+  .sala.mini .chat{grid-column:1}
+  .sala.mini .escena-video{position:fixed;z-index:35;top:96px;right:24px;left:auto;bottom:auto;width:400px;height:270px;border-radius:18px;overflow:hidden;background:#05070A;
+    box-shadow:0 30px 80px rgba(0,0,0,.62),0 0 0 1px rgba(156,195,228,.28);cursor:grab}
+  .sala.mini.mini-movida .escena-video{left:var(--mini-x);top:var(--mini-y);right:auto}
+  .sala.mini.mini-arrastrando .escena-video{cursor:grabbing;user-select:none}
+  .sala.mini .video-suyo{position:absolute;inset:0;width:100%!important;height:100%!important;object-fit:cover}
+  .sala.mini .video-mio{left:auto!important;top:10px!important;right:10px!important;bottom:auto!important;width:30%!important;height:auto!important;aspect-ratio:16/10!important;border-radius:8px!important;cursor:inherit}
+  .sala.mini .raya-division,.sala.mini .vigia-estado,.sala.mini .vigia-panel,.sala.mini .filtro-otro,.sala.mini .otro-chat,.sala.mini .avisos-llamada,.sala.mini .video-reto{display:none!important}
+  .sala.mini .video-tiempo{top:10px;left:10px;right:auto;padding:6px 9px;font-size:12px}
+  .sala.mini .controles{bottom:10px;gap:8px;--k:1!important;transform:translateX(-50%)!important}
+  .sala.mini .controles .seg{width:auto;gap:0}
+  .sala.mini .controles .seg>span{display:none}
+  .sala.mini .controles .seg>svg{width:42px!important;height:42px!important;padding:12px}
+  .sala.mini .controles .seg:not(#b-micro):not(#b-camara):not(#b-grande):not(#b-colgar){display:none!important}
+  .sala.mini .controles #b-colgar{margin-left:0}
+  .sala.mini .controles #b-colgar>svg{padding:11px}
+  .sala:not(.mini) .controles #b-grande{display:none!important}
 }
 /* la pantalla que comparte la otra persona, entera (sin recortar) */
 .sala.otro-pantalla .video-suyo{object-fit:contain!important;background:#05070A}
@@ -1900,8 +1932,8 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
    70 %, «--mi-p»); tu imagen pequeña se mueve con el ratón ---------- */
 .raya-division{display:none}
 @media (min-width:761px){
-  .sala.dividida:not(.comprobando) .video-suyo{position:absolute;left:0;top:0;right:auto;bottom:auto;width:calc((1 - var(--mi-p,.5)) * 100%)!important;height:100%!important;object-fit:cover}
-  .sala.dividida:not(.comprobando) .video-mio{position:absolute;left:calc((1 - var(--mi-p,.5)) * 100%)!important;top:0!important;right:auto!important;bottom:auto!important;
+  .sala.dividida:not(.comprobando):not(.mini) .video-suyo{position:absolute;left:0;top:0;right:auto;bottom:auto;width:calc((1 - var(--mi-p,.5)) * 100%)!important;height:100%!important;object-fit:cover}
+  .sala.dividida:not(.comprobando):not(.mini) .video-mio{position:absolute;left:calc((1 - var(--mi-p,.5)) * 100%)!important;top:0!important;right:auto!important;bottom:auto!important;
     width:calc(var(--mi-p,.5) * 100%)!important;height:100%!important;max-width:none!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;
     object-fit:cover;z-index:auto!important;cursor:default}
   .sala.dividida .video-mio,.sala.dividida .video-suyo{transition:none}
@@ -1918,7 +1950,7 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala.moviendo-mi .video-mio{cursor:grabbing!important;transition:none!important;box-shadow:0 24px 60px rgba(0,0,0,.7)}
   .sala.moviendo-mi,.sala.moviendo-mi *{user-select:none;-webkit-user-select:none}
   /* con la pantalla partida, los avisos de la otra persona, en su parte */
-  .sala.dividida:not(.comprobando) .filtro-otro,.sala.dividida:not(.comprobando) .otro-chat{left:calc((1 - var(--mi-p,.5)) * 50%)}
+  .sala.dividida:not(.comprobando):not(.mini) .filtro-otro,.sala.dividida:not(.comprobando):not(.mini) .otro-chat{left:calc((1 - var(--mi-p,.5)) * 50%)}
   /* «Cambiar vista» y «Pantalla completa», con sus dos iconos (como en GUARDIANA) */
   .sala .controles #b-vista .peq,.sala .controles #b-vista.partida .parte{display:none}
   .sala .controles #b-vista.partida .peq{display:inline}
