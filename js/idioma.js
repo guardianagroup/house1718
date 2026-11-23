@@ -313,8 +313,21 @@
   let guardado = null; try { guardado = localStorage.getItem('elixire-lengua'); } catch (_) {}
   const delEnlace = (/[#&]l=(es|en)\b/.exec(location.hash || '') || [])[1]; // la invitación lleva el idioma de quien la manda
   const inicial = (guardado || delEnlace) === 'es' ? 'es' : 'en';
-  for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => { pon(b.dataset.idioma); try { localStorage.setItem('elixire-lengua', actual); } catch (_) {} });
+  // ES / EN (dueño, 23 nov 12:15: «ponlo bien profesional… se da y no sabes si has clicado; va como a tirones»): al tocar, la ficha
+  // y el botón cambian en el acto; la página se traduce justo después de pintarlos (la ficha se desliza suave mientras tanto). Tocar el
+  // idioma que ya está no hace nada.
+  const grupoIdioma = document.querySelector('.idiomas');
+  let pedido = actual, traduceT = 0;
+  const marca = (k) => { pedido = k; if (grupoIdioma) grupoIdioma.dataset.pedido = k; for (const b of document.querySelectorAll('[data-idioma]')) b.setAttribute('aria-pressed', String(b.dataset.idioma === k)); };
+  for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => {
+    const k = b.dataset.idioma === 'en' ? 'en' : 'es';
+    if (k === pedido) return;
+    marca(k); try { localStorage.setItem('elixire-lengua', k); } catch (_) {}
+    cancelAnimationFrame(traduceT); traduceT = requestAnimationFrame(() => setTimeout(() => { if (pedido === k && actual !== k) pon(k); }, 0));
+  });
   window.ElixireIdioma = { t, pon, actual: () => actual };
   if (inicial !== 'es') pon(inicial);
+  marca(actual);
   document.documentElement.classList.remove('traduciendo');
+  if (grupoIdioma) requestAnimationFrame(() => requestAnimationFrame(() => grupoIdioma.classList.add('listo')));
 })();

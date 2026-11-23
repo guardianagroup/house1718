@@ -56,19 +56,21 @@
   };
   const mide = () => { for (const b of bloques) if (!b.fijo) b.kt = objetivo(b); if (!andando) { andando = true; t0 = performance.now(); requestAnimationFrame(cuadro); } };
   let pend = false; const pide = () => { if (!pend) { pend = true; requestAnimationFrame(() => { pend = false; mide(); }); } };
-  function prepara() {
+  function prepara(cambio) {
     const leidos = new Set(bloques.filter((b) => b.k >= b.w.length).map((b) => b.el));
     H0.clear(); H1.clear();
     bloques = [...document.querySelectorAll(LUZ)].map((el) => ({ el, w: palabras(el), k: 0, kt: 0, acc: 0, fijo: false })).filter((b) => b.w.length > 1);
     for (const b of bloques) {
       const r = b.el.getBoundingClientRect(), n = b.w.length;
       if (leidos.has(b.el) || r.bottom < 0) { b.k = b.kt = n + 2; b.fijo = true; continue; } // ya leído (o por encima): encendido
+      // al cambiar de idioma, lo que está a la vista sigue encendido, sin volver a apagarse y encenderse (dueño, 23 nov 12:15)
+      if (cambio === true && r.top < innerHeight && r.bottom > 0) { b.k = b.kt = n + 2; b.fijo = true; continue; }
       b.w.forEach((_, i) => pon(b, i, 2));
       if (r.top < innerHeight && r.bottom > 0) { b.fijo = true; b.kt = n + 2; } // a la vista al llegar: se enciende entero
     }
     setTimeout(mide, 180);
   }
   addEventListener('scroll', pide, { passive: true }); addEventListener('resize', pide);
-  document.addEventListener('elixire-idioma', () => requestAnimationFrame(prepara));
+  document.addEventListener('elixire-idioma', () => requestAnimationFrame(() => prepara(true)));
   prepara();
 })();

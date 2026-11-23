@@ -2026,3 +2026,25 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 /* (dueño, 23 nov 11:38: «de la versión móvil quítame lo de "Tengo un código"; solamente uno es el que invita y ya está; más fácil
    así»): en el móvil, en la portada, solo «Invitar a una llamada» (quien recibe la invitación por WhatsApp entra con el enlace) */
 @media (max-width:760px){ .portada-botones #empezar-codigo{display:none!important} }
+
+/* ---------- el idioma, ES / EN (dueño, 23 nov 12:15: «ponlo bien profesional… ahora se da y no sabes si has clicado; va como a
+   tirones»): un selector de dos posiciones con su ficha. Al tocar, la ficha (azul hielo) se desliza en el acto hasta el idioma
+   elegido, que queda en blanco; el otro, apagado. La ficha solo se mueve con transform: va suave aunque la página esté traduciendo.
+   Antes de que cargue nada, la posición sale del idioma de la página (idioma-inicio.js), así que no salta al abrir. ---------- */
+.idiomas{--pad:3px;padding:var(--pad);gap:0}
+.idiomas .idioma-ficha{position:absolute;z-index:0;top:var(--pad);bottom:var(--pad);left:var(--pad);width:calc(50% - var(--pad));border-radius:11px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(156,195,228,.34),rgba(156,195,228,.17));box-shadow:inset 0 0 0 1px rgba(156,195,228,.6),0 6px 16px -8px rgba(156,195,228,.55);
+  transform:translateX(0);will-change:transform}
+html[lang="en"] .idiomas:not([data-pedido]) .idioma-ficha,.idiomas[data-pedido="en"] .idioma-ficha{transform:translateX(100%)}
+.idiomas[data-pedido="es"] .idioma-ficha{transform:translateX(0)}
+.idiomas.listo .idioma-ficha{transition:transform .24s cubic-bezier(.2,.85,.25,1)}
+.cabecera .idiomas .seg{position:relative;z-index:1;height:30px;min-width:48px;padding:0 12px;background:none!important;text-shadow:none!important;
+  color:rgba(240,244,248,.46);font-weight:500;transition:color .16s ease,transform .12s ease;touch-action:manipulation}
+.cabecera .idiomas .seg+.seg::before{content:none}
+html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[lang="en"] .cabecera .idiomas:not([data-pedido]) [data-idioma="en"],
+.cabecera .idiomas[data-pedido="es"] [data-idioma="es"],.cabecera .idiomas[data-pedido="en"] [data-idioma="en"]{color:#F4F6F8}
+.cabecera .idiomas[data-pedido="es"] [data-idioma="en"]:hover,.cabecera .idiomas[data-pedido="en"] [data-idioma="es"]:hover{color:rgba(240,244,248,.82)}
+.cabecera .idiomas .seg:active{transform:scale(.93)}
+.cabecera .idiomas .seg:focus-visible{outline:2px solid rgba(156,195,228,.85);outline-offset:-3px;border-radius:11px}
+@media (max-width:760px){ .cabecera .idiomas .seg{height:26px;min-width:44px;padding:0 10px} }
+@media (prefers-reduced-motion:reduce){ .idiomas.listo .idioma-ficha{transition:none} }
