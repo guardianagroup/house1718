@@ -437,7 +437,7 @@
     // (de momento, las débiles solo se ven en el modo diagnóstico: sin calibrar con móviles de verdad, no bastan para avisar)
     else if (mirado > 20000 && vida.length < 2 && medias.length >= 2) nivel = 'atencion';
     const motivos = k.sort((a, b) => FUERZA[b] - FUERZA[a]).slice(0, 2);
-    decide(nivel, motivos);
+    decide(nivel, motivos); pintaChip();
     if (diagOn || diagVisible) pintaDiag();
   }
 
@@ -474,6 +474,64 @@
     } else if (S.mostrado === 'atencion' && S.vida.length >= 2) {
       S.mostrado = 'bien'; S.motivos = []; muestraAviso('bien', []); clearTimeout(tBien); tBien = setTimeout(() => { if (S && S.mostrado === 'bien') oculta(); }, 6000);
     }
+  }
+
+  // ---------- el modo espectador, visible y discreto (dueño, 23 nov 06:52: «profesionalizar» la detección en modo espectador) ----------
+  // Durante toda la llamada el vigía observa en silencio, sin pedir nada. Una etiqueta pequeña dice qué está viendo (analizando, sin
+  // señales raras, algo raro, riesgo, no se ve la cara) y al tocarla se abre un panel con las señales en directo y «Comprobar a fondo».
+  // Las señales débiles, sin calibrar con móviles de verdad, nunca se pintan como «raro»: como mucho, «aún no».
+  let chip = null, panel = null;
+  const SENALES = ['directo', 'camara', 'parpadeo', 'labios', 'pulso', 'relieve'];
+  function creaChip() {
+    chip = document.createElement('button'); chip.type = 'button'; chip.className = 'vigia-estado'; chip.hidden = true; chip.setAttribute('aria-expanded', 'false');
+    chip.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ESCUDO + '"/><path class="ve-ok" d="m9 12.2 2.1 2.1 4-4.2"/></svg><b></b><span class="ve-txt"></span>';
+    chip.addEventListener('click', () => abrePanel(panel.hidden));
+    panel = document.createElement('div'); panel.className = 'vigia-panel'; panel.hidden = true; panel.setAttribute('role', 'dialog');
+    panel.innerHTML = '<div class="vp-cab"><b></b><button type="button" class="vp-cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div><p class="vp-sub"></p>' +
+      '<ul class="vp-lista">' + SENALES.map((k) => '<li data-k="' + k + '"><i aria-hidden="true"></i><span></span><em></em></li>').join('') + '</ul>' +
+      '<button type="button" class="vp-comprobar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9 10h.01M15 10h.01M9.5 14.5c1.4 1.2 3.6 1.2 5 0"/></svg><span></span></button>';
+    panel.querySelector('.vp-cerrar').addEventListener('click', () => abrePanel(false));
+    panel.querySelector('.vp-comprobar').addEventListener('click', () => { abrePanel(false); comprueba(); });
+    caja.append(chip, panel);
+  }
+  function abrePanel(si) { if (!panel) return; panel.hidden = !si; chip.setAttribute('aria-expanded', String(!!si)); chip.classList.toggle('abierto', !!si); document.body.classList.toggle('vigia-abierto', !!si); if (si) pintaPanel(); }
+  function senales() {
+    const o = {}, c = (S && S.crudos) || {}, v = (S && S.vida) || [], t = performance.now(), mirado = S ? t - S.t0 : 0;
+    // «en directo» solo con pruebas de que la imagen cambia (una foto puesta como cámara también manda fotogramas)
+    const q = S ? S.quietas : [], cambia = q.length >= 15 && q[q.length - 1].t - q[0].t >= 8000 && media(q.map((x) => x.q)) < 0.8;
+    o.directo = c.congelada || c.bucle ? 'raro' : mirado > 10000 && S && t - S.ultFrame < 1500 && cambia ? 'bien' : 'espera';
+    const k = S && S.fuente && S.fuente.k; o.camara = k === 'virtual' ? 'raro' : k && !['intermedia', 'apagada'].includes(k) ? 'bien' : 'espera';
+    o.parpadeo = c.sinParpadeo ? 'raro' : v.includes('parpadeo') ? 'bien' : 'espera';
+    o.labios = c.labios ? 'raro' : v.includes('labios') ? 'bien' : 'espera';
+    o.pulso = v.includes('pulso') ? 'bien' : 'espera';
+    o.relieve = c.plano ? 'raro' : v.includes('relieve') ? 'bien' : 'espera';
+    return o;
+  }
+  function estadoChip() {
+    const e = M.estadoLlamada ? M.estadoLlamada() : {}, f = e.otroFiltro || {};
+    if (f.cara || f.chat) return 'oculta';
+    const t = performance.now(); if (!S.crudos || t - S.t0 < 8000) return 'analiza';
+    // «no se ve su cara» solo si las últimas detecciones no la encuentran durante más de 8 s (un fallo suelto no cuenta)
+    if (S.tSinCara && S.tSinCara > (S.tCara || 0) && S.tSinCara - (S.tCara || S.t0) > 8000) return 'sinCara';
+    const J = S.indicios || {}, k = Object.keys(J);
+    if (k.some((x) => FUERZA[x] === 3) || k.filter((x) => FUERZA[x] === 2).length >= 3) return 'riesgo';
+    if (k.some((x) => FUERZA[x] === 2)) return 'atencion';
+    const mirado = t - S.t0; return mirado > 20000 && ((S.vida || []).length >= 2 || mirado > 45000) ? 'normal' : 'analiza';
+  }
+  function pintaChip() {
+    if (!S) { if (chip) { chip.hidden = true; abrePanel(false); } return; }
+    if (!chip) creaChip();
+    const ocultar = !!compr || !!S.mostrado; chip.hidden = ocultar; if (ocultar) { abrePanel(false); return; }
+    const est = estadoChip(); chip.dataset.e = est;
+    chip.querySelector('b').textContent = tr('vgp_vigia'); chip.querySelector('.ve-txt').textContent = tr('vgp_' + est);
+    chip.setAttribute('aria-label', tr('vgp_vigia') + ': ' + tr('vgp_' + est));
+    if (!panel.hidden) pintaPanel();
+  }
+  function pintaPanel() {
+    panel.querySelector('.vp-cab b').textContent = tr('vgp_titulo'); panel.querySelector('.vp-sub').textContent = tr('vgp_sub');
+    panel.querySelector('.vp-cerrar').setAttribute('aria-label', tr('vgp_cerrar')); panel.querySelector('.vp-comprobar span').textContent = tr('vgp_comprobar');
+    const o = senales();
+    for (const li of panel.querySelectorAll('li')) { const k = li.dataset.k; li.dataset.e = o[k]; li.querySelector('span').textContent = tr('vgp_' + k); li.querySelector('em').textContent = tr('vgp_' + o[k]); }
   }
 
   // ---------- el modo diagnóstico, para calibrar con móviles de verdad (?diag, o mantener pulsado el tiempo de la llamada) ----------
@@ -960,7 +1018,7 @@
   function preguntaFuente() { if (!S || !M.fuente) return; M.fuente().then((f) => { if (S && f) S.fuente = f; }).catch(() => {}); }
   function arranca() {
     if (S) return;
-    S = nuevo();
+    S = nuevo(); pintaChip();
     tArranca = setTimeout(async () => {
       if (!S) return;
       try { await cargaHumano(); } catch (_) { if (diagOn || diagVisible) pintaDiag(); return; }
@@ -972,7 +1030,7 @@
   }
   function para() {
     clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); clearTimeout(tBien); paraMuestreo();
-    cierraComprobacion(); S = null; oculta(); if (pre) pre.hidden = true;
+    cierraComprobacion(); S = null; oculta(); pintaChip(); if (pre) pre.hidden = true;
   }
   M.on('filtro', (f) => { if (compr && compr.fase !== 'fin' && f && (f.chat || f.cara)) { cierraComprobacion(); comprueba(); } });
   M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) arranca(); else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });

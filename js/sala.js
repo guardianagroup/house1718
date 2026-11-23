@@ -119,6 +119,44 @@
   const icono = (k) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('aria-hidden', 'true'); for (const d of ICONOS[k] || ICONOS.doc) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); v.append(p); } return v; };
   const esFoto = (m) => /^image\/(png|jpe?g|gif|webp|heic|heif|avif)$/i.test(m || '');
   const esAudio = (m, n) => /^audio\//i.test(m || '') || /^nota-de-voz/i.test(n || '');
+  // ---------- escudo durante la llamada (dueño, 23 nov 07:06: «más fuertes en cuanto a robo de datos y espías mientras sucede la llamada») ----------
+  // 1) al salir de la app (otra app, el selector de apps, otra pestaña) la llamada se tapa: lo que hay en pantalla no queda a la vista
+  //    ni en la miniatura del sistema, en la medida en que el sistema lo permite. 2) si una extensión del navegador se mete en la página
+  //    (las que leen o corrigen lo que escribes, gestores de contraseñas, grabadores…), se avisa una vez: podría leer los mensajes y ver la llamada.
+  const tapa = (si) => { if (si && sala.hidden) return; sala.classList.toggle('cubierta', !!si); }; // al volver se destapa siempre
+  document.addEventListener('visibilitychange', () => tapa(document.visibilityState === 'hidden'));
+  addEventListener('pagehide', () => tapa(true)); addEventListener('pageshow', () => tapa(false));
+  const EXTENSIONES = [[/grammarly/i, 'Grammarly'], [/1password/i, '1Password'], [/lastpass/i, 'LastPass'], [/bitwarden|^bit-/i, 'Bitwarden'], [/dashlane/i, 'Dashlane'], [/loom/i, 'Loom'], [/deepl/i, 'DeepL'], [/honey/i, 'Honey'], [/languagetool|^lt-/i, 'LanguageTool'], [/keeper/i, 'Keeper'], [/nordpass/i, 'NordPass']];
+  let espias = null, espiaVisto = false;
+  function ajeno(n) {
+    if (!n || n.nodeType !== 1) return null;
+    const tag = n.tagName.toLowerCase(), src = n.getAttribute('src') || n.getAttribute('href') || '';
+    if (!tag.includes('-') && tag !== 'iframe' && !/^(chrome|moz|safari-web|ms-browser|edge)-extension:/i.test(src)) return null;
+    const k = tag + ' ' + src + ' ' + (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+    const e = EXTENSIONES.find(([r]) => r.test(k)); return e ? e[1] : '';
+  }
+  function avisoEspia(nombre) {
+    if (espiaVisto || sala.hidden) return; espiaVisto = true;
+    const d = document.createElement('div'); d.className = 'escudo-aviso'; d.setAttribute('role', 'alert');
+    d.innerHTML = '<span class="ea-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 5 6v5.6c0 4.4 3 8.2 7 9.3 4-1.1 7-4.9 7-9.3V6l-7-2.8Z"/><path d="M12 8.2v4.6M12 15.9v.1"/></svg></span><span class="ea-txt"><b></b><small></small></span><button type="button" class="ea-cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>';
+    d.querySelector('b').textContent = tr('espiaTitulo').replace('{n}', nombre ? ' (' + nombre + ')' : '');
+    d.querySelector('small').textContent = tr('espiaTexto');
+    d.querySelector('.ea-cerrar').setAttribute('aria-label', tr('vg_cerrar').split(' ')[0]);
+    d.querySelector('.ea-cerrar').addEventListener('click', () => d.remove());
+    sala.append(d);
+  }
+  function vigilaEspias(si) {
+    if (espias) { espias.disconnect(); espias = null; }
+    if (!si || typeof MutationObserver === 'undefined') return;
+    const mira = (n) => { const r = ajeno(n); if (r != null) { avisoEspia(r); return true; } return false; };
+    for (const n of document.querySelectorAll('iframe, [src^="chrome-extension:"], [src^="moz-extension:"], [src^="safari-web-extension:"]')) if (mira(n)) break;
+    if (!espiaVisto) for (const n of document.documentElement.children) if (mira(n)) break;
+    if (!espiaVisto && document.body) for (const n of document.body.children) if (mira(n)) break;
+    espias = new MutationObserver((ms) => { if (espiaVisto) return; for (const m of ms) for (const n of m.addedNodes) if (mira(n)) return; });
+    espias.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  M.on('llamada', (e) => { if (!e) return; if (e.estado === 'hablando') { if (!espias) vigilaEspias(true); } else if (['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) { vigilaEspias(false); espiaVisto = false; for (const d of sala.querySelectorAll('.escudo-aviso')) d.remove(); } });
+
   function toast(id, o) {
     if (!movil.matches || !abierta || enChat) return null;
     let li = avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]');

@@ -1687,3 +1687,57 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 }
 /* la app del iPhone: la portada y la roca, a pantalla entera (el botón baja la altura de la barra de estado) */
 @media (max-width:760px){ .app-ios .portada{height:var(--alto-app,100svh)} .app-ios .lienzo3d{height:var(--alto-app,100vh)} }
+/* (23 nov) el vigía en modo espectador: etiqueta discreta con el estado y panel con las señales en directo */
+.vigia-estado{position:absolute;z-index:5;right:22px;top:66px;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px 0 10px;border-radius:16px;
+  background:rgba(8,11,16,.62);border:1px solid rgba(156,195,228,.22);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#C9D6E3;font:500 12.5px/1 var(--ui);white-space:nowrap;cursor:pointer;--ve:#9CC3E4}
+.vigia-estado[hidden]{display:none}
+.vigia-estado svg{width:15px;height:15px;fill:none;stroke:var(--ve);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.vigia-estado .ve-ok{opacity:0}
+.vigia-estado[data-e="normal"] .ve-ok{opacity:1}
+.vigia-estado b{font-weight:600;color:#F4F6F8}
+.vigia-estado .ve-txt{color:var(--ve)}
+.vigia-estado .ve-txt::before{content:'·';margin-right:6px;color:#5F7387}
+.vigia-estado[data-e="normal"]{--ve:#5CC98A;border-color:rgba(92,201,138,.3)}
+.vigia-estado[data-e="atencion"]{--ve:#F0C77F;border-color:rgba(240,199,127,.4)}
+.vigia-estado[data-e="riesgo"]{--ve:#E07A6C;border-color:rgba(224,122,108,.5)}
+.vigia-estado[data-e="sinCara"],.vigia-estado[data-e="oculta"]{--ve:#8FA2B5}
+.vigia-estado[data-e="analiza"] svg{animation:veLatido 1.6s ease-in-out infinite}
+@keyframes veLatido{50%{opacity:.45}}
+.vigia-estado.abierto{border-color:rgba(156,195,228,.5)}
+.vigia-panel{position:absolute;z-index:7;right:22px;top:106px;width:min(330px,calc(100% - 24px));box-sizing:border-box;padding:14px 16px 14px;border-radius:18px;
+  background:rgba(10,13,18,.96);border:1px solid rgba(156,195,228,.2);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 18px 40px -16px rgba(0,0,0,.8);color:#F4F6F8}
+.vigia-panel[hidden]{display:none}
+.vp-cab{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vp-cab b{font:600 15.5px/1.2 var(--ui)}
+.vp-cerrar{display:grid;place-items:center;width:30px;height:30px;margin:-6px -6px 0 0;border:0;border-radius:50%;background:transparent;color:#8FA2B5;cursor:pointer}
+.vp-cerrar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.vp-sub{margin:5px 0 8px;font:400 12.5px/1.45 var(--ui);color:#9AAFC3}
+.vp-lista{list-style:none;margin:0;padding:0}
+.vp-lista li{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06);font:500 13px/1.2 var(--ui)}
+.vp-lista li i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font:700 11px/1 var(--ui);font-style:normal;background:rgba(143,162,181,.15);color:#8FA2B5}
+.vp-lista li i::before{content:'…'}
+.vp-lista li[data-e="bien"] i{background:rgba(92,201,138,.16);color:#5CC98A}
+.vp-lista li[data-e="bien"] i::before{content:'✓'}
+.vp-lista li[data-e="raro"] i{background:rgba(224,122,108,.18);color:#E07A6C}
+.vp-lista li[data-e="raro"] i::before{content:'!'}
+.vp-lista li em{font:500 12px/1 var(--ui);font-style:normal;color:#8FA2B5}
+.vp-lista li[data-e="bien"] em{color:#5CC98A}
+.vp-lista li[data-e="raro"] em{color:#E07A6C}
+.vp-comprobar{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:42px;margin-top:10px;border:0;border-radius:22px;background:#9CC3E4;color:#06080C;font:600 14.5px/1 var(--ui);cursor:pointer}
+.vp-comprobar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:760px){
+  .vigia-estado{right:auto;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 110px)}
+  .vigia-panel{right:auto;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 150px)}
+  .filtro-otro{top:calc(env(safe-area-inset-top) + 152px)}
+}
+@media (max-width:760px){ body.vigia-abierto .b-filtro{visibility:hidden} }
+/* (23 nov) escudo en la llamada: al salir de la app la pantalla se tapa; aviso si una extensión del navegador se mete en la página */
+.sala.cubierta::after{content:'ELIXIRE';position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#06080C;color:#F4F6F8;font:600 20px/1 var(--display);letter-spacing:.5em;text-indent:.5em}
+.escudo-aviso{position:fixed;z-index:60;left:50%;top:calc(env(safe-area-inset-top) + 14px);transform:translateX(-50%);width:min(460px,calc(100% - 24px));box-sizing:border-box;display:grid;grid-template-columns:36px 1fr 30px;gap:12px;align-items:start;
+  padding:12px 12px 12px 14px;border-radius:16px;background:rgba(14,12,8,.985);border:1px solid rgba(240,199,127,.45);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 16px 40px -18px rgba(0,0,0,.85);color:#F4F6F8}
+.escudo-aviso .ea-ico{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:rgba(240,199,127,.14);color:#F0C77F}
+.escudo-aviso svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.escudo-aviso .ea-txt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.escudo-aviso b{font:600 14px/1.3 var(--ui)}
+.escudo-aviso small{font:400 12.5px/1.45 var(--ui);color:#C9BFAE}
+.escudo-aviso .ea-cerrar{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:#B9AE9B;cursor:pointer}
