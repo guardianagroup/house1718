@@ -1105,20 +1105,54 @@
   // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
-  // (dueño, 23 nov 16:25: «En llamada de voz parece en altavoz, podemos cambiarla a normal?») en el iPhone, la llamada de voz suena
-  // por el auricular, como una llamada de teléfono, y «Altavoz» la pasa al altavoz (y vuelta). Solo donde el navegador deja elegirlo
-  // (los del iPhone: navigator.audioSession); la videollamada, por el altavoz, como siempre.
-  const SESION_AUDIO = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
+  // ---- por dónde suena (dueño, 23 nov 16:25: «En llamada de voz parece en altavoz, podemos cambiarla a normal?»; 17:24–17:26: «el
+  // audio sale en altavoz y no se cambia a normal»): la llamada de voz, por el auricular, como una llamada de teléfono, y «Altavoz», al
+  // altavoz y vuelta. El tipo de sesión de sonido («play-and-record») solo no basta: el iPhone lo deja en el altavoz. Lo que sí lo
+  // cambia es elegir la salida de cada elemento que suena (setSinkId, que Safari tiene desde iOS 26 y que lista el auricular y el
+  // altavoz). Sin eso (iOS anterior), el navegador no deja elegirlo y el botón no sale. La videollamada, por el altavoz, como siempre.
+  const TEL_SALIDA = /iPhone|iPod|Android/i.test(navigator.userAgent);
+  const TIPO_SESION = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
+  const SALIDAS = TEL_SALIDA && typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype && !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices);
+  const ES_ALTAVOZ = /speaker|altavoz|haut-parleur|lautsprecher|altoparlante|alto-falante|luidspreker/i;
+  const ES_AURICULAR = /receiver|receptor|auricular|earpiece|iphone|écouteur|hörer|ricevitore|handset/i;
   const bAltavoz = $('#b-altavoz');
-  let altavoz = false, tipoAudio = '';
-  function ponAudio(voz) {
-    if (!voz) altavoz = false;
-    if (bAltavoz) { bAltavoz.hidden = !(SESION_AUDIO && voz); bAltavoz.setAttribute('aria-pressed', String(altavoz)); }
-    if (!SESION_AUDIO) return;
-    const t = voz && !altavoz ? 'play-and-record' : 'auto'; if (t === tipoAudio) return; tipoAudio = t;
-    try { navigator.audioSession.type = t; } catch (_) {}
+  let altavoz = false, enVoz = false, salidas = null, leyendo = null, pendiente = false;
+  function leeSalidas() {
+    if (!SALIDAS) return Promise.resolve(null);
+    if (!leyendo) leyendo = navigator.mediaDevices.enumerateDevices().then((ds) => {
+      const out = ds.filter((d) => d.kind === 'audiooutput' && d.deviceId);
+      const alt = out.find((d) => ES_ALTAVOZ.test(d.label || ''));
+      let aur = out.find((d) => d !== alt && ES_AURICULAR.test(d.label || '') && !ES_ALTAVOZ.test(d.label || ''));
+      if (!aur && alt) { const resto = out.filter((d) => d !== alt && d.deviceId !== 'default'); if (resto.length === 1) aur = resto[0]; }
+      salidas = alt && aur ? { altavoz: alt.deviceId, auricular: aur.deviceId } : null; return salidas;
+    }).catch(() => null).finally(() => { leyendo = null; });
+    return leyendo;
   }
-  if (bAltavoz) bAltavoz.addEventListener('click', () => { altavoz = !altavoz; ponAudio(sala.classList.contains('solo-voz')); });
+  // los elementos que suenan: la persona de la llamada y los recuadros del grupo (nunca mi propia imagen)
+  const suenan = () => [...document.querySelectorAll('#escena-video video')].filter((v) => v.id !== 'video-mio' && !v.classList.contains('video-mio') && v.srcObject && v.srcObject.getAudioTracks && v.srcObject.getAudioTracks().length);
+  function aplicaSalida(forzar) {
+    if (!salidas) return;
+    const id = enVoz && !altavoz ? salidas.auricular : salidas.altavoz;
+    for (const v of suenan()) {
+      if (!forzar && v.sinkId === id) continue;
+      // (sin un toque, el iPhone puede no dejar cambiarla: entonces se cambia en el primer toque en la llamada)
+      try { const p = v.setSinkId(id); if (p && p.catch) p.catch(() => { pendiente = true; }); } catch (_) { pendiente = true; }
+    }
+  }
+  function ponTipo() { if (!TIPO_SESION) return; const t = enVoz && !altavoz ? 'play-and-record' : 'auto'; try { if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } catch (_) {} }
+  function pintaAltavoz() { if (!bAltavoz) return; bAltavoz.hidden = !(enVoz && salidas); bAltavoz.setAttribute('aria-pressed', String(altavoz)); }
+  let salidaT = 0;
+  function ponAudio(voz) {
+    if (voz !== enVoz) {
+      enVoz = voz; if (!voz) altavoz = false; ponTipo();
+      clearInterval(salidaT); salidaT = voz && SALIDAS ? setInterval(() => aplicaSalida(false), 2000) : 0;
+      if (voz && SALIDAS) leeSalidas().then(() => { pintaAltavoz(); aplicaSalida(true); }); else aplicaSalida(true);
+    } else aplicaSalida(false); // (los recuadros nuevos del grupo, a la misma salida)
+    pintaAltavoz();
+  }
+  if (bAltavoz) bAltavoz.addEventListener('click', () => { altavoz = !altavoz; pendiente = false; ponTipo(); aplicaSalida(true); pintaAltavoz(); });
+  document.addEventListener('pointerdown', () => { if (pendiente && enVoz && salidas) { pendiente = false; aplicaSalida(true); } }, true);
+  if (SALIDAS && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (enVoz) leeSalidas().then(() => { pintaAltavoz(); aplicaSalida(true); }); });
   function pintaLlamadaVoz(si, e) {
     ponAudio(si);
     const bc = $('#b-camara'), s0 = bc && bc.querySelector('span');
