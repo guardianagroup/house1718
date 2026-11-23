@@ -365,11 +365,11 @@
   // ---------- las señales y el aviso (cada segundo) ----------
   const TXT = {
     congelada: 'vg_congelada', bucle: 'vg_bucle', virtual: 'vg_virtual', sinParpadeo: 'vg_sinParpadeo', labios: 'vg_labios', plano: 'vg_plano',
-    cortes: 'vg_cortes', sinGestos: 'vg_sinGestos', metronomo: 'vg_metronomo', modelos: 'vg_modelos', sinPulso: 'vg_sinPulso', noGira: 'vg_noGira', desfase: 'vg_desfase', costura: 'vg_costura', manoOculta: 'vg_manoOculta', perfil: 'vg_perfil', suave: 'vg_suave', noMano: 'vg_noMano', pantalla: 'vg_pantalla', otraCara: 'vg_otraCara',
+    cortes: 'vg_cortes', sinGestos: 'vg_sinGestos', metronomo: 'vg_metronomo', modelos: 'vg_modelos', sinPulso: 'vg_sinPulso', noGira: 'vg_noGira', desfase: 'vg_desfase', costura: 'vg_costura', manoOculta: 'vg_manoOculta', perfil: 'vg_perfil', suave: 'vg_suave', noMano: 'vg_noMano', pantalla: 'vg_pantalla', otraCara: 'vg_otraCara', vozSinLabios: 'vg_vozSinLabios', noVoz: 'vg_noVoz',
   };
   // (22 nov 17:56: los cortes pasan a débiles: en una prueba real, mover el móvil deprisa o dejar de mirar los imitaba)
-  const FUERZA = { congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 1, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1, noGira: 1, desfase: 1, costura: 2, manoOculta: 2, pantalla: 2, otraCara: 2, perfil: 1, suave: 1, noMano: 1 };
-  const UNA_VEZ = { costura: 1, manoOculta: 1, pantalla: 1, otraCara: 1 }; // pruebas de un momento (en «Comprobar»): cuentan ya, sin esperar 8 s
+  const FUERZA = { congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 1, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1, noGira: 1, desfase: 1, costura: 2, manoOculta: 2, pantalla: 2, otraCara: 2, vozSinLabios: 2, perfil: 1, suave: 1, noMano: 1, noVoz: 1 };
+  const UNA_VEZ = { costura: 1, manoOculta: 1, pantalla: 1, otraCara: 1, vozSinLabios: 1 }; // pruebas de un momento (en «Comprobar»): cuentan ya, sin esperar 8 s
   function evalua() {
     if (!S) return;
     const t = performance.now(), mirado = t - S.t0, I = {}, vida = [];
@@ -421,6 +421,7 @@
     if (S.reflejo === 'si') vida.push('reflejo');
     if (S.giro === 'si') vida.push('giro'); else if (S.giro === 'no') I.noGira = 1;
     if (S.mano === 'si') vida.push('mano'); else if (S.mano === 'oculta') I.manoOculta = 1; else if (S.mano === 'no') I.noMano = 1;
+    if (S.vozReto === 'si') vida.push('voz'); else if (S.vozReto === 'mudo') I.vozSinLabios = 1; else if (S.vozReto === 'no') I.noVoz = 1;
     if (S.costura === 'si') I.costura = 1;
     if (S.pantalla) I.pantalla = 1;
     if (compr) identidad(); if (S.otraCara) I.otraCara = 1;
@@ -490,7 +491,7 @@
       'voz habla ' + (S.hablaN || 0) + ' · desv boca ' + f(S.sb, 4) + ' · corr ' + f(S.corr, 2),
       'plano si ' + S.plano.si + ' no ' + S.plano.no + ' últ ' + f(S.plano.ultimo, 3) + '/' + f(S.plano.sem, 3) + ' · gestos p90 ' + f(S.g90, 3),
       'redes real ' + f(S.real) + ' vivo ' + f(S.live) + ' · pulso ok ' + S.pulso.ok + ' no ' + S.pulso.no + (S.pz ? ' [' + S.pz.map((z) => f(z.f * 60, 0) + 'lpm ' + f(z.snr, 1) + 'dB').join(' · ') + ']' : ''),
-      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–') + ' · luz ' + (S.reflejo || '–') + ' ' + f(S.reflejoDif, 4) + '/' + f(S.reflejoRuido, 4) + ' fondo ' + f(S.reflejoFondo, 4) + ' cuello ' + f(S.reflejoCuello, 4) + ' ojos ' + f(S.reflejoOjos, 4) + (S.reflejoGafas ? ' (gafas)' : '') + ' espectro ' + f(S.reflejoEspectro, 2) + (S.pantalla ? ' PANTALLA' : '') + ' · A/F/L ' + Object.values(cuentas()).join('/') + ' · giro ' + (S.giro || '–') + ' ' + f(S.giroBueno, 2) + '/' + f(S.giroContra, 2) + (S.perfil ? ' temblor ' + f(S.perfil.rg, 3) + '/' + f(S.perfil.rf, 3) : '') + ' · mano ' + (S.mano || '–') + (S.manoDatos ? ' ' + f(S.manoDatos.pc, 0) + '/' + f(S.manoDatos.pl, 0) + '/' + f(S.manoDatos.pr, 0) + ' q' + f(S.manoDatos.quieto, 0) + ' cubre ' + f(S.manoDatos.cubre, 2) : '') + ' · textura ' + f(S.texR, 2) + (S.identDatos ? ' · identidad ' + f(S.identDatos.cons, 2) + '/' + f(S.identDatos.min, 2) + ' (' + S.identDatos.n + ')' : '') + ' · desfase ' + (S.desfase == null ? '–' : S.desfase + ' ms ' + f(S.desfaseCorr, 2)),
+      'cámara ' + (S.fuente ? S.fuente.k + (S.fuente.n ? ' ' + S.fuente.n : '') : '–') + ' · luz ' + (S.reflejo || '–') + ' ' + f(S.reflejoDif, 4) + '/' + f(S.reflejoRuido, 4) + ' fondo ' + f(S.reflejoFondo, 4) + ' cuello ' + f(S.reflejoCuello, 4) + ' ojos ' + f(S.reflejoOjos, 4) + (S.reflejoGafas ? ' (gafas)' : '') + ' espectro ' + f(S.reflejoEspectro, 2) + (S.pantalla ? ' PANTALLA' : '') + ' · A/F/L ' + Object.values(cuentas()).join('/') + ' · giro ' + (S.giro || '–') + ' ' + f(S.giroBueno, 2) + '/' + f(S.giroContra, 2) + (S.perfil ? ' temblor ' + f(S.perfil.rg, 3) + '/' + f(S.perfil.rf, 3) : '') + ' · voz ' + (S.vozReto || '–') + (S.vozDatos ? ' ' + S.vozDatos.hablaMs + 'ms r' + f(S.vozDatos.corr, 2) + ' b' + f(S.vozDatos.db, 3) : '') + ' · mano ' + (S.mano || '–') + (S.manoDatos ? ' ' + f(S.manoDatos.pc, 0) + '/' + f(S.manoDatos.pl, 0) + '/' + f(S.manoDatos.pr, 0) + ' q' + f(S.manoDatos.quieto, 0) + ' cubre ' + f(S.manoDatos.cubre, 2) : '') + ' · textura ' + f(S.texR, 2) + (S.identDatos ? ' · identidad ' + f(S.identDatos.cons, 2) + '/' + f(S.identDatos.min, 2) + ' (' + S.identDatos.n + ')' : '') + ' · desfase ' + (S.desfase == null ? '–' : S.desfase + ' ms ' + f(S.desfaseCorr, 2)),
       'INDICIOS ' + (Object.keys(S.indicios).join(', ') || '–') + ' · VIDA ' + (S.vida.join(', ') || '–') + ' · AVISO ' + (S.mostrado || '–'),
     ].join('\n');
   }
@@ -532,7 +533,7 @@
     // (al acabar los retos puede estar aún de lado: vale una cara vista en los últimos 8 s)
     if (cuentas().F) return 0;
     if (!S.tCara || performance.now() - S.tCara > 8000) return null;
-    const medias = k.filter((x) => FUERZA[x] === 2).length, debiles = k.filter((x) => FUERZA[x] === 1 && x !== 'noGira' && x !== 'noMano').length;
+    const medias = k.filter((x) => FUERZA[x] === 2).length, debiles = k.filter((x) => FUERZA[x] === 1 && x !== 'noGira' && x !== 'noMano' && x !== 'noVoz').length;
     // Lo que manda son las pruebas activas, pedidas al azar y en ese momento (la luz, la mano, el giro): un vídeo grabado no puede
     // hacerlas. Las pasivas (parpadear, labios con la voz, gestos, relieve, pulso) también las tiene un vídeo de una persona real
     // (dueño, 22 nov 19:57: «un vídeo de YouTube… lo ha dado como 97 % humano»): solo suman un poco.
@@ -544,8 +545,8 @@
   }
   // A: pruebas activas superadas; F: pedidas y no hechas (con la cara a la vista); L: señales pasivas de vida (como mucho 2)
   function cuentas() {
-    const v = S ? S.vida : [], act = ['reflejo', 'mano', 'giro'];
-    return { A: act.filter((x) => v.includes(x)).length, F: (S && S.giro === 'no' ? 1 : 0) + (S && S.mano === 'no' ? 1 : 0), L: Math.min(2, v.filter((x) => !act.includes(x)).length) };
+    const v = S ? S.vida : [], act = ['reflejo', 'voz', 'mano', 'giro'];
+    return { A: act.filter((x) => v.includes(x)).length, F: (S && S.giro === 'no' ? 1 : 0) + (S && S.mano === 'no' ? 1 : 0) + (S && S.vozReto === 'no' ? 1 : 0), L: Math.min(2, v.filter((x) => !act.includes(x)).length) };
   }
   // ---- el escáner, dibujado sobre toda la pantalla de la llamada ----
   function esquinas(g, x, y, w, h, l) {
@@ -663,7 +664,7 @@
       // cuánto tiempo se le ha visto la cara de frente (si deja de mirar, no se le juzga: se espera y se le pide que mire)
       const u = S && S.ultima, vista = u && u.frontal && performance.now() - u.t < 2500;
       if (vista) { compr.frontalMs += 250; compr.sinMirar = 0; } else if (!compr.reto && !compr.manoReto) compr.sinMirar += 250;
-      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzTxt' : S && S.brilloCara != null && S.brilloCara < 32 ? 'vc_luzBaja' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
+      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzVozTxt' : S && S.brilloCara != null && S.brilloCara < 32 ? 'vc_luzBaja' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
       const el = performance.now() - compr.tA, listo = !compr.pruebas && compr.frontalMs >= 2000 && S && S.tCara && performance.now() - S.tCara < 2000 && (datosListos() || el >= 15000 || S.vida.length >= 3 || Object.keys(S.indicios).length > 0), acaba = el >= DUR_COMPR && (listo || el >= 38000); // (con los retos, en el peor caso, unos 31 s)
       cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / 24000)).toFixed(3));
       if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
@@ -676,7 +677,7 @@
   // nota, así que no verlo no acusa a nadie. A él le sale «Comprobación de seguridad · Mira a la pantalla» (js/sala.js).
   async function retos() {
     const yo = compr; if (!yo) return; yo.pruebas = true;
-    try { await reflejo(); if (compr === yo) await manoReto(); if (compr === yo) await giroReto(); } finally { yo.pruebas = false; }
+    try { await reflejo(); if (compr === yo) { await new Promise((r) => setTimeout(r, 600)); vozDecide(yo); } if (compr === yo) await manoReto(); if (compr === yo) await giroReto(); } finally { yo.pruebas = false; }
   }
   // Girar la cabeza (dueño, 22 nov 18:01: «ponte en la piel del estafador… y haz la contramedida»). Es el reto que más delata a una
   // cara cambiada en directo (Deep-Live-Cam, DeepFaceLive, FaceFusion…): de perfil el cambio se rompe, y un vídeo grabado o un avatar
@@ -761,6 +762,20 @@
     if (manosListas || !humano || CONFIG.backend === 'cpu') return;
     cargandoManos = true; humano.config.hand.enabled = true; humano.load().then(() => { const reg = humano.models && (humano.models.models || humano.models); manosListas = !!(reg && (reg.handtrack || reg.handdetect)); }).catch(() => {}).finally(() => { cargandoManos = false; if (!(compr && compr.manoReto)) humano.config.hand.enabled = false; });
   }
+  // ¿dijo las palabras? Su voz sube después de pedírselo y sus labios se mueven con ella. Si se oye voz y los labios no se mueven,
+  // es un vídeo doblado o un avatar. Si no habla (o tiene el micro apagado), no lo ha hecho.
+  function vozDecide(yo) {
+    const t0 = yo.vozT0; if (!t0 || !S) return;
+    const antes = S.voz.filter((x) => x.t >= t0 - 3000 && x.t < t0).map((x) => x.v), despues = S.voz.filter((x) => x.t >= t0 + 400 && x.t <= t0 + 8500);
+    if (despues.length < 20) return; // sin muestras del audio que llega: no se juzga
+    const base = antes.length >= 5 ? cuantil(antes, 0.5) : 0, umbral = Math.max(0.02, base * 4 + 0.01), hablaMs = despues.filter((x) => x.v > umbral).length * 100;
+    const vozEn = (t) => { let mejor = null, dm = 1e9; for (const x of despues) { const dd = Math.abs(x.t - t); if (dd < dm) { dm = dd; mejor = x; } } return dm < 250 ? mejor.v : null; };
+    const pares = S.boca.filter((b) => (b.tf || b.t) >= t0 + 400 && (b.tf || b.t) <= t0 + 8500).map((b) => [b.v, vozEn(b.tf || b.t)]).filter((p) => p[1] != null);
+    let corr = 0, db = 0; if (pares.length >= 6) { const xb = pares.map((p) => p[0]), xv = pares.map((p) => p[1]), mb = media(xb), mv = media(xv); let n = 0, a = 0, b = 0; for (let i = 0; i < xb.length; i++) { n += (xb[i] - mb) * (xv[i] - mv); a += (xb[i] - mb) ** 2; b += (xv[i] - mv) ** 2; } corr = n / (Math.sqrt(a * b) || 1); db = desv(xb); }
+    S.vozDatos = { base, hablaMs, corr, db, n: pares.length };
+    if (hablaMs >= 500) { if (pares.length >= 6 && (corr > 0.2 || db > 0.012)) S.vozReto = 'si'; else if (pares.length >= 8 && corr < 0.05 && db < 0.004) S.vozReto = 'mudo'; }
+    else if (hablaMs < 200 && base < 0.02) S.vozReto = 'no';
+  }
   async function manoReto() {
     const yo = compr; if (!M.gesto || !S || !yo) return;
     for (let i = 0; i < 25 && !manosListas && cargandoManos; i++) await new Promise((r) => setTimeout(r, 100));
@@ -822,9 +837,12 @@
     yo.luz = true; S.reflejo = 'nd'; S.pantalla = false; S.reflejoEspectro = null; S.reflejoDif = S.reflejoRuido = null; S.costura = 'nd'; S.reflejoCuello = null; S.reflejoOjos = null; S.reflejoGafas = false;
     const espera = (ms) => new Promise((r) => setTimeout(r, ms)), vivo = () => compr === yo && !!S;
     const az = crypto.getRandomValues(new Uint8Array(2)), orden = [az[0] & 1, 1 - (az[0] & 1), az[1] & 1, 1 - (az[1] & 1)], marcas = [];
+    // dos palabras al azar de la lista de verificación (2048 palabras neutras): «Mira a la pantalla y di en voz alta: …»
+    const PL = window.GuardianaPalabras || [], ap = crypto.getRandomValues(new Uint16Array(2)), palabras = PL.length ? PL[ap[0] % PL.length] + ' ' + PL[ap[1] % PL.length] : '';
+    S.vozReto = 'nd'; S.vozDatos = null; yo.vozT0 = 0; yo.palabras = palabras;
     try {
       await espera(2200); if (!vivo()) return;
-      for (const c of orden) { if (!vivo()) return; if (M.gesto('luz', c, 0) === false) return; const t = performance.now(); marcas.push({ c, t }); yo.flash = { c, t }; await espera(1700); }
+      for (const c of orden) { if (!vivo()) return; if (M.gesto('luz', c, 0, palabras) === false) return; const t = performance.now(); if (!yo.vozT0) yo.vozT0 = t; marcas.push({ c, t }); yo.flash = { c, t }; await espera(1700); }
     } catch (_) { return; } finally { try { M.gesto('fin', 0, 0); } catch (_) {} yo.luz = false; }
     if (!vivo() || marcas.length < 4) return;
     const zonas = (x) => x.z.map((z) => (z[0] - z[1]) / ((z[0] + z[1] + z[2]) || 1));
@@ -888,10 +906,10 @@
     cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
     res.dataset.n = nivel; cuentaPct(pct);
     res.querySelector('.vg-r-et').textContent = tr('vc_probabilidad');
-    const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), { A, F } = cuentas(), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : A === 0 && F ? tr('vg_noResponde') : A === 0 ? tr('vg_inconcluso') : S && S.giro === 'no' ? tr('vg_noGira') : S && S.mano === 'no' ? tr('vg_noMano') : '';
+    const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), { A, F } = cuentas(), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : A === 0 && F ? tr('vg_noResponde') : A === 0 ? tr('vg_inconcluso') : S && S.vozReto === 'no' ? tr('vg_noVoz') : S && S.giro === 'no' ? tr('vg_noGira') : S && S.mano === 'no' ? tr('vg_noMano') : '';
     res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr(poco ? 'vc_noMira' : 'vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? (tr('vc_bien') + (motivo ? ' ' + motivo : '')) : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
     const lista = res.querySelector('.vg-r-pruebas'); lista.textContent = '';
-    if (S) for (const [k, v] of [['vc_pLuz', S.reflejo === 'si' ? 'si' : 'nd'], ['vc_pMano', S.mano === 'si' ? 'si' : S.mano === 'no' || S.mano === 'oculta' ? 'no' : 'nd'], ['vc_pGiro', S.giro === 'si' ? 'si' : S.giro === 'no' ? 'no' : 'nd']]) {
+    if (S) for (const [k, v] of [['vc_pLuz', S.reflejo === 'si' ? 'si' : 'nd'], ['vc_pVoz', S.vozReto === 'si' ? 'si' : S.vozReto === 'no' || S.vozReto === 'mudo' ? 'no' : 'nd'], ['vc_pMano', S.mano === 'si' ? 'si' : S.mano === 'no' || S.mano === 'oculta' ? 'no' : 'nd'], ['vc_pGiro', S.giro === 'si' ? 'si' : S.giro === 'no' ? 'no' : 'nd']]) {
       const li = document.createElement('li'); li.className = 'vg-p-' + v; li.textContent = tr(k); lista.append(li);
     }
     res.querySelector('.vg-r-cerrar').textContent = tr('vc_cerrar');

@@ -704,7 +704,8 @@
     // el destello de color: su luz se refleja en una cara de verdad (quien comprueba lo mide en el vídeo)
     if (g.q === 'luz') { let fl = document.querySelector('.gesto-luz'); if (!fl) { fl = document.createElement('div'); fl.className = 'gesto-luz'; caja.parentElement.append(fl); } fl.style.setProperty('--c', g.n ? '#00FFFF' : '#FF00FF'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 800); }
     et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
-    tx.textContent = tr('gesto_' + g.q) + (g.q === 'voz' && g.w ? ' «' + g.w + '»' : ''); caja.hidden = false;
+    const sinMic = (() => { try { const e = M.estadoLlamada(); return e && e.mic === false; } catch (_) { return false; } })();
+    tx.textContent = (g.q === 'luz' && g.w ? tr('gesto_luzVoz') + ' «' + g.w + '»' : tr('gesto_' + g.q) + (g.q === 'voz' && g.w ? ' «' + g.w + '»' : '')) + ((g.q === 'voz' || (g.q === 'luz' && g.w)) && sinMic ? ' · ' + tr('gesto_activaMic') : ''); caja.hidden = false;
     try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
     gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, g.q === 'voz' || g.q === 'clave' ? 20000 : 6000);
   });
