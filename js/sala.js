@@ -901,19 +901,23 @@
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
     botonesSolos(e.estado === 'hablando');
-    ent.hidden = e.estado !== 'entrante';
+    const contestaYa = !!(window.Elixire && window.Elixire.contestaSola); // (se contesta sola: sin «Aceptar / Rechazar» entre medias)
+    ent.hidden = e.estado !== 'entrante' || contestaYa;
     const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
-    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (m && e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);
+    // (dueño, 23 nov 11:42: «quien invita ya está esperando y pone "Llamando"; cuando el otro entra, de golpe, sin nada entre medias»):
+    // mientras la llamada está por llegar (quien invitó contesta solo; quien escribió el código llama solo), ni en el móvil ni en el
+    // ordenador sale «Empezar videollamada»: solo «Llamando…», y en cuanto conecta, la videollamada
+    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);
     $('#salir-llamada').hidden = !(e.estado === 'libre' || e.estado === 'fin');
     ctl.hidden = !activa;
     velo.hidden = hablando;
     $('#video-capa').hidden = true; // (todo arriba, en la cabecera)
     { const c = e.estado === 'hablando' && !!e.capa; if (c !== conCapa) { conCapa = c; const mas = $('#sala-estado-mas'), x = $('#sala-estado-texto'); if (mas) mas.hidden = !(conCapa && x.dataset.t === 'salaEstado'); } }
     if (!hablando) { ponVistaLl(''); sueltaCompleta(); } else if (enPC() && e.video !== false && !vistaLl) ponVistaLl('grande');
-    if (e.estado === 'libre') { if (m) { if (esperaLlamada) pon('conectandoLlamada'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); rotuloLlamar('llamar'); } else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); }
+    if (e.estado === 'libre') { if (esperaLlamada && !fuera) pon('llLlamando'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); if (m) rotuloLlamar('llamar'); }
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
-    else if (e.estado === 'entrante') pon('llEntrante');
+    else if (e.estado === 'entrante') pon(contestaYa ? 'llConectando' : 'llEntrante');
     else if (e.estado === 'conectando') pon('llConectando');
     else if (hablando) {
       // sin límite (dueño, 16:11), el tiempo que lleva la llamada; con límite, el que queda de prueba
