@@ -554,7 +554,7 @@
   const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = 20000000; // 4K en el móvil y en el ordenador (dueño, 23 nov 07:31)
   async function medios() {
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
-    const VIDEO = TEL ? { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
+    const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
     let st;
     try { st = await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: VIDEO }); }
     catch (e) {
@@ -606,9 +606,9 @@
   // Calidad automática (dueño, 23 nov 07:32: «que detecte automáticamente la mejor calidad que pueda brindar el teléfono sin retrasarlo
   // y sin lag… siempre la mejor conexión y experiencia»). La cámara arranca en lo máximo que da (hasta 4K). De la red ya se ocupa el
   // navegador: baja la nitidez y conserva la fluidez. Aquí se cuida el propio equipo y el de la otra persona:
-  //   · si este equipo no da abasto al codificar (lo dice el navegador, o salen menos de 20 imágenes por segundo con la red bien),
-  //     la cámara baja un escalón (4K → 1440p → 1080p → 720p → 540p); con 30 s seguidos de holgura, prueba a subir uno; si al subir
-  //     vuelve a ahogarse, se queda abajo 3 minutos (sin vaivenes);
+  //   · se arranca en Full HD; con 30 s seguidos de holgura en el equipo y red de sobra, sube un escalón (1440p, luego 4K, si la
+  //     cámara lo da); si el equipo no da abasto al codificar (lo dice el navegador, o salen menos de 20 imágenes por segundo con la
+  //     red bien), baja un escalón al momento (… → 720p → 540p); si al subir vuelve a ahogarse, se queda abajo 3 minutos (sin vaivenes);
   //   · si el equipo de la otra persona no da abasto al mostrar la imagen (pocas imágenes por segundo y descodificar le cuesta), se lo
   //     dice a este, que no pasa de ese escalón hasta que el otro vuelva a ir holgado.
   const NIV = [2160, 1440, 1080, 720, 540];
@@ -619,7 +619,11 @@
     // 1) este equipo, al codificar
     const cam = x.local && x.local.getVideoTracks()[0];
     if (cam && cam.readyState === 'live' && cam.enabled && x.cam !== false && !x.caraOculta && !x.enChat && o) {
-      if (ac.n == null) { const s0 = cam.getSettings ? cam.getSettings() : {}; ac.tope = nivelDe(Math.min(s0.width || 1080, s0.height || 1080)); ac.n = ac.tope; ac.tCambio = t; }
+      if (ac.n == null) {
+        // lo máximo que da la cámara (si el navegador lo dice) y en qué escalón arranca
+        const s0 = cam.getSettings ? cam.getSettings() : {}, c0 = cam.getCapabilities ? cam.getCapabilities() : {}, mx = c0 && c0.width && c0.height && c0.width.max && c0.height.max ? Math.min(c0.width.max, c0.height.max) : 0;
+        ac.n = nivelDe(Math.min(s0.width || 1080, s0.height || 1080)); ac.tope = mx ? Math.min(ac.n, nivelDe(mx)) : ac.n; ac.tCambio = t;
+      }
       const e = { tt: o.totalEncodeTime || 0, n: o.framesEncoded || 0 }, encMs = ac.e0 && e.n > ac.e0.n ? (e.tt - ac.e0.tt) * 1000 / (e.n - ac.e0.n) : null; ac.e0 = e;
       const fps = o.framesPerSecond || 0, lim = o.qualityLimitationReason || 'none', red = par && par.availableOutgoingBitrate;
       const mal = lim === 'cpu' || (fps > 0 && fps < 20 && encMs != null && encMs > 30 && perdida < 0.03 && (!red || red > 1500000));
@@ -629,7 +633,7 @@
       let nuevo = ac.n;
       if (ac.n < capRemoto) nuevo = capRemoto;
       else if (ac.malos >= 3 && ac.n < NIV.length - 1) { nuevo = ac.n + 1; if (t - ac.tSube < 25000) ac.bloqueo = t + 180000; }
-      else if (ac.buenos >= 15 && ac.n > minimo && t > ac.bloqueo && t - ac.tCambio > 30000) { nuevo = ac.n - 1; ac.tSube = t; }
+      else if (ac.buenos >= 15 && ac.n > minimo && t > ac.bloqueo && t - ac.tCambio > 30000 && (!red || red >= (NIV[ac.n - 1] >= 2160 ? 14000000 : NIV[ac.n - 1] >= 1440 ? 9000000 : 4000000))) { nuevo = ac.n - 1; ac.tSube = t; }
       if (nuevo !== ac.n) {
         ac.n = nuevo; ac.malos = 0; ac.buenos = 0; ac.tCambio = t; const h = NIV[nuevo];
         try { cam.applyConstraints({ width: { ideal: Math.round(h * 16 / 9) }, height: { ideal: h }, frameRate: { ideal: 30, max: 30 } }).catch(() => {}); } catch (_) {}
@@ -995,7 +999,7 @@
     const vieja = L.local.getVideoTracks()[0]; if (!vieja) return false;
     girando = true;
     const ahora = L.mira || ((vieja.getSettings && vieja.getSettings().facingMode) || 'user'), otra = ahora === 'environment' ? 'user' : 'environment';
-    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 } } });
+    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } } });
     try {
       vieja.stop();
       let st = null; try { st = await pide(otra, true); } catch (_) { try { st = await pide(otra, false); } catch (_) { st = null; } }
