@@ -2214,3 +2214,25 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 /* «Comprobar» en grupo: mientras se elige a quién, los recuadros de las demás personas se marcan y se tocan */
 .sala.eligiendo .escena-video>.en-tesela:not(#video-mio){cursor:pointer;outline:2px solid #9CC3E4;outline-offset:-2px;animation:elige 1.4s ease-in-out infinite}
 @keyframes elige{50%{outline-color:rgba(156,195,228,.35)}}
+
+/* ---------- llamada de voz y videollamada (dueño, 23 nov 15:47–15:51: «tres botones al empezar… en la versión PC también… y
+   las llamadas en grupo») ---------- */
+@media (min-width:761px){ .portada-botones{grid-template-columns:repeat(3,minmax(0,1fr));width:min(1020px,94vw)} }
+.cristal.grande.codigo.voz{padding:0 22px 0 66px}
+@media (max-width:760px){ .consola .cristal.grande.codigo.voz{padding:0 18px 0 62px} .portada-botones #empezar{order:-1} }
+/* la llamada de voz: una tarjeta con la persona y un aro que late con su voz */
+.tarjeta-voz{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;pointer-events:none}
+.tarjeta-voz[hidden]{display:none}
+.tarjeta-voz .tv-aro{--nivel:0;display:grid;place-items:center;width:156px;height:156px;border-radius:50%;background:radial-gradient(circle,rgba(156,195,228,calc(.10 + var(--nivel) * .22)) 0%,rgba(156,195,228,0) 70%);transform:scale(calc(1 + var(--nivel) * .12));transition:transform .12s linear,background .12s linear}
+.tarjeta-voz .tv-circulo{display:grid;place-items:center;width:116px;height:116px;border-radius:50%;background:rgba(156,195,228,.14);border:1px solid rgba(156,195,228,.32);box-shadow:0 0 0 calc(var(--nivel) * 10px) rgba(92,201,138,.18)}
+.tarjeta-voz .tv-circulo svg{width:52px;height:52px;fill:none;stroke:#9CC3E4;stroke-width:1.5;stroke-linecap:round}
+.tarjeta-voz .tv-t{font:500 15px/1.3 var(--ui);letter-spacing:.02em;color:#F4F6F8;opacity:.86}
+.sala.solo-voz #video-suyo,.sala.solo-voz #video-mio,.sala.solo-voz .video-mio{visibility:hidden}
+.sala.solo-voz #video-velo{display:none!important}
+.sala.en-grupo .tarjeta-voz,.sala.en-chat .tarjeta-voz{display:none}
+.sala.solo-voz .controles .seg#b-girar,.sala.solo-voz .controles .seg#b-ocultacara,.sala.solo-voz .controles .seg#b-pantalla,.sala.solo-voz .controles .seg#b-vista,.sala.solo-voz .controles .seg#b-comprobar,.sala.solo-voz .controles .seg#b-reto{display:none!important}
+/* «Vídeo»: el botón de la cámara, en una llamada de voz, invita a pasar a vídeo */
+.controles .seg#b-camara.a-video svg .tachado{display:none}
+.controles .seg#b-camara.a-video{color:#F4F6F8}
+.controles .seg#b-camara.a-video .ico-ctl{stroke:#5CC98A}
+.sala.sin-cam-propia:not(.en-grupo) #video-mio{visibility:hidden}

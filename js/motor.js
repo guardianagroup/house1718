@@ -385,12 +385,13 @@ const creaMotor = (OPC) => {
         if (typeof j.v === 'string' && /^\d{8}-\d{2}$/.test(j.v)) g.v = j.v; // la versión de la web de la otra persona
         g.n = Math.max(0, Math.min(8, j.n | 0));
         if (j.arbol === 1) g.arbol = 1; // entiende el grupo «como en GUARDIANA» (imágenes reenviadas por cada tramo)
+        if (j.voz === 1) g.voz = 1; // (la llamada a la que invita es de voz)
         // quién hay detrás de este tramo: cada persona, con su imagen (en qué hueco de esta llamada llega; «p», la principal) y lo que
         // tiene puesto
         if (Array.isArray(j.g)) {
           g.gente = j.g.slice(0, 8).filter((x) => x && typeof x.id === 'string' && /^[0-9a-f]{12}$/.test(x.id)).map((x) => {
             const f = x.f && typeof x.f === 'object' ? x.f : {};
-            return { id: x.id, mid: x.mid === 'p' ? 'p' : typeof x.mid === 'string' && /^[\w-]{1,16}$/.test(x.mid) ? x.mid : null, f: { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat } };
+            return { id: x.id, mid: x.mid === 'p' ? 'p' : typeof x.mid === 'string' && /^[\w-]{1,16}$/.test(x.mid) ? x.mid : null, f: { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat, vid: f.vid !== false } };
           });
         }
         if (typeof j.habla === 'string' && (j.habla === '' || /^[0-9a-f]{12}$/.test(j.habla))) g.habla = j.habla;
@@ -566,7 +567,8 @@ const creaMotor = (OPC) => {
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, vozCambiada: !!L.vozCambiada, caraOculta: !!L.caraOculta, pantalla: !!L.pantalla, otroFiltro: L.otroFiltro || null, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: (L.caraOculta && ocu && ocu.vista) || L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
+  const hayVideo = (x) => !!(x.video || (x.local && x.local.getVideoTracks().length) || (x.remoto && x.remoto.getVideoTracks().length));
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: hayVideo(L), videoMio: !!(L.local && L.local.getVideoTracks().length), t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, vozCambiada: !!L.vozCambiada, caraOculta: !!L.caraOculta, pantalla: !!L.pantalla, otroFiltro: L.otroFiltro || null, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: (L.caraOculta && ocu && ocu.vista) || L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -630,11 +632,16 @@ const creaMotor = (OPC) => {
       p.encodings[0].maxBitrate = b; snd.setParameters(p).catch(() => {});
     } catch (_) {}
   }
-  async function medios() {
+  // (dueño, 23 nov 15:47: «llamada de voz y videollamada»): en la llamada de voz no se pide la cámara; se puede pasar a vídeo sin colgar
+  let soloVoz = false;
+  async function medios(voz) {
     // (en grupo, las llamadas con las demás personas usan copias de la cámara y el micrófono que ya están abiertos: no se abren
     // otra vez; en el iPhone solo puede haber una cámara abierta)
     if (OPC.medios) { try { const st = await OPC.medios(); if (st && st.getTracks().length) return st; } catch (_) {} }
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
+    if (voz != null ? voz : soloVoz) {
+      try { return await navigator.mediaDevices.getUserMedia({ audio: AUDIO }); } catch (_) { return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    }
     const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
     let st;
     try { st = await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: VIDEO }); }
@@ -654,9 +661,15 @@ const creaMotor = (OPC) => {
     const p = mediosPrevios = medios().catch(() => null);
     clearTimeout(mediosPreviosT); mediosPreviosT = setTimeout(() => { if (mediosPrevios !== p) return; mediosPrevios = null; p.then((st) => { if (st && !(L && L.local === st)) st.getTracks().forEach((t) => t.stop()); }); }, 90000);
   }
-  async function tomaMedios() {
-    if (mediosPrevios) { const p = mediosPrevios; mediosPrevios = null; clearTimeout(mediosPreviosT); const st = await p; if (st && st.getTracks().length && st.getTracks().every((t) => t.readyState === 'live')) return st; }
-    return medios();
+  async function tomaMedios(voz) {
+    if (mediosPrevios) {
+      const p = mediosPrevios; mediosPrevios = null; clearTimeout(mediosPreviosT); const st = await p;
+      if (st && st.getTracks().length && st.getTracks().every((t) => t.readyState === 'live')) {
+        if (voz) for (const t of st.getVideoTracks()) { st.removeTrack(t); try { t.stop(); } catch (_) {} } // (llamada de voz: sin cámara)
+        if (st.getTracks().length) return st;
+      }
+    }
+    return medios(voz);
   }
   // Cómo va la llamada (dueño, 16:44: «cuando la llamada se establezca y sea poscuántica, que lo indique; y cuando no, que diga el
   // grado de encriptación que tiene… para que la persona sepa en todo momento lo que está pasando con la llamada y la calidad»):
@@ -835,6 +848,8 @@ const creaMotor = (OPC) => {
     pc.addEventListener('track', (e) => {
       ponCapa(pc); if (!L || L.pc !== pc) return;
       const t = e.transceiver;
+      const suya = !!(L.remoto && e.streams && e.streams[0] && e.streams[0].id === L.remoto.id); // (pasó de voz a vídeo)
+      if (suya && L.base && t && !L.base.has(t)) L.base.add(t);
       if (L.base && t && !L.base.has(t)) {
         // (grupo, como en GUARDIANA) una imagen reenviada: va aparte, por su hueco («mid»); quién es lo dice la otra persona
         const x = L; x.llegan = x.llegan || new Map();
@@ -963,7 +978,8 @@ const creaMotor = (OPC) => {
     const ses = s.sesiones.get(L.sid); if (!ses) { colgar('fallo'); return false; }
     const x = L; L.estado = 'preparando'; emite('llamada', estadoLlamada());
     try {
-      const st = await tomaMedios(); if (L !== x) { cede(st); return false; }
+      // (si quien llama lo hace sin vídeo, o esta es una llamada de voz, sin cámara)
+      const st = await tomaMedios(!L.video || soloVoz || undefined); if (L !== x) { cede(st); return false; }
       L.local = st;
       if (!L.sinCapa) await llavesLlamada(ses.medios, L.id, false);
       const pc = L.pc = conexion();
@@ -1350,6 +1366,24 @@ const creaMotor = (OPC) => {
     if (viejo && viejo !== st) for (const t of viejo.getTracks()) if (!st.getTracks().includes(t)) { try { t.stop(); } catch (_) {} }
     emite('llamada', estadoLlamada()); return true;
   }
+  async function activaVideo(pista) {
+    const x = L; if (!x || !x.pc || !x.local || x.estado !== 'hablando') { if (pista) { try { pista.stop(); } catch (_) {} } return false; }
+    if (x.local.getVideoTracks().some((t) => t.readyState === 'live')) { if (pista) { try { pista.stop(); } catch (_) {} } camara(true); return true; }
+    let t = pista || null;
+    if (!t) {
+      const V = { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
+      try { t = (await navigator.mediaDevices.getUserMedia({ video: V })).getVideoTracks()[0]; } catch (_) { try { t = (await navigator.mediaDevices.getUserMedia({ video: true })).getVideoTracks()[0]; } catch (_) { t = null; } }
+    }
+    if (!t || L !== x) { if (t) { try { t.stop(); } catch (_) {} } return false; }
+    try { t.contentHint = 'motion'; } catch (_) {}
+    x.local.addTrack(t); x.cam = true; x.video = true; soloVoz = false;
+    const snd = x.pc.addTrack(t, x.local), tr = x.pc.getTransceivers().find((q) => q.sender === snd);
+    if (tr && x.base) x.base.add(tr);
+    prefiereCodecs(x.pc, !!x.compat); ponCapa(x.pc);
+    emite('llamada', estadoLlamada());
+    await renegocia(x); if (L === x) { topes(x.pc); avisaFiltros(); emite('llamada', estadoLlamada()); }
+    return true;
+  }
   // los avisos del grupo (quién soy, a quién conectar): por la sesión encriptada de esta pareja, nunca por el relé a la vista
   function enviaGrupo(obj) { const s = S; if (!s || !s.conectado || s.fin || !obj) return false; return enviaControl(s, Object.assign({}, obj, { tipo: 'grupo' })); }
   function micro(si) { if (!L || !L.local) return; const antes = L.mic !== false; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; if (antes !== !!si) avisaFiltros(); emite('llamada', estadoLlamada()); }
@@ -1514,6 +1548,7 @@ const creaMotor = (OPC) => {
   const API = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); }, miFuente: () => fuenteMia(),
+    activaVideo, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },

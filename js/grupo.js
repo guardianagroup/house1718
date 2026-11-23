@@ -52,9 +52,10 @@
   function ponId(p, id) { if (!esId(id) || id === yo) return; p.id = id; if (!nums.has(id)) nums.set(id, p.n); }
 
   // ---- quién hay detrás de cada tramo (lo dice la otra persona: «gente»); sin eso, solo ella ----
-  const filtros = (f) => { f = f || {}; return { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat }; };
+  const filtros = (f) => { f = f || {}; return { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat, vid: f.vid !== false }; };
   function genteDe(K) {
-    const suya = { id: K.id || 't' + K.clave, mid: 'p', f: filtros(K.m.estadoLlamada().otroFiltro) };
+    const e = K.m.estadoLlamada(), r = e.remoto;
+    const suya = { id: K.id || 't' + K.clave, mid: 'p', f: Object.assign(filtros(e.otroFiltro), { vid: !!(r && r.getVideoTracks().length) }) };
     if (!K.arbol || !Array.isArray(K.gente) || !K.gente.length) return [suya];
     const out = [], vistos = new Set([yo]);
     for (const x of K.gente) { if (vistos.has(x.id)) continue; vistos.add(x.id); out.push(x.mid === 'p' ? { id: x.id, mid: 'p', f: suya.f } : x); }
@@ -66,7 +67,8 @@
     if (P.mid == null) return null;
     const t = K.m.llegan && K.m.llegan.get(String(P.mid)); return t && t.readyState === 'live' ? t : null;
   }
-  const misFiltros = () => ({ mic: propio.mic !== false, cam: propio.cam !== false, voz: !!propio.voz, cara: !!propio.cara, pantalla: !!(pantallaG || M.estadoLlamada().pantalla), chat: !!propio.chat });
+  const sinVideoMio = () => { const st = M.propias || (enCurso()[0] && enCurso()[0].m.propias); return !(st && st.getVideoTracks().some((t) => t.readyState === 'live')); };
+  const misFiltros = () => ({ mic: propio.mic !== false, cam: propio.cam !== false, voz: !!propio.voz, cara: !!propio.cara, pantalla: !!(pantallaG || M.estadoLlamada().pantalla), chat: !!propio.chat, vid: !sinVideoMio() });
   const personas = () => 1 + tramos().reduce((s, K) => s + genteDe(K).length, 0) + pares().filter((p) => !enLlamada(p) && !p.m.terminada).length;
 
   // ---- la cámara y el micrófono de cada tramo nuevo: copias de los que ya están abiertos (no se abre otra vez la cámara; en el
@@ -88,7 +90,7 @@
     const p = { m, id: null, n: ++numero, invitado: !!o.invitado, visto: false, clave: hex(4), reintentos: 0, gente: null, arbol: false, enviado: '' };
     extras.set(p.clave, p);
     m.on('conectado', () => {
-      if (p.invitado) clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo, v: VERSION, arbol: 1 });
+      if (p.invitado) clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo, v: VERSION, arbol: 1, voz: sinVideoMio() ? 1 : 0 });
       if (invitaPC === p) pintaTarjeta('anadirEntra');
       pinta();
     });
@@ -152,7 +154,7 @@
   function avisaViejo(q) { const k = q.principal ? 'p:' + (q.id || 'x') : q.clave; if (viejoAvisado.has(k)) return; viejoAvisado.add(k); aviso(tr('grupoViejo').replace('{p}', etiqueta(q))); }
   function recibe(p, g) {
     if (!g || !g.que) return;
-    if (g.que === 'hola') { ponId(p, g.id); p.arbol = g.arbol === 1; p.viejo = !p.arbol; pinta(); return; }
+    if (g.que === 'hola') { ponId(p, g.id); p.arbol = g.arbol === 1; p.viejo = !p.arbol; p.voz = g.voz === 1; p.holaVisto = true; pinta(); return; }
     if (g.que === 'gente') {
       p.gente = Array.isArray(g.gente) && g.gente.length ? g.gente : null;
       if (p.gente && p.gente[0].mid === 'p' && !p.id) ponId(p, p.gente[0].id);
@@ -306,7 +308,7 @@
   async function anadeMovil() {
     const E = window.Elixire || {};
     const semilla = crypto.getRandomValues(new Uint8Array(32)), s64 = b64u(semilla);
-    const texto = E.textoInvitacion ? E.textoInvitacion(s64) : location.origin + '/invitacion/#e=' + s64;
+    const texto = E.textoInvitacion ? E.textoInvitacion(s64, sinVideoMio()) : location.origin + '/invitacion/#e=' + s64;
     const compartida = E.comparte ? E.comparte(texto) : Promise.resolve(false); // (el menú tiene que abrirse en el mismo toque)
     const p = nuevoPar({ semilla, invitado: true }); if (!p) return;
     const ok = await compartida;
@@ -332,7 +334,7 @@
     if (!tarjeta) return;
     const p = invitaPC, c = p && p.codigo, lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
     $('#gi-codigo').textContent = c ? c.replace(/(.{4})(?=.)/g, '$1 ') : '···· ···· ···· ····';
-    const enlace = c ? location.origin + '/#c=' + c + '&l=' + lengua + '&ll=1' : '';
+    const enlace = c ? location.origin + '/#c=' + c + '&l=' + lengua + '&ll=1' + (sinVideoMio() ? '&voz=1' : '') : '';
     const wa = $('#gi-wa'), co = $('#gi-correo');
     if (c) {
       wa.href = 'https://wa.me/?text=' + encodeURIComponent(tr('mensajeGrupo').replace('{enlace}', enlace).replace('{codigo}', c.replace(/(.{4})(?=.)/g, '$1 ')));
@@ -475,7 +477,7 @@
       const vw = el.videoWidth, vh = el.videoHeight, ar = vw && vh ? vw / vh : 16 / 9;
       const entera = (!x.yo && !!f.pantalla) || (!m && Math.abs(Math.log(ar / (r.w / r.h))) > 0.45);
       pon('object-fit', entera ? 'contain' : 'cover');
-      { const sinCam = x.conectando || x.sinImagen || f.cam === false || !!f.chat; placa(el, r, sinCam, x.conectando || (x.sinImagen && f.cam !== false && !f.chat) ? 'grupoConectando' : f.chat ? 'etChatLargo' : 'camaraApagada'); if (el._placa) el._placa.classList.toggle('conecta', !!(x.conectando || (x.sinImagen && f.cam !== false && !f.chat))); }
+      { const voz = f.vid === false && !x.conectando, cone = !voz && (x.conectando || (x.sinImagen && f.cam !== false && !f.chat)); const sinCam = x.conectando || x.sinImagen || voz || f.cam === false || !!f.chat; placa(el, r, sinCam, cone ? 'grupoConectando' : f.chat ? 'etChatLargo' : voz ? 'enVoz' : 'camaraApagada'); if (el._placa) el._placa.classList.toggle('conecta', !!cone); }
       if (x.r) {
         // el nombre y, si hace falta, lo que tiene puesto (voz cambiada, cara oculta, pantalla, en el chat): se ve en su recuadro
         const mas = [f.pantalla ? tr('etPantalla') : '', f.voz ? tr('etVoz') : '', f.cara && !f.pantalla ? tr('etCara') : '', f.chat ? tr('etChat') : ''].filter(Boolean);
@@ -651,6 +653,14 @@
     async cambiaVoz(si) { const ok = await todas((m) => m.cambiaVoz(si)); if (ok) propio.voz = !!si; sincroniza(); return ok; },
     async caraOculta(si) { const ok = await todas((m) => m.caraOculta(si)); if (ok) propio.cara = !!si; sincroniza(); return ok; },
     pantalla, giraCamara, sal,
+    async activaVideo() {
+      const ms = motores(); if (!ms.length) return M.activaVideo();
+      const fuente = ms[0], ok = await fuente.activaVideo(); if (!ok) return false;
+      const cam = fuente.propias && fuente.propias.getVideoTracks()[0];
+      for (const m of ms.slice(1)) if (cam) { try { await m.activaVideo(cam.clone()); } catch (_) {} }
+      propio.cam = true; sincroniza(); return true;
+    },
+    get tipoPrincipal() { return principal.holaVisto ? (principal.voz ? 'voz' : 'video') : null; },
     modoChat(si) { propio.chat = !!si; for (const m of motores()) m.modoChat(si); sincroniza(); },
     colgar() { sal(); },
     // las invitaciones de «Añadir» que nadie ha abierto todavía
@@ -658,7 +668,7 @@
   };
   if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.ElixireGrupo._estado = () => ({ yo, principal: principal.id, enLlamada: enLlamada(principal), arbol: principal.arbol, gente: tramos().map((K) => genteDe(K).map((P) => P.id + '@' + P.mid + (pistaDe(K, P) ? '+' : '-'))), promovido: promovido && promovido.n, extras: pares().map((p) => ({ n: p.n, id: p.id, arbol: p.arbol, conectada: p.m.conectada, estado: p.m.estadoLlamada().estado, capa: p.m.estadoLlamada().capa, salen: p.m.salen })), principalSalen: M.salen, llegan: [...M.llegan.keys()] });
 
-  M.on('conectado', () => { M.grupo({ que: 'hola', id: yo, v: VERSION, arbol: 1 }); });
+  M.on('conectado', () => { M.grupo({ que: 'hola', id: yo, v: VERSION, arbol: 1, voz: M.enModoVoz ? 1 : 0 }); });
   M.on('grupo', (g) => recibe(principal, g));
   M.on('llamada', (e) => {
     // lo propio que tenía puesto la llamada principal pasa a ser lo del grupo (al formarse el grupo, los demás tramos lo copian)
@@ -679,7 +689,7 @@
   });
   M.on('filtro', () => pinta());
   M.on('llegan', programa); M.on('reneg', programa);
-  M.on('fin', () => { principal.id = null; principal.gente = null; principal.enviado = ''; principal.arbol = false; fuera = null; pinta(); });
+  M.on('fin', () => { principal.id = null; principal.gente = null; principal.enviado = ''; principal.arbol = false; principal.holaVisto = false; principal.voz = false; fuera = null; pinta(); });
   chatDe(principal);
   { const b = $('#b-anadir'); if (b) b.addEventListener('click', anade); }
   addEventListener('pagehide', () => { for (const p of pares()) { try { p.m.termina('cierra'); } catch (_) {} } });

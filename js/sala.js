@@ -1101,6 +1101,22 @@
     if (sala.classList.contains('sin-botones')) muestraBotones(); else escondeBotones();
   });
   $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(5000); });
+  // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
+  // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
+  let vozT = null, tarjetaVoz = null;
+  function pintaLlamadaVoz(si, e) {
+    const bc = $('#b-camara'), s0 = bc && bc.querySelector('span');
+    if (bc) { const sinCam = !!(e && (e.estado === 'hablando' || e.estado === 'reconectando') && e.videoMio === false); bc.classList.toggle('a-video', sinCam); if (s0) { const k = sinCam ? 'pasarVideo' : 'camara'; if (s0.dataset.t !== k) { s0.dataset.t = k; s0.textContent = tr(k); } } if (sinCam) bc.setAttribute('aria-pressed', 'false'); }
+    if (!si) { if (tarjetaVoz) tarjetaVoz.hidden = true; clearInterval(vozT); vozT = null; return; }
+    if (!tarjetaVoz) {
+      tarjetaVoz = document.createElement('div'); tarjetaVoz.className = 'tarjeta-voz'; tarjetaVoz.setAttribute('aria-hidden', 'true');
+      tarjetaVoz.innerHTML = '<span class="tv-aro"><span class="tv-circulo"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.9"/><path d="M4.4 20.2c.7-4 3.9-6.7 7.6-6.7s6.9 2.7 7.6 6.7"/></svg></span></span><span class="tv-t"></span>';
+      $('#escena-video').append(tarjetaVoz);
+    }
+    tarjetaVoz.hidden = false;
+    const t = tarjetaVoz.querySelector('.tv-t'); if (t.dataset.t !== 'llamadaVozEnCurso') { t.dataset.t = 'llamadaVozEnCurso'; t.textContent = tr('llamadaVozEnCurso'); }
+    if (!vozT) vozT = setInterval(() => { const x = M.nivelVoz ? M.nivelVoz() : 0; tarjetaVoz.style.setProperty('--nivel', String(Math.min(1, Math.max(0, (x || 0) * 3)).toFixed(2))); }, 120);
+  }
   function pintaLlamada(e) {
     const velo = $('#video-velo'), boton = $('#llamar'), ent = $('#entrante'), txt = $('#video-texto'), ctl = $('#controles');
     const vs = $('#video-suyo'), vm = $('#video-mio');
@@ -1124,6 +1140,7 @@
     const hablando = !pas && (e.estado === 'hablando' || e.estado === 'reconectando');
     const activa = hablando || pas || ['preparando', 'llamando', 'conectando'].includes(e.estado);
     sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
+    { const voz = hablando && e.video === false; sala.classList.toggle('solo-voz', voz); sala.classList.toggle('sin-cam-propia', !!((hablando || activa) && e.videoMio === false)); pintaLlamadaVoz(voz, e); }
     $('#video-reconecta').hidden = e.estado !== 'reconectando' || pas;
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando && !pas) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
@@ -1172,7 +1189,7 @@
       // (si se cortó sin que nadie colgara, vuelve sola: solo «Volviendo a la llamada…»)
       const sola = (e.estado === 'fin' && ['caida', 'fallo', 'sin-respuesta'].includes(e.motivo) && window.ElixireGrupo.vuelveSola) || (e.estado === 'libre' && window.ElixireGrupo.volviendo);
       if (sola) { pon('grupoVuelve'); boton.hidden = true; finGrupoMio = false; }
-      else if (e.estado === 'libre' || e.estado === 'fin') { if (e.estado === 'fin') finGrupoMio = e.motivo === 'mio'; pon(finGrupoMio ? 'grupoFuera' : 'grupoCortada'); rotuloLlamar('volverLlamada'); boton.disabled = false; boton.hidden = false; }
+      else if (e.estado === 'libre' || e.estado === 'fin') { if (e.estado === 'fin') finGrupoMio = e.motivo === 'mio'; pon(finGrupoMio ? 'grupoFuera' : 'grupoCortada'); rotuloLlamar('volverGrupo'); boton.disabled = false; boton.hidden = false; }
       else if (['preparando', 'llamando', 'conectando'].includes(e.estado)) pon('grupoVuelve');
     }
   }
@@ -1240,7 +1257,12 @@
     if (g && !enLaPrincipal && abierta) { if (finPendiente || !M.activa) finSala(finPendiente || { motivo: 'mio' }); else pintaLlamada({ estado: 'fin', motivo: 'mio' }); }
   });
   $('#b-micro').addEventListener('click', (e) => (G() || M).micro(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
-  $('#b-camara').addEventListener('click', (e) => (G() || M).camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
+  $('#b-camara').addEventListener('click', async (e) => {
+    const b = e.currentTarget;
+    // en una llamada de voz (sin cámara todavía): pasar a vídeo, sin colgar
+    if (b.classList.contains('a-video')) { b.disabled = true; try { await (G() || M).activaVideo(); } finally { b.disabled = false; } return; }
+    (G() || M).camara(b.getAttribute('aria-pressed') !== 'true');
+  });
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
@@ -1250,7 +1272,11 @@
     esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
     if (esperaLlamada) esperaT = setTimeout(() => { esperaLlamada = false; if (abierta && ultimo.estado === 'libre') pintaLlamada(ultimo); }, 15000);
     if (ultimo.estado === 'libre') pintaLlamada(ultimo);
-    if (E.llamaAlEntrar) { E.llamaAlEntrar = false; setTimeout(() => { if (abierta) M.llamar(); }, 150); }
+    if (E.llamaAlEntrar) {
+      E.llamaAlEntrar = false; const t0 = Date.now();
+      const va = () => { if (!abierta) return; const g = window.ElixireGrupo, tp = g ? g.tipoPrincipal : null; if (!E.tipoEnlace && tp == null && Date.now() - t0 < 900) { setTimeout(va, 60); return; } if (tp === 'voz' && M.modoVoz) { M.modoVoz(true); E.tipo = 'voz'; } M.llamar(); };
+      setTimeout(va, 150);
+    }
   });
 
   // ---------- pasar la conversación al móvil con un QR (motor.js: pasaMovil) ----------

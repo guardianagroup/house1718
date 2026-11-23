@@ -100,9 +100,13 @@
   // (dueño, 23 nov 08:50: «lo de "Tengo un código" también tiene que salir en la pantalla principal, para que mi amigo no tenga que
   // entrar a invitar una llamada; así es más fácil»): en la portada, las dos entradas. «Invitar a videollamada» (en el ordenador, el
   // código sale ya en pantalla; en el móvil, la invitación por WhatsApp) y «Tengo un código» (directamente a escribirlo).
-  const empieza = () => { if (!M || ocupado || abierta) return; if (enMovil()) invitaMovil(); else abre('#crear'); };
-  $('#empezar').addEventListener('click', empieza);
-  for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', empieza);
+  // (dueño, 23 nov 15:47–15:51: «llamada de voz y videollamada… tres botones al empezar… en la versión PC también… y las llamadas
+  // en grupo»): «Llamada de voz» (sin cámara; se puede pasar a vídeo sin colgar) o «Videollamada»
+  const ponTipo = (t) => { window.Elixire.tipo = t === 'voz' ? 'voz' : 'video'; if (M && M.modoVoz) M.modoVoz(t === 'voz'); };
+  const empieza = (t) => { if (!M || ocupado || abierta) return; ponTipo(t); if (enMovil()) invitaMovil(); else abre('#crear'); };
+  $('#empezar').addEventListener('click', () => empieza('video'));
+  { const v = $('#empezar-voz'); if (v) v.addEventListener('click', () => empieza('voz')); }
+  for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', () => empieza('video'));
   $('#empezar-codigo').addEventListener('click', () => { if (!M || ocupado || abierta) return; abre('#tengo'); });
   for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', () => { olvidaInvitacion(); cierra(); });
   // «Cancelar» y «Volver»: a la portada, donde están las dos entradas
@@ -146,9 +150,9 @@
   function ponWhatsApp(codigo) {
     const a = $('#whatsapp');
     if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; delete a.dataset.texto; return; }
-    const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
-    const enlace = location.origin + '/#c=' + codigo + '&l=' + lengua;
-    const texto = tr('mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
+    const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en', voz = window.Elixire.tipo === 'voz';
+    const enlace = location.origin + '/#c=' + codigo + '&l=' + lengua + (voz ? '&voz=1' : '');
+    const texto = tr(voz ? 'mensajeWaVoz' : 'mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
     a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo; a.dataset.texto = texto;
   }
 
@@ -166,11 +170,12 @@
   let invitacion = null; // { s: la semilla en base64url, t0 }
   function guardaInvitacion() { try { if (invitacion) sessionStorage.setItem(GUARDA, JSON.stringify(invitacion)); else sessionStorage.removeItem(GUARDA); } catch (_) {} }
   function olvidaInvitacion() { if (!invitacion) return; invitacion = null; guardaInvitacion(); }
-  function textoInvitacion(sem) {
+  function textoInvitacion(sem, voz) {
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
+    if (voz == null) voz = window.Elixire.tipo === 'voz';
     // la tarjeta de WhatsApp (imagen y texto propios) está en /invitacion/ y /invitation/; al tocarla, esta página con el fragmento
-    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem;
-    return tr('mensajeLlamada').replace('{enlace}', enlace);
+    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem + (voz ? '&voz=1' : '');
+    return tr(voz ? 'mensajeLlamadaVoz' : 'mensajeLlamada').replace('{enlace}', enlace);
   }
   function abreWhatsApp(texto) { try { const w = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); if (w) { try { w.opener = null; } catch (_) {} } return !!w; } catch (_) { return false; } }
   // el menú «Compartir» tiene que abrirse en el mismo toque (el teléfono lo exige); sin él, WhatsApp directamente
@@ -197,7 +202,8 @@
   function ponEnlacesPC(texto) {
     const enlace = enlaceDe(texto), limpio = String(texto || '').replace(/\*/g, '');
     $('#enviar-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
-    $('#enviar-correo').href = 'mailto:?subject=' + encodeURIComponent(tr('correoAsunto')) + '&body=' + encodeURIComponent(tr('correoCuerpo').replace('{enlace}', enlace).replace('{texto}', limpio));
+    const voz = window.Elixire.tipo === 'voz';
+    $('#enviar-correo').href = 'mailto:?subject=' + encodeURIComponent(tr(voz ? 'correoAsuntoVoz' : 'correoAsunto')) + '&body=' + encodeURIComponent(tr(voz ? 'correoCuerpoVoz' : 'correoCuerpo').replace('{enlace}', enlace).replace('{texto}', limpio));
     $('#copiar-enlace').dataset.enlace = enlace;
   }
   async function invitaPC() {
@@ -290,12 +296,18 @@
   // ---- la invitación de WhatsApp: se abre «Tengo un código» con el código ya puesto; basta con tocar «Entrar» ----
   let codigoEnlace = null, enlaceLlamada = false, semillaEnlace = null;
   {
-    const e = /^#e=([A-Za-z0-9_-]{43})(?:&l=(?:es|en))?(&ll=1)?$/.exec(location.hash || '');
+    // (la invitación a una llamada de voz lleva «&voz=1»: quien la abre entra sin cámara)
+    window.Elixire = window.Elixire || {};
+    const partes = String(location.hash || '').split('&'), extra = new Set(partes.slice(1));
+    if (extra.has('voz=1')) { window.Elixire.tipo = 'voz'; window.Elixire.tipoEnlace = true; if (M && M.modoVoz) M.modoVoz(true); }
+    else if (/^#[ec]=/.test(partes[0] || '')) window.Elixire.tipoEnlace = true;
+    const limpio = partes[0] + [...extra].filter((x) => /^(l=(es|en)|ll=1)$/.test(x)).sort((a, b) => (a < b ? -1 : 1)).map((x) => '&' + x).join('');
+    const e = /^#e=([A-Za-z0-9_-]{43})(?:&l=(?:es|en))?(&ll=1)?$/.exec(limpio);
     if (e) {
       try { let b = e[1].replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; const x = Uint8Array.from(atob(b), (q) => q.charCodeAt(0)); if (x.length === 32) { semillaEnlace = x; enlaceLlamada = true; codigoEnlace = 'semilla'; } } catch (_) {}
       try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
     }
-    const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?(&ll=1)?$/.exec(location.hash || '');
+    const m = /^#c=([0-9A-HJKMNP-TV-Z]{16})(?:&l=(?:es|en))?(&ll=1)?$/.exec(limpio);
     if (m) { codigoEnlace = m[1]; enlaceLlamada = !!m[2]; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {} }
   }
   async function abreConCodigo() {
