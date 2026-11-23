@@ -354,7 +354,7 @@
     });
     M.on('par-ocupada', () => { if (abierta === 'movil') { errorMovil('movilUsado'); textoMovil('movilAquiTexto'); } });
     M.on('par-fin', () => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; errorMovil('movilCancelado'); textoMovil('movilAquiTexto'); } });
-    M.on('par-hecho', () => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; textoMovil('movilPasando'); } });
+    M.on('par-hecho', (x) => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; textoMovil(x && x.reanuda ? 'pasandoLlamada' : 'movilPasando'); } });
     M.on('continua', () => { paraReloj(); ocultaPaneles(); abierta = 'sala'; });
   }
 

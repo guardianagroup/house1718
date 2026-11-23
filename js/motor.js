@@ -1309,7 +1309,7 @@ const creaMotor = (OPC) => {
       enviaControl(s, { tipo: 'par', que: 'ok' });
       const usado = Math.max(0, PRUEBA_MS - Math.max(0, +j.resto || 0)), reanuda = j.llamada === 1;
       let v = null; try { v = j.v ? C.deB64u(String(j.v)) : null; } catch (_) { v = null; }
-      setTimeout(async () => { finaliza(s, 'traspaso', '', true); emite('par-hecho'); if (v && v.length === 32) { if (vuelta) vuelta.fill(0); vuelta = v; } await continuaEn(k, { papel: 'movil', usado, reanuda }); }, 700);
+      setTimeout(async () => { finaliza(s, 'traspaso', '', true); emite('par-hecho', { reanuda }); if (v && v.length === 32) { if (vuelta) vuelta.fill(0); vuelta = v; } await continuaEn(k, { papel: 'movil', usado, reanuda }); }, 700);
     }
   }
   // la otra persona: su conversación pasa sola a la sesión nueva con el móvil
@@ -1320,7 +1320,7 @@ const creaMotor = (OPC) => {
     s.traspasando = true;
     const reanuda = j.llamada === 1 || !!(L && L.t0), dest = j.dest === 'pc' ? 'pc' : 'movil';
     enviaControl(s, { tipo: 'traspaso-ok' });
-    emite('traspaso', { fase: 'espera', dest });
+    emite('traspaso', { fase: 'espera', dest, reanuda });
     setTimeout(async () => { finaliza(s, 'traspaso', '', true); await continuaEn(k, { usado: s.usado || 0, reanuda, llamaYo: true, dest }); }, 700);
   }
   async function continuaEn(k, opc) {

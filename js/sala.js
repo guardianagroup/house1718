@@ -53,7 +53,7 @@
     if (!movil.matches) setTimeout(() => texto.focus({ preventScroll: true }), 300);
   }
   function cierra() {
-    if (!abierta) return; abierta = false;
+    if (!abierta) return; abierta = false; marcaPasando(false);
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
     for (const im of lista.querySelectorAll('img[src^="blob:"]')) URL.revokeObjectURL(im.src);
@@ -716,6 +716,14 @@
   // completa y abajo, botones redondos: rojo para colgar; al colgar o si se corta, verde para volver a llamar (css/elixir.css). Sin
   // palabras ni chat. Mientras la llamada de la invitación está por llegar, «Conectando la llamada…» (sin botón, para no cruzarse).
   let ultimo = { estado: 'libre' }, esperaLlamada = false, esperaT = null;
+  // (dueño, 23 nov 13:56: «cuando paso la llamada del PC al móvil y del móvil al PC… no tiene que aparecer "Llamar" ni "Volver a
+  // llamar"… puede decir "Pasando la llamada", pum, y ya»): mientras la llamada cambia de aparato, en los tres lados solo «Pasando la
+  // llamada…», sin botones, sin tonos y sin avisos de fin; se quita en cuanto la llamada nueva habla (o a los 25 s, por si algo falla)
+  let pasando = false, pasandoT = null, pasandoDesde = 0;
+  function marcaPasando(si) {
+    pasando = !!si; clearTimeout(pasandoT); pasandoT = null;
+    if (pasando) { pasandoDesde = Date.now(); pasandoT = setTimeout(() => { pasando = false; if (abierta) pintaLlamada(ultimo); }, 25000); }
+  }
   // La otra persona ha salido de Elixire (dueño, 18:17: «si uno le da a volver a llamar y el otro ha salido completamente de la web,
   // que lo detecte… para que la persona no pierda el tiempo»): en vez de «Volver a llamar», «Invitar de nuevo».
   let otroFuera = false;
@@ -1002,36 +1010,41 @@
     const pon = (k) => { txt.dataset.t = k; txt.textContent = tr(k); };
     clearInterval(tiempo); tiempo = null; $('#video-tiempo').hidden = true; if (e.estado !== 'hablando' && e.estado !== 'reconectando') calidadUlt = null;
     ultimo = e; if (e.estado !== 'libre') { esperaLlamada = false; clearTimeout(esperaT); }
+    // la llamada nueva ya habla (o la de paso se cortó de verdad): se acaba el «Pasando la llamada…»
+    if (pasando && ((e.estado === 'hablando' && (e.t0 || 0) >= pasandoDesde) || (e.estado === 'fin' && e.motivo && e.motivo !== 'fin'))) marcaPasando(false);
+    const pas = pasando && !(e.estado === 'hablando' && (e.t0 || 0) >= pasandoDesde);
     pintaCifrado(e);
-    if (e.estado === 'llamando') tono('saliente'); else if (e.estado === 'entrante' && !e.cruzada && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
+    if (e.estado === 'llamando' && !pas) tono('saliente'); else if (e.estado === 'entrante' && !pas && !e.cruzada && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
     vm.classList.toggle('trasera', e.mira === 'environment');
-    $('#b-girar').hidden = !(m && (e.estado === 'hablando' || e.estado === 'reconectando') && e.local && e.local.getVideoTracks().length && e.cam !== false);
+    $('#b-girar').hidden = !(m && !pas && (e.estado === 'hablando' || e.estado === 'reconectando') && e.local && e.local.getVideoTracks().length && e.cam !== false);
     if (e.remoto && vs.srcObject !== e.remoto) { vs.srcObject = e.remoto; intentaVer(); }
     if (e.estado === 'hablando') intentaVer(); else if (e.estado !== 'reconectando') $('#video-toca').hidden = true;
-    const hablando = e.estado === 'hablando' || e.estado === 'reconectando';
-    const activa = hablando || ['preparando', 'llamando', 'conectando'].includes(e.estado);
+    const hablando = !pas && (e.estado === 'hablando' || e.estado === 'reconectando');
+    const activa = hablando || pas || ['preparando', 'llamando', 'conectando'].includes(e.estado);
     sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
-    $('#video-reconecta').hidden = e.estado !== 'reconectando';
-    if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando) { llamadaVista = false; cierraChat(); }
+    $('#video-reconecta').hidden = e.estado !== 'reconectando' || pas;
+    if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando && !pas) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
-    botonesSolos(e.estado === 'hablando');
+    botonesSolos(e.estado === 'hablando' && !pas);
     const contestaYa = !!(window.Elixire && window.Elixire.contestaSola); // (se contesta sola: sin «Aceptar / Rechazar» entre medias)
-    ent.hidden = e.estado !== 'entrante' || contestaYa;
+    ent.hidden = e.estado !== 'entrante' || contestaYa || pas;
     const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
     // (dueño, 23 nov 11:42: «quien invita ya está esperando y pone "Llamando"; cuando el otro entra, de golpe, sin nada entre medias»):
     // mientras la llamada está por llegar (quien invitó contesta solo; quien escribió el código llama solo), ni en el móvil ni en el
     // ordenador sale «Empezar videollamada»: solo «Llamando…», y en cuanto conecta, la videollamada
-    boton.hidden = (e.estado !== 'libre' && e.estado !== 'fin') || (e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);
-    $('#salir-llamada').hidden = !(e.estado === 'libre' || e.estado === 'fin');
+    boton.hidden = pas || (e.estado !== 'libre' && e.estado !== 'fin') || (e.estado === 'libre' && esperaLlamada && !fuera) || (m && e.estado === 'fin' && !!e.prueba);
+    $('#salir-llamada').hidden = pas || !(e.estado === 'libre' || e.estado === 'fin');
     ctl.hidden = !activa;
     velo.hidden = hablando;
     $('#video-capa').hidden = true; // (todo arriba, en la cabecera)
     { const c = e.estado === 'hablando' && !!e.capa; if (c !== conCapa) { conCapa = c; const mas = $('#sala-estado-mas'), x = $('#sala-estado-texto'); if (mas) mas.hidden = !(conCapa && x.dataset.t === 'salaEstado'); } }
-    if (!hablando) { ponVistaLl(''); sueltaCompleta(); } else if (enPC() && e.video !== false && !vistaLl) ponVistaLl('grande');
-    if (e.estado === 'libre') { if (esperaLlamada && !fuera) pon('llLlamando'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); if (m) rotuloLlamar('llamar'); }
+    if (!hablando) { if (!pas) { ponVistaLl(''); sueltaCompleta(); } } else if (enPC() && e.video !== false && !vistaLl) ponVistaLl('grande');
+    if (e.estado === 'fin') { vs.srcObject = null; vm.srcObject = null; }
+    if (pas) pon('pasandoLlamada');
+    else if (e.estado === 'libre') { if (esperaLlamada && !fuera) pon('llLlamando'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); if (m) rotuloLlamar('llamar'); }
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
     else if (e.estado === 'entrante') pon(contestaYa ? 'llConectando' : 'llEntrante');
@@ -1042,7 +1055,6 @@
       pinta(); tiempo = setInterval(pinta, 250);
       $('#b-micro').setAttribute('aria-pressed', String(e.mic)); $('#b-camara').setAttribute('aria-pressed', String(e.cam));
     } else if (e.estado === 'fin') {
-      vs.srcObject = null; vm.srcObject = null;
       // se cortó (o falló) y queda tiempo de prueba: «Volver a llamar»
       const cortada = e.motivo === 'caida' || e.motivo === 'fallo';
       if (e.prueba) { pon('pruebaFin'); boton.disabled = true; rotuloLlamar('videollamada'); }
@@ -1055,7 +1067,7 @@
       // el código técnico del fallo, pequeño, para saber la causa (red, servidor de llamadas o teléfono)
       if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
     }
-    if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
+    if (fuera && !pas) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
   }
   M.on('llamada', (e) => {
     if (abierta) pintaLlamada(ef(e));
@@ -1168,7 +1180,7 @@
   });
   M.on('par-vuelve', () => { cierraMovil(); aviso('pcVuelveEtiqueta', 'pcVuelveTitulo', 'pcVuelveTexto', false); });
   // la otra persona pasa a otro aparato: esta sala sigue abierta y continúa con él, con claves nuevas
-  M.on('traspaso', (x) => { if (abierta) { const k = x && x.dest === 'pc' ? 'traspasoEsperaPc' : 'traspasoEspera'; ponEstado(k, false); sistema(k); } });
+  M.on('traspaso', (x) => { if (abierta) { const k = x && x.dest === 'pc' ? 'traspasoEsperaPc' : 'traspasoEspera'; ponEstado(k, false); sistema(k); if (x && x.reanuda) { if (dividida) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; pintaVista(); } marcaPasando(true); pintaLlamada(ultimo); } } });
   M.on('continua', (e) => {
     continuada = true; $('#aviso').hidden = true;
     // la llamada llega a este aparato (por el QR o de vuelta): se contesta sola
@@ -1180,6 +1192,7 @@
     }
     verN = 0;
     if (!abierta) abre();
+    if (e && e.reanuda) marcaPasando(true);
     $('#sala-palabras').hidden = true; sala.classList.remove('por-comprobar'); ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
     sistema(e && e.movil ? (e.tel ? 'continuaAqui' : 'continuaAquiPc') : e && e.dest === 'pc' ? 'continuaSuPc' : 'continuaSuMovil');
     pintaVolver();
