@@ -2244,7 +2244,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    desaparecen», como en la videollamada): en el centro, la roca; abajo, los botones redondos e iguales, como en el teléfono (tres
    por fila y «Colgar» solo, en el centro) */
 @media (max-width:760px){
-  .sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz-movil.webp) 50% calc(30% + env(safe-area-inset-top, 0px) * .55)/cover no-repeat}
+  .sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz-movil2.webp) 50% calc(30% + env(safe-area-inset-top, 0px) * .55)/cover no-repeat}
   .tarjeta-voz .tv-luz{top:calc(32% + env(safe-area-inset-top, 0px) * .55);width:82vw}
   .tarjeta-voz .tv-t{display:none}
   .sala.solo-voz.en-llamada .escena-video::after{background:linear-gradient(180deg,rgba(6,8,12,.6) 0,transparent 150px,transparent 50%,rgba(6,8,12,.72) 72%,rgba(6,8,12,.92) 100%)}

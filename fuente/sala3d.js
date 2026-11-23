@@ -574,11 +574,12 @@ function arranca() {
     // en el móvil de pie (dueño, 15:41: «arriba queda mucho espacio, aprovéchalo»): la roca, más grande y más arriba (la imagen se
     // desplaza como con un objetivo descentrable, sin deformar), y abajo el suelo espejo y el botón; al abrir, se acerca menos
     retrato = camara.aspect < 0.8;
-    // y más cerca: el holograma, a pantalla completa (dueño, 16:05)
-    CAM.z = retrato ? 4.2 : 4.7;
+    // y más cerca: el holograma, a pantalla completa (dueño, 16:05); (dueño, 23 nov 17:41: «Haz la piedra más pequeña porque ahora hay
+    // menos pantalla disponible»: con los dos botones de la portada, de pie, la cámara más lejos y la sala algo más arriba)
+    CAM.z = retrato ? 5.6 : 4.7;
     // (dueño, 22 nov: «en la versión pc el botón tapa la parte inferior del holograma»): la sala, algo más arriba, para que el botón
     // y la flecha de bajar queden debajo de la base del proyector (23 nov: en el móvil vuelve a ir solo «Invitar a una llamada»)
-    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.105 : 0.1)), w, h);
+    camara.setViewOffset(w, h, 0, Math.round(h * (retrato ? 0.15 : 0.1)), w, h);
     camara.updateProjectionMatrix();
   }
   let retrato = false;
