@@ -547,14 +547,14 @@
   //   · los códecs, por calidad y por compatibilidad: entre teléfonos, primero el H.264 «constrained baseline», el que todos saben
   //     codificar y decodificar (en GUARDIANA, del iPhone al Android la imagen llegaba en negro cuando el iPhone ofrecía H.264 High);
   //     en el ordenador, VP9; sin AV1 (con la capa poscuántica);
-  //   · la imagen arranca nítida (1,5 Mb/s desde el primer segundo, no 300 kb/s) y sube hasta 8 Mb/s en el teléfono y 20 Mb/s en el
+  //   · la imagen arranca nítida (1,5 Mb/s desde el primer segundo, no 300 kb/s) y sube hasta 20 Mb/s (4K) en el teléfono y en el
   //     ordenador; si falta red, se conserva la fluidez y baja la resolución, que vuelve a subir en cuanto hay red;
   //   · la voz: Opus a 48 kHz, hasta 96 kb/s, con corrección de errores, y va por delante de la imagen cuando la red se aprieta.
   const TEL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
-  const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = TEL ? 8000000 : 20000000;
+  const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = 20000000; // 4K en el móvil y en el ordenador (dueño, 23 nov 07:31)
   async function medios() {
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
-    const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
+    const VIDEO = TEL ? { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
     let st;
     try { st = await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: VIDEO }); }
     catch (e) {
@@ -586,20 +586,71 @@
     x.calT = setInterval(async () => {
       if (L !== x || !x.pc) { clearInterval(x.calT); return; }
       try {
-        const st = await x.pc.getStats(); let par = null, tra = null, v = null; const rx = { lost: 0, recv: 0 };
+        const st = await x.pc.getStats(); let par = null, tra = null, v = null, o = null; const rx = { lost: 0, recv: 0 };
         st.forEach((r) => {
           if (r.type === 'transport') tra = r;
           if (r.type === 'candidate-pair' && r.state === 'succeeded' && (r.nominated || r.selected) && !par) par = r;
           if (r.type === 'inbound-rtp' && !r.isRemote) { rx.lost += r.packetsLost || 0; rx.recv += r.packetsReceived || 0; if (r.kind === 'video') v = r; }
+          if (r.type === 'outbound-rtp' && !r.isRemote && r.kind === 'video' && (!o || (r.frameHeight || 0) > (o.frameHeight || 0))) o = r;
         });
         if (tra && tra.selectedCandidatePairId && st.get(tra.selectedCandidatePairId)) par = st.get(tra.selectedCandidatePairId);
         const lost = antes ? Math.max(0, rx.lost - antes.lost) : 0, recv = antes ? Math.max(0, rx.recv - antes.recv) : 0; antes = rx;
         const perdida = lost + recv > 0 ? lost / (lost + recv) : 0, rtt = par && par.currentRoundTripTime != null ? par.currentRoundTripTime : null;
         const nivel = perdida < 0.015 && (rtt == null || rtt < 0.3) ? 'excelente' : perdida < 0.06 && (rtt == null || rtt < 0.6) ? 'buena' : 'debil';
         x.calidad = { nivel, rtt, perdida, ancho: (v && v.frameWidth) || 0, alto: (v && v.frameHeight) || 0, tls: (tra && tra.tlsVersion) || '', srtp: (tra && tra.srtpCipher) || '', dtls: (tra && tra.dtlsCipher) || '' };
+        calidadAuto(x, o, v, par, perdida);
         emite('calidad', x.calidad);
       } catch (_) {}
     }, 2000);
+  }
+  // Calidad automática (dueño, 23 nov 07:32: «que detecte automáticamente la mejor calidad que pueda brindar el teléfono sin retrasarlo
+  // y sin lag… siempre la mejor conexión y experiencia»). La cámara arranca en lo máximo que da (hasta 4K). De la red ya se ocupa el
+  // navegador: baja la nitidez y conserva la fluidez. Aquí se cuida el propio equipo y el de la otra persona:
+  //   · si este equipo no da abasto al codificar (lo dice el navegador, o salen menos de 20 imágenes por segundo con la red bien),
+  //     la cámara baja un escalón (4K → 1440p → 1080p → 720p → 540p); con 30 s seguidos de holgura, prueba a subir uno; si al subir
+  //     vuelve a ahogarse, se queda abajo 3 minutos (sin vaivenes);
+  //   · si el equipo de la otra persona no da abasto al mostrar la imagen (pocas imágenes por segundo y descodificar le cuesta), se lo
+  //     dice a este, que no pasa de ese escalón hasta que el otro vuelva a ir holgado.
+  const NIV = [2160, 1440, 1080, 720, 540];
+  const nivelDe = (alto) => { const i = NIV.findIndex((h) => h <= alto + 40); return i < 0 ? NIV.length - 1 : i; };
+  function calidadAuto(x, o, v, par, perdida) {
+    if (L !== x || x.estado !== 'hablando') return;
+    const t = performance.now(), ac = x.ac || (x.ac = { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null });
+    // 1) este equipo, al codificar
+    const cam = x.local && x.local.getVideoTracks()[0];
+    if (cam && cam.readyState === 'live' && cam.enabled && x.cam !== false && !x.caraOculta && !x.enChat && o) {
+      if (ac.n == null) { const s0 = cam.getSettings ? cam.getSettings() : {}; ac.tope = nivelDe(Math.min(s0.width || 1080, s0.height || 1080)); ac.n = ac.tope; ac.tCambio = t; }
+      const e = { tt: o.totalEncodeTime || 0, n: o.framesEncoded || 0 }, encMs = ac.e0 && e.n > ac.e0.n ? (e.tt - ac.e0.tt) * 1000 / (e.n - ac.e0.n) : null; ac.e0 = e;
+      const fps = o.framesPerSecond || 0, lim = o.qualityLimitationReason || 'none', red = par && par.availableOutgoingBitrate;
+      const mal = lim === 'cpu' || (fps > 0 && fps < 20 && encMs != null && encMs > 30 && perdida < 0.03 && (!red || red > 1500000));
+      const bien = lim !== 'cpu' && (fps === 0 || fps >= 27) && (encMs == null || encMs < 16);
+      ac.malos = mal ? ac.malos + 1 : 0; ac.buenos = bien ? ac.buenos + 1 : 0;
+      const capRemoto = ac.remoto ? nivelDe(ac.remoto) : 0, minimo = Math.max(ac.tope, capRemoto);
+      let nuevo = ac.n;
+      if (ac.n < capRemoto) nuevo = capRemoto;
+      else if (ac.malos >= 3 && ac.n < NIV.length - 1) { nuevo = ac.n + 1; if (t - ac.tSube < 25000) ac.bloqueo = t + 180000; }
+      else if (ac.buenos >= 15 && ac.n > minimo && t > ac.bloqueo && t - ac.tCambio > 30000) { nuevo = ac.n - 1; ac.tSube = t; }
+      if (nuevo !== ac.n) {
+        ac.n = nuevo; ac.malos = 0; ac.buenos = 0; ac.tCambio = t; const h = NIV[nuevo];
+        try { cam.applyConstraints({ width: { ideal: Math.round(h * 16 / 9) }, height: { ideal: h }, frameRate: { ideal: 30, max: 30 } }).catch(() => {}); } catch (_) {}
+      }
+      x.calidad.captura = NIV[ac.n];
+    }
+    // 2) el equipo de la otra persona, al mostrar lo que llega
+    if (v && S) {
+      const d = { tt: v.totalDecodeTime || 0, n: v.framesDecoded || 0, dr: v.framesDropped || 0 }, dec = ac.d0 && d.n > ac.d0.n ? (d.tt - ac.d0.tt) * 1000 / (d.n - ac.d0.n) : null;
+      const tiradas = ac.d0 ? Math.max(0, d.dr - ac.d0.dr) / Math.max(1, d.n - ac.d0.n + Math.max(0, d.dr - ac.d0.dr)) : 0; ac.d0 = d;
+      const fin = v.framesPerSecond || 0, alto = Math.min(v.frameWidth || 0, v.frameHeight || 0);
+      const rMal = alto >= 720 && fin > 0 && fin < 20 && perdida < 0.03 && ((dec != null && dec > 25) || tiradas > 0.1);
+      const rBien = fin >= 27 && (dec == null || dec < 12) && tiradas < 0.02;
+      ac.rMalos = rMal ? ac.rMalos + 1 : 0; ac.rBuenos = rBien ? ac.rBuenos + 1 : 0;
+      if (ac.rMalos >= 3 && t - ac.tPide > 20000) {
+        ac.pedido = NIV[Math.min(NIV.length - 1, nivelDe(alto) + 1)]; ac.tPide = t; ac.rMalos = 0; ac.pedidos++;
+        enviaControl(S, { tipo: 'llamada', que: 'calidad', id: x.id, alto: ac.pedido });
+      } else if (ac.pedido && ac.rBuenos >= 30 && ac.pedidos < 2 && t - ac.tPide > 60000) {
+        ac.pedido = 0; ac.tPide = t; enviaControl(S, { tipo: 'llamada', que: 'calidad', id: x.id, alto: 0 });
+      }
+    }
   }
   function prefiereCodecs(pc, compatible) {
     try {
@@ -870,6 +921,7 @@
     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
+    if (que === 'calidad' && L.estado === 'hablando') { L.ac = L.ac || { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null }; L.ac.remoto = Math.max(0, +j.alto || 0); }
     if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat }; emite('filtro', L.otroFiltro); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
@@ -943,12 +995,12 @@
     const vieja = L.local.getVideoTracks()[0]; if (!vieja) return false;
     girando = true;
     const ahora = L.mira || ((vieja.getSettings && vieja.getSettings().facingMode) || 'user'), otra = ahora === 'environment' ? 'user' : 'environment';
-    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: TEL ? 1920 : 3840 }, height: { ideal: TEL ? 1080 : 2160 }, frameRate: { ideal: 30, max: 30 } } });
+    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: 30, max: 30 } } });
     try {
       vieja.stop();
       let st = null; try { st = await pide(otra, true); } catch (_) { try { st = await pide(otra, false); } catch (_) { st = null; } }
       let modo = otra; if (!st) { modo = ahora; st = await pide(ahora, false); }
-      const nueva = st.getVideoTracks()[0]; try { nueva.contentHint = 'motion'; } catch (_) {}
+      const nueva = st.getVideoTracks()[0]; try { nueva.contentHint = 'motion'; } catch (_) {} if (L && L.ac) { L.ac.n = null; L.ac.e0 = null; }
       nueva.enabled = L.cam !== false;
       const s = L.pc.getSenders().find((x) => x.track === vieja) || L.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
       if (ocu) { ocu.v.srcObject = new MediaStream([nueva]); ocu.v.play().catch(() => {}); } else if (s) await s.replaceTrack(nueva);
@@ -1024,9 +1076,9 @@
       if (si) {
         if (!cam) return false; paraOcultar();
         const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.srcObject = new MediaStream([cam]); v.play().catch(() => {});
-        const st = cam.getSettings ? cam.getSettings() : {}, cv = document.createElement('canvas'); cv.width = st.width || 640; cv.height = st.height || 480;
+        const st = cam.getSettings ? cam.getSettings() : {}, cv = document.createElement('canvas'); cv.width = Math.min(st.width || 640, 1280); cv.height = Math.round((st.height || 480) * cv.width / (st.width || 640));
         const g = cv.getContext('2d'), pe = document.createElement('canvas'), gp = pe.getContext('2d');
-        const pinta = () => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return; if (cv.width !== vw || cv.height !== vh) { cv.width = vw; cv.height = vh; } const bw = 22, bh = Math.max(1, Math.round(22 * vh / vw)); if (pe.width !== bw || pe.height !== bh) { pe.width = bw; pe.height = bh; } try { gp.drawImage(v, 0, 0, bw, bh); g.imageSmoothingEnabled = false; g.drawImage(pe, 0, 0, vw, vh); } catch (_) {} };
+        const pinta = () => { const v0 = v.videoWidth, h0 = v.videoHeight; if (!v0 || !h0) return; const vw = Math.min(v0, 1280), vh = Math.round(h0 * vw / v0); if (cv.width !== vw || cv.height !== vh) { cv.width = vw; cv.height = vh; } const bw = 22, bh = Math.max(1, Math.round(22 * vh / vw)); if (pe.width !== bw || pe.height !== bh) { pe.width = bw; pe.height = bh; } try { gp.drawImage(v, 0, 0, bw, bh); g.imageSmoothingEnabled = false; g.drawImage(pe, 0, 0, vw, vh); } catch (_) {} };
         g.fillStyle = '#05070A'; g.fillRect(0, 0, cv.width, cv.height);
         const tick = setInterval(pinta, 50), pista = cv.captureStream(20).getVideoTracks()[0];
         await snd.replaceTrack(pista);
