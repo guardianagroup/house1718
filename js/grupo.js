@@ -501,10 +501,8 @@
     for (const r of esc.querySelectorAll('.tesela-nombre')) if (!lista.some((x) => x.r === r)) r.hidden = true;
     for (const pl of esc.querySelectorAll('.tesela-sin')) if (!lista.some((x) => x.el._placa === pl) || sala.classList.contains('en-chat')) pl.hidden = true;
     if (!lista.length || sala.classList.contains('en-chat')) { if (lista.length) for (const x of lista) { x.el.classList.remove('en-tesela', 'habla'); for (const k of PROPS) x.el.style.removeProperty(k); } return; }
-    const W = esc.clientWidth, m = movil.matches, mini = sala.classList.contains('mini');
-    // (llamada de voz en el móvil: los botones no se esconden; los recuadros acaban encima de ellos)
-    let H = esc.clientHeight; if (!W || !H) return;
-    { const ctl = $('#controles'); if (m && sala.classList.contains('solo-voz') && ctl && !ctl.hidden) { const top = ctl.getBoundingClientRect().top - esc.getBoundingClientRect().top; if (top > 120 && top < H) H = Math.round(top - 14); } }
+    const W = esc.clientWidth, H = esc.clientHeight; if (!W || !H) return;
+    const m = movil.matches, mini = sala.classList.contains('mini');
     // si alguien comparte su pantalla, su recuadro pasa a ser el grande (como en Meet): las demás personas, al lado (o debajo, en
     // el móvil)
     const foco = mini ? -1 : lista.findIndex((x) => !x.yo && x.f && x.f.pantalla && !x.f.chat);

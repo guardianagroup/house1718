@@ -1091,7 +1091,7 @@
   // vuelven a esconder a los 4 s); otro toque, fuera. Mientras se usan (un botón, el menú de enviar o el chat), no se esconden.
   let tBotones = 0, enMarchaBotones = false;
   const escondeBotones = () => { clearTimeout(tBotones); if (enMarchaBotones && movil.matches && !enChat && menuEnviar.hidden) sala.classList.add('sin-botones'); };
-  const muestraBotones = (ms) => { sala.classList.remove('sin-botones'); clearTimeout(tBotones); if (enMarchaBotones) tBotones = setTimeout(escondeBotones, ms || 4000); };
+  const muestraBotones = (ms) => { sala.classList.remove('sin-botones'); clearTimeout(tBotones); if (enMarchaBotones) tBotones = setTimeout(escondeBotones, ms || 3000); }; // (3 s sin tocar nada)
   function botonesSolos(si) {
     if (si && !enMarchaBotones && !/[?&]botones=fijos\b/.test(location.search)) { enMarchaBotones = true; muestraBotones(3000); } // (fijos: solo en pruebas)
     else if (!si && enMarchaBotones) { enMarchaBotones = false; clearTimeout(tBotones); sala.classList.remove('sin-botones'); }
@@ -1101,7 +1101,7 @@
     if (e.target.closest('#controles, #video-mio, .video-mio, .vigia-aviso, .avisos-llamada, #chat, #menu-enviar, .menu-enviar, #video-reto, button, a, input, textarea, label')) return;
     if (sala.classList.contains('sin-botones')) muestraBotones(); else escondeBotones();
   });
-  $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(5000); });
+  $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(3000); });
   // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
@@ -1194,7 +1194,7 @@
     $('#video-reconecta').hidden = e.estado !== 'reconectando' || pas;
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando && !pas) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
-    botonesSolos(e.estado === 'hablando' && !pas && e.video !== false); // (en la de voz no se esconden: no hay imagen que tapar)
+    botonesSolos(e.estado === 'hablando' && !pas); // (dueño, 23 nov 17:37: también en la de voz, a los 3 s sin tocar nada)
     const contestaYa = !!(window.Elixire && window.Elixire.contestaSola); // (se contesta sola: sin «Aceptar / Rechazar» entre medias)
     ent.hidden = e.estado !== 'entrante' || contestaYa || pas;
     const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
