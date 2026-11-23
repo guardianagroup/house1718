@@ -281,7 +281,6 @@
     if (grupo !== antes) { const S = SALA(); if (S.grupoCambia) S.grupoCambia(grupo); }
     // «Añadir»: con la llamada en marcha y sitio para alguien más
     const b = $('#b-anadir'); if (b) b.hidden = !(PRUEBA && (pEn || enCurso().length) && personas() < MAX);
-    sala.classList.toggle('con-grupo', extras.size > 0); // (con alguien más en el grupo, «Pasar al móvil» no está)
     // menos caudal por pareja cuantas más personas (3: 720p a 1,5 Mb/s; 4: 540p a 0,9 Mb/s y 24 imágenes por segundo)
     const total = 1 + n, tope = total >= 4 ? { bps: 900000, escala: 2, fps: 24 } : total === 3 ? { bps: 1500000, escala: 1.5, fps: 30 } : null;
     for (const q of [principal, ...pares()]) { try { q.m.limita(tope); } catch (_) {} }
@@ -456,6 +455,8 @@
     pantalla, giraCamara, sal,
     modoChat(si) { propio.chat = !!si; for (const m of motores()) m.modoChat(si); },
     colgar() { sal(); },
+    // las invitaciones de «Añadir» que nadie ha abierto todavía
+    cancelaInvitaciones() { for (const p of pares()) if (p.invitado && !p.m.conectada) quita(p); cierraTarjeta(); },
   };
   if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.ElixireGrupo._estado = () => ({ yo, principal: principal.id, enLlamada: enLlamada(principal), promovido: promovido && promovido.n, extras: pares().map((p) => ({ n: p.n, id: p.id, rol: p.rol, llama: p.llama, conectada: p.m.conectada, estado: p.m.estadoLlamada().estado, capa: p.m.estadoLlamada().capa })) });
 

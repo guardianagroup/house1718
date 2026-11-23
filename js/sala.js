@@ -1065,6 +1065,8 @@
   }
   const errorDm = (k) => { const e = $('#movil-error'); if (k) e.dataset.t = k; e.textContent = k ? tr(k) : ''; };
   $('#b-movil').addEventListener('click', async () => {
+    // (una invitación de «Añadir» aún sin abrir se cancela: la llamada se va al móvil)
+    { const g = window.ElixireGrupo; if (g && g.cancelaInvitaciones) g.cancelaInvitaciones(); }
     // el móvil ya espera (la llamada vino de él): pasa directa, sin QR
     if (M.puedeVolver) { const r0 = await M.devuelve(); if (r0.ok) { $('#movil-qr').removeAttribute('src'); errorDm(''); pasoMovil(2); dm.hidden = false; return; } }
     const r = await M.pasaMovil(); if (!r.ok || typeof window.qrSvg !== 'function') return;

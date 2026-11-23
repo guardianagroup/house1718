@@ -2060,7 +2060,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .sala.en-grupo:not(.en-chat) .tesela-nombre:not([hidden]){display:block;position:absolute;z-index:3;height:26px;padding:0 10px;border-radius:999px;background:rgba(5,7,10,.62);
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:500 12.5px/26px var(--ui);color:#F4F6F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .sala.en-grupo #raya-division,.sala.en-grupo #filtro-otro,.sala.en-grupo #otro-chat,.sala.en-grupo .controles .seg#b-vista,.sala.en-grupo .controles .seg#b-comprobar,
-.sala.en-grupo .sala-botones #b-movil,.sala.con-grupo .sala-botones #b-movil,.sala.en-grupo .controles .seg#b-volver-pc,.sala.en-grupo .controles .seg#b-reto{display:none!important}
+.sala.en-grupo .sala-botones #b-movil,.sala.en-grupo .controles .seg#b-volver-pc,.sala.en-grupo .controles .seg#b-reto{display:none!important}
 .sala.en-grupo .escena-video{background:#06080C}
 @media (max-width:760px){
   .sala.en-grupo:not(.en-chat) .escena-video>.en-tesela{border-radius:0!important;box-shadow:none!important}
@@ -2119,3 +2119,9 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    donde la hubieras movido; ahí no se arrastra (lo que se mueve es la tarjeta entera) */
 .sala.mini.mini .escena-video .video-mio{left:auto!important;top:10px!important;right:10px!important;bottom:auto!important;width:30%!important;height:auto!important;
   aspect-ratio:16/10!important;border-radius:8px!important;cursor:inherit!important;transition:none!important}
+/* (dueño, 23 nov 13:23: «al comprobar se ve a tirones; tiene que ir fluido») el velo y las líneas de monitor del escáner, en CSS
+   (antes se pintaban en cada imagen, a pantalla completa); al dar el resultado, el velo se oscurece un poco */
+.vg-escaner{background:repeating-linear-gradient(180deg,rgba(0,0,0,.1) 0 1px,transparent 1px 4px),rgba(3,7,12,.32);animation:vgVelo .6s ease both;transition:background-color .5s ease}
+.vg-escaner.fin{background-color:rgba(3,7,12,.55)}
+@keyframes vgVelo{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.vg-escaner{animation:none}}

@@ -273,6 +273,7 @@
     if (t < enPausa || (compr && compr.manoReto && (CONFIG.backend === 'cpu' || t - (S.tDetMano || 0) < 380))) { tDet = setTimeout(detecta, 120); return; }
     if (compr && compr.manoReto) S.tDetMano = t;
     if (document.hidden || !video.videoWidth || video.readyState < 2 || (S.brillo != null && S.brillo < 12)) { tDet = setTimeout(detecta, 700); return; }
+    { const dc = humano.config.face.detector; if (compr) { dc.skipFrames = 2; dc.skipTime = 300; } else { dc.skipFrames = 10; dc.skipTime = 1200; } }
     let r = null; try { r = await humano.detect(video); } catch (e) { fallo = String(e && e.message || e); }
     if (!S || !activo) return;
     const dt = performance.now() - t; S.dtMedio = S.dtMedio ? S.dtMedio * 0.9 + dt * 0.1 : dt; S.n++;
@@ -283,10 +284,13 @@
     } else if (!visionLista && !cargandoVision && S.n >= 4 && t - S.t0 > 8000) precargaVision();
     if (compr && r && r.face && r.face[0] && r.face[0].embedding && r.face[0].embedding.length && S.ultima) { S.ident.push({ t, e: Array.from(r.face[0].embedding), g: S.ultima.giro || 0 }); if (S.ident.length > 120) S.ident.shift(); }
     if (compr && compr.manoReto && humano.config.hand.enabled) { S.manos.push({ t, cajas: ((r && r.hand) || []).filter((h) => (h.score || 0) >= 0.45 && h.box).map((h) => h.box) }); corta(S.manos, t, 15000); }
-    tDet = setTimeout(detecta, compr ? Math.max(90, S.dtMedio * 0.9) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
+    tDet = setTimeout(detecta, compr ? Math.max(110, S.dtMedio * 1.15) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
   }
   function procesa(r, t) {
     const f = r && r.face && r.face[0];
+    // (dueño, 23 nov 13:23: «el rostro detectado lo detecta un rato y luego se pierde; tiene que ser más certero»): para dibujarla
+    // basta una confianza algo menor (al girar la cabeza baja un momento); para medir se sigue pidiendo la de siempre
+    if (f && f.mesh && f.mesh.length >= 468 && (f.faceScore || f.score || 0) >= 0.3) S.vista = { t, malla: f.mesh };
     if (!f || !f.mesh || f.mesh.length < 468 || (f.faceScore || f.score || 0) < 0.5) { S.ultima = null; S.refGestos = null; S.tSinCara = t; return; }
     S.conCara++; S.tCara = t;
     const m = f.mesh, io = d2(m[33], m[263]) || 1, ang = (f.rotation && f.rotation.angle) || {}, yaw = ang.yaw || 0, pitch = ang.pitch || 0;
@@ -696,28 +700,37 @@
     g.beginPath(); if (vertical) { g.moveTo(a, 0); g.lineTo(a, H); } else { g.moveTo(0, a); g.lineTo(W, a); } g.stroke();
     g.restore();
   }
+  // la cara que se dibuja: la última vista (si un análisis falla, se mantiene un momento y se apaga despacio) y suavizada entre un
+  // análisis y el siguiente: el escáner se mueve con la cara a 30 imágenes por segundo aunque el análisis vaya a 6–9
+  function caraVista(ahora) {
+    const v = S && S.vista; if (!v || ahora - v.t > 1100) { if (S) S.suave = null; return null; }
+    const m = v.malla, dt = Math.min(200, ahora - (S.tSuave || ahora)); S.tSuave = ahora;
+    if (!S.suave || S.suave.length !== m.length) S.suave = m.map((p) => [p[0], p[1]]);
+    else { const k = 1 - Math.exp(-dt / 55); for (let i = 0; i < m.length; i++) { const q = S.suave[i]; q[0] += (m[i][0] - q[0]) * k; q[1] += (m[i][1] - q[1]) * k; } }
+    return { malla: S.suave, alfa: Math.max(0, Math.min(1, 1 - (ahora - v.t - 600) / 500)) };
+  }
   function pintaEscaner() {
     if (!compr) return;
     const ahora = performance.now(); if (compr.tPinta && ahora - compr.tPinta < 30) { compr.raf = requestAnimationFrame(pintaEscaner); return; } compr.tPinta = ahora;
-    const rc = caja.getBoundingClientRect(), d = Math.min(1.5, devicePixelRatio || 1), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
+    // (dueño, 23 nov 13:23: «al comprobar, en mi pantalla se ve a tirones; tiene que ir fluido»): el lienzo, con tope de tamaño
+    // (en una pantalla grande no pasa de unos 2,6 millones de puntos); el velo y las líneas de monitor van en CSS, sin coste
+    const rc = caja.getBoundingClientRect(), d = Math.min(1.25, devicePixelRatio || 1, Math.sqrt(2600000 / Math.max(1, rc.width * rc.height))), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
     if (lienzo.width !== W || lienzo.height !== H) { lienzo.width = W; lienzo.height = H; }
     const g = lienzo.getContext('2d'); g.clearRect(0, 0, W, H);
     const t = (performance.now() - compr.t0) / 1000, fin = compr.fase === 'fin', tf = fin ? (performance.now() - compr.tFin) / 1000 : 0;
     const col = fin ? compr.color : '207,230,250', aparece = facil(t / 0.6);
     // el velo y las esquinas de la pantalla
-    g.fillStyle = 'rgba(3,7,12,' + (0.32 * aparece + (fin ? 0.25 * facil(tf / 0.5) : 0)) + ')'; g.fillRect(0, 0, W, H);
+    lienzo.classList.toggle('fin', fin);
     g.lineWidth = 1.5 * d; g.strokeStyle = 'rgba(' + col + ',' + 0.7 * aparece + ')'; esquinas(g, 16 * d, 16 * d, W - 32 * d, H - 32 * d, 30 * d);
-    // líneas de barrido finas, como en un monitor (muy suaves)
-    if (!rayas) { rayas = document.createElement('canvas'); rayas.width = 1; rayas.height = 4; const q = rayas.getContext('2d'); q.fillStyle = 'rgba(0,0,0,.55)'; q.fillRect(0, 0, 1, 1); }
-    g.save(); g.globalAlpha = 0.18 * aparece; g.fillStyle = g.createPattern(rayas, 'repeat'); g.fillRect(0, 0, W, H); g.restore();
     // la prueba de luz: su pantalla se enciende en magenta o en cian; aquí, un pulso del mismo color
     const fl = compr.flash, ef = fl ? (performance.now() - fl.t) / 1000 : 9;
     if (ef < 1.2) { g.fillStyle = (fl.c ? 'rgba(0,229,255,' : 'rgba(255,64,255,') + (Math.sin(Math.min(1, ef / 1.2) * Math.PI) * 0.13).toFixed(3) + ')'; g.fillRect(0, 0, W, H); }
     // los barridos: de arriba a abajo y de izquierda a derecha, uno tras otro
     if (!fin) { const c = t % 3.3; if (c < 1.55) barrido(g, W, H, d, H * suave(c / 1.55), false); else if (c >= 1.65 && c < 3.1) barrido(g, W, H, d, W * suave((c - 1.65) / 1.45), true); }
     // la cara: el enfoque que se cierra sobre ella, los ojos y la malla de luz
-    const u = S && S.ultima, vw = video.videoWidth, vh = video.videoHeight;
+    const u = caraVista(ahora), vw = video.videoWidth, vh = video.videoHeight;
     if (u && u.malla && vw) {
+      g.save(); g.globalAlpha = u.alfa;
       const r = video.getBoundingClientRect(), ajuste = getComputedStyle(video).objectFit === 'contain' ? Math.min : Math.max, k = ajuste(r.width / vw, r.height / vh) * d;
       const ox = (r.left - rc.left) * d + (r.width * d - vw * k) / 2, oy = (r.top - rc.top) * d + (r.height * d - vh * k) / 2, P = (q) => [ox + q[0] * k, oy + q[1] * k];
       const pts = u.malla.map(P), xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
@@ -757,8 +770,9 @@
         if ('letterSpacing' in g) g.letterSpacing = (2.5 * d) + 'px';
         g.fillText(tr(fin ? 'vc_rostroFin' : compr.reto ? 'vc_giro' : compr.manoReto ? 'vc_mano' : ef < 1.2 ? 'vc_luz' : 'vc_rostro'), cx, y1 + 22 * d);
         // al fijar el resultado: un fogonazo que se abre desde la cara
-        if (fin && tf < 0.7) { const e = tf / 0.7; g.save(); g.strokeStyle = 'rgba(' + col + ',' + (0.85 * (1 - e)).toFixed(3) + ')'; g.lineWidth = 2.5 * d * (1 - e) + 0.5 * d; g.shadowColor = 'rgba(' + col + ',.9)'; g.shadowBlur = 16 * d; g.beginPath(); g.arc(cx, cy, R * (1 + e * 1.4), 0, PI2); g.stroke(); g.restore(); }
+        if (fin && tf < 0.7 && u.alfa > 0.5) { const e = tf / 0.7; g.save(); g.strokeStyle = 'rgba(' + col + ',' + (0.85 * (1 - e)).toFixed(3) + ')'; g.lineWidth = 2.5 * d * (1 - e) + 0.5 * d; g.shadowColor = 'rgba(' + col + ',.9)'; g.shadowBlur = 16 * d; g.beginPath(); g.arc(cx, cy, R * (1 + e * 1.4), 0, PI2); g.stroke(); g.restore(); }
       }
+      g.restore();
     }
     compr.raf = requestAnimationFrame(pintaEscaner);
   }
