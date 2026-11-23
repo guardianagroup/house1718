@@ -2014,3 +2014,12 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala .controles #b-comprobar[data-e="riesgo"]>svg{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #E07A6C}
   .sala.mini .controles #b-comprobar{display:none!important}
 }
+
+/* (dueño, 23 nov 11:23: «lo de vigía arriba que pone "toca para comprobar" tiene que ser lo mismo que prueba de vida y comprobar; si no,
+   se hace un lío»): un solo sitio para comprobar, también en el móvil: el botón «Comprobar» de abajo; su anillo dice cómo salió */
+.vigia-estado,.vigia-panel{display:none!important}
+@media (max-width:760px){
+  .sala .controles .seg#b-comprobar[data-e="normal"]{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #5CC98A,0 12px 30px -10px rgba(0,0,0,.75)}
+  .sala .controles .seg#b-comprobar[data-e="atencion"]{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #F0C77F,0 12px 30px -10px rgba(0,0,0,.75)}
+  .sala .controles .seg#b-comprobar[data-e="riesgo"]{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #E07A6C,0 12px 30px -10px rgba(0,0,0,.75)}
+}

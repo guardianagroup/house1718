@@ -574,9 +574,8 @@
     if (!w) return;
     const p = $('#palabras'); p.textContent = '';
     for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
-    // (dueño, 23 nov 08:58: «quita las palabras de verificación, no hacen falta ya»): ya no salen solas en la pantalla. Siguen ahí
-    // para quien quiera comprobarlas: se abren tocando «Encriptado poscuántico», arriba.
-    $('#sala-estado').classList.add('con-palabras');
+    // (dueño, 23 nov 08:58 y 11:23: «quita las palabras de verificación, no hacen falta ya… cuando le damos a encriptado
+    // poscuántico se abre lo de las palabras: eso quítalo»): ya no se enseñan en ningún sitio
   }
   const bEstado = $('#sala-estado'), cajaPal = $('#sala-palabras');
   function verPalabras(si) { if (si && !bEstado.classList.contains('con-palabras')) return; cajaPal.hidden = !si; bEstado.setAttribute('aria-expanded', String(!!si)); }
