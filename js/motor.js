@@ -10,10 +10,14 @@
 //   · Archivos: cada uno con su llave AES-256-GCM al azar, que viaja dentro de la sesión; trozos de tamaño fijo.
 //   · Videollamada: WebRTC solo por el servidor de llamadas del relé (ninguno ve la dirección del otro), la negociación dentro de la
 //     sesión, y encima la capa poscuántica de la imagen y el sonido (medios-pq.js), sin rebaja: sin ella, no hay llamada.
+//   · Llamada en grupo, hasta 4 (dueño, 23 nov 11:50: «añadir participante, que cualquiera de los dos pueda añadir»; decidido:
+//     «cada uno con cada uno»): un motor por cada otra persona. window.ElixireMotor es la conversación de siempre; los demás los
+//     crea grupo.js con window.ElixireMotorNuevo({ medios }) y cada pareja tiene su propia sesión poscuántica y su propia llamada.
 'use strict';
-(() => {
+const creaMotor = (OPC) => {
+  OPC = OPC || {};
   const C = window.GuardianaCripto, B = C && C.B;
-  if (!C || !B || !window.GuardianaRele) return;
+  if (!C || !B || !window.GuardianaRele) return null;
   const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   const q = new URLSearchParams(location.search);
   const TIC_MS = (LOCAL && +q.get('latido')) || 500;
@@ -269,7 +273,7 @@
     return C.cat(cab, ct);
   }
   // fuera del ritmo fijo: el acuerdo de claves, las palabras, las órdenes y la señalización de la llamada
-  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel', 'par', 'traspaso', 'traspaso-ok']);
+  const APARTE = new Set(['ok', 'palabras', 'palabras-ok', 'alarma', 'destruir', 'llamada', 'archivo-ack', 'archivo-cancel', 'par', 'traspaso', 'traspaso-ok', 'grupo']);
   function enviaControl(s, obj) {
     if (!s || s.fin || !s.sesion || !R.abierto || !s.miembros.has(s.suId)) return false;
     if (!APARTE.has(obj.tipo)) { aTic(s, obj); return true; }
@@ -360,6 +364,15 @@
       case 'archivo-ack': return avanzaEnvio(s, j);
       case 'archivo-cancel': return cancelaArchivo(String(j.id || ''), true);
       case 'llamada': return llamadaRecibe(s, j);
+      case 'grupo': {
+        // la llamada en grupo: solo lo que se espera, con tamaños fijos (quién soy, a quién conectar y con qué semilla)
+        const g = { que: String(j.que || '').slice(0, 16), id: String(j.id || '').slice(0, 16) };
+        if (typeof j.semilla === 'string' && /^[A-Za-z0-9_-]{43}$/.test(j.semilla)) g.semilla = j.semilla;
+        if (typeof j.con === 'string') g.con = j.con.slice(0, 16);
+        if (j.rol === 'crea' || j.rol === 'entra') g.rol = j.rol;
+        g.n = Math.max(0, Math.min(8, j.n | 0));
+        emite('grupo', g); return;
+      }
       case 'alarma': return finaliza(s, 'alarma-suya');
       case 'destruir': return finaliza(s, 'suyo');
       default: return;
@@ -396,10 +409,11 @@
   }
 
   // ---------- texto ----------
-  function envia(texto) {
+  // (en grupo, el mismo mensaje sale por cada pareja con el mismo identificador: así «Borrar para todos» lo borra en todos)
+  function envia(texto, idFijo) {
     const s = S; texto = String(texto || '').trim();
     if (!s || !s.conectado || s.fin || !texto) return null;
-    const m = { tipo: 'texto', id: C.hex(C.azar(12)), t: Date.now(), texto: texto.slice(0, 20000) };
+    const m = { tipo: 'texto', id: /^[0-9a-f]{16,24}$/.test(idFijo || '') ? idFijo : C.hex(C.azar(12)), t: Date.now(), texto: texto.slice(0, 20000) };
     aTic(s, m);
     return { id: m.id, texto: m.texto, t: m.t, dir: 'mia' };
   }
@@ -416,10 +430,10 @@
   // tamaño (los últimos bytes, rellenos), y cada uno autentica su número y el total: nadie puede cambiarlos, quitarlos ni reordenarlos.
   const TROZO = 48 * 1024, VENTANA = 32, LIMITE = 1024 * 1024 * 1024, ATRASO = 6 * 1024 * 1024;
   const adTrozo = (cab, partes) => C.cat(cab, C.te.encode('ELIXIRE archivo v1\n' + partes));
-  function enviaArchivo(file) {
+  function enviaArchivo(file, idFijo) {
     const s = S; if (!s || !s.conectado || s.fin || !file) return { ok: false, por: 'sin-sesion' };
     if (file.size > LIMITE) return { ok: false, por: 'grande' };
-    const id = C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
+    const id = /^[0-9a-f]{16}$/.test(idFijo || '') && !s.envios.has(idFijo) ? idFijo : C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
     const env = { id, file, llave, partes, enviadas: 0, confirmadas: 0, nombre: String(file.name || 'archivo').slice(0, 200), tam: file.size, mime: String(file.type || '').slice(0, 100), activo: false, fin: false };
     s.envios.set(id, env);
     aTic(s, { tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) });
@@ -568,6 +582,9 @@
     } catch (_) {}
   }
   async function medios() {
+    // (en grupo, las llamadas con las demás personas usan copias de la cámara y el micrófono que ya están abiertos: no se abren
+    // otra vez; en el iPhone solo puede haber una cámara abierta)
+    if (OPC.medios) { try { const st = await OPC.medios(); if (st && st.getTracks().length) return st; } catch (_) {} }
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
     const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
     let st;
@@ -633,7 +650,7 @@
     const t = performance.now(), ac = x.ac || (x.ac = { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null });
     // 1) este equipo, al codificar
     const cam = x.local && x.local.getVideoTracks()[0];
-    if (cam && cam.readyState === 'live' && cam.enabled && x.cam !== false && !x.caraOculta && !x.enChat && o) {
+    if (cam && cam.readyState === 'live' && cam.enabled && x.cam !== false && !x.caraOculta && !x.enChat && o && !topeGrupo) {
       if (ac.n == null) {
         // lo máximo que da la cámara (si el navegador lo dice) y en qué escalón arranca
         const s0 = cam.getSettings ? cam.getSettings() : {}, c0 = cam.getCapabilities ? cam.getCapabilities() : {}, mx = c0 && c0.width && c0.height && c0.width.max && c0.height.max ? Math.min(c0.width.max, c0.height.max) : 0;
@@ -728,12 +745,26 @@
   }
   // la descripción propia, con la alta fidelidad
   async function describe(pc, oferta, opc) { const d = oferta ? await pc.createOffer(opc) : await pc.createAnswer(); await pc.setLocalDescription({ type: d.type, sdp: altaFidelidad(d.sdp) }); }
+  // En grupo, cada persona manda su imagen a cada una de las demás: menos resolución y caudal por pareja para que ningún equipo se
+  // cargue (como hacen Meet, FaceTime o WhatsApp al pasar de dos a varias personas). Lo pone grupo.js; sin grupo, lo de siempre.
+  let topeGrupo = null;
+  function limita(t) {
+    const nuevo = t && t.bps ? { bps: t.bps | 0, escala: Math.max(1, +t.escala || 1), fps: Math.max(10, Math.min(30, t.fps | 0 || 30)) } : null;
+    if (JSON.stringify(nuevo) === JSON.stringify(topeGrupo)) return;
+    topeGrupo = nuevo;
+    if (L && L.ac) { L.ac.n = null; L.ac.techo = false; L.ac.malos = 0; L.ac.buenos = 0; L.ac.e0 = null; }
+    // (si la cámara había subido de Full HD, vuelve a Full HD: en grupo no hace falta más)
+    try { const cam = nuevo && L && L.local && L.local.getVideoTracks()[0], st = cam && cam.getSettings ? cam.getSettings() : {}; if (cam && Math.min(st.width || 0, st.height || 0) > 1100) cam.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } }).catch(() => {}); } catch (_) {}
+    if (L && L.pc) topes(L.pc);
+  }
   async function topes(pc) {
     for (const snd of pc.getSenders()) {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
         if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
+        else if (topeGrupo && snd.track.contentHint === 'detail') { p.encodings[0].maxBitrate = Math.max(topeGrupo.bps, 1500000); p.encodings[0].maxFramerate = 15; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-resolution'; }
+        else if (topeGrupo) { p.encodings[0].maxBitrate = topeGrupo.bps; p.encodings[0].maxFramerate = topeGrupo.fps; p.encodings[0].scaleResolutionDownBy = topeGrupo.escala; p.degradationPreference = 'balanced'; }
         else { p.encodings[0].maxBitrate = BPS[1080]; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
         await snd.setParameters(p);
       } catch (_) {}
@@ -1119,16 +1150,17 @@
   const PANTALLA = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function') && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
   let pantallaP = null;
   function paraPantalla() { if (pantallaP) { const p = pantallaP; pantallaP = null; try { p.stop(); } catch (_) {} } if (L) L.pantalla = false; }
-  async function pantalla(si) {
-    if (!PANTALLA || !L || !L.pc || L.estado !== 'hablando') return false;
+  async function pantalla(si, externa) {
+    if ((!PANTALLA && !externa) || !L || !L.pc || L.estado !== 'hablando') { if (externa) { try { externa.stop(); } catch (_) {} } return false; }
     if (si) {
-      if (pantallaP) return true;
-      let st = null; try { st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false }); } catch (_) { return false; }
-      const pista = st && st.getVideoTracks()[0]; if (!pista) return false;
+      if (pantallaP) { if (externa) { try { externa.stop(); } catch (_) {} } return true; }
+      let pista = externa || null;
+      if (!pista) { let st = null; try { st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false }); } catch (_) { return false; } pista = st && st.getVideoTracks()[0]; }
+      if (!pista) return false;
       const snd = emisor('video'); if (!L || L.estado !== 'hablando' || !snd) { pista.stop(); return false; }
       try { pista.contentHint = 'detail'; } catch (_) {}
       try { await snd.replaceTrack(pista); } catch (_) { pista.stop(); return false; }
-      pantallaP = pista; L.pantalla = true;
+      pantallaP = pista; L.pantalla = true; if (topeGrupo) topes(L.pc);
       pista.addEventListener('ended', () => { if (pantallaP === pista) pantalla(false); });
     } else {
       if (!pantallaP) return true;
@@ -1136,9 +1168,26 @@
       const snd = emisor('video'), vuelta = ocu ? ocu.pista : L.local && L.local.getVideoTracks()[0];
       try { if (snd && vuelta) await snd.replaceTrack(vuelta); } catch (_) {}
       try { p.stop(); } catch (_) {}
+      if (topeGrupo && L.pc) topes(L.pc);
     }
     avisaFiltros(); emite('llamada', estadoLlamada()); return true;
   }
+  // pistas nuevas para esta llamada (grupo.js: al girar la cámara, copias nuevas): entran en los mismos emisores (replaceTrack), con
+  // los filtros que estén puestos (la cara oculta o la pantalla siguen saliendo; la voz cambiada se rehace con el micrófono nuevo)
+  async function ponPistas(st) {
+    const x = L; if (!x || !x.pc || !st || !st.getTracks().length) return false;
+    const viejo = x.local, cam = st.getVideoTracks()[0], mic = st.getAudioTracks()[0];
+    x.local = st; micro(x.mic !== false); camara(x.cam !== false);
+    try {
+      const sv = emisor('video'), sa = emisor('audio');
+      if (cam) { if (ocu) { ocu.v.srcObject = new MediaStream([cam]); ocu.v.play().catch(() => {}); } else if (sv && !pantallaP) await sv.replaceTrack(cam); }
+      if (mic) { if (vozN) await cambiaVoz(true); else if (sa) await sa.replaceTrack(mic); }
+    } catch (e) { console.warn('pistas', e); }
+    if (viejo && viejo !== st) for (const t of viejo.getTracks()) if (!st.getTracks().includes(t)) { try { t.stop(); } catch (_) {} }
+    emite('llamada', estadoLlamada()); return true;
+  }
+  // los avisos del grupo (quién soy, a quién conectar): por la sesión encriptada de esta pareja, nunca por el relé a la vista
+  function enviaGrupo(obj) { const s = S; if (!s || !s.conectado || s.fin || !obj) return false; return enviaControl(s, Object.assign({}, obj, { tipo: 'grupo' })); }
   function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
   function camara(si) { if (!L || !L.local) return; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
 
@@ -1298,17 +1347,20 @@
       const u = f[0]; return performance.now() - (u.timestamp || 0) > 1000 && u.timestamp < 1e12 ? 0 : (u.audioLevel || 0);
     } catch (_) { return null; }
   }
-  window.ElixireMotor = {
-    on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
+  const API = {
+    on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
-    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
+    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
-  if (LOCAL) window.ElixireMotor._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
-  if (LOCAL) window.ElixireMotor._usa = (ms) => { if (S) S.usado = ms; };
-  if (LOCAL) window.ElixireMotor._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
-  if (LOCAL) window.ElixireMotor._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
-})();
+  if (LOCAL) API._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
+  if (LOCAL) API._usa = (ms) => { if (S) S.usado = ms; };
+  if (LOCAL) API._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
+  if (LOCAL) API._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
+  return API;
+};
+window.ElixireMotor = creaMotor({});
+window.ElixireMotorNuevo = creaMotor;
