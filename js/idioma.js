@@ -4,6 +4,10 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    movilConectadoPasando: 'Tu móvil se ha conectado. Pasando la llamada…', vueltaNoEspera: 'El otro aparato ya no está esperando. Si quieres, vuelve a pasarla con el código QR.', volviendoPc: 'Volviendo al ordenador…',
+    pcHechoEtiqueta: 'EN TU ORDENADOR', pcHechoTitulo: 'La llamada ha vuelto a tu ordenador.', pcHechoTexto: 'Para pasarla otra vez a este móvil, pulsa «Pasar al móvil» en el ordenador. Deja esta página abierta.',
+    movilHechoVuelta: 'Para traerla de vuelta, pulsa «Volver al ordenador» en tu móvil. Deja esta página abierta.', traspasoEsperaPc: 'La otra persona está pasando la conversación a su ordenador…',
+    continuaAquiPc: 'La conversación sigue en este ordenador · claves nuevas', continuaSuPc: 'La conversación continúa en su ordenador · claves nuevas',
     pantallaDividida: 'Pantalla dividida', hacerPequena: 'Hacer pequeña tu imagen', moverDivision: 'Mover la división',
     escribiendo: 'Escribiendo…',
     estadoMas: '· Imagen, sonido y chat', compartirPantalla: 'Compartir pantalla', dejarPantalla: 'Dejar de compartir', ampliar: 'Ampliar', verChat: 'Ver chat', otroPantalla: 'Está compartiendo su pantalla',
@@ -190,7 +194,7 @@
     pruebaTitulo: 'FREE TRIAL', pruebaTexto: 'A video call of up to 3 minutes, with the same encryption as the full service.',
     pruebasTexto: 'During the testing phase, chat and file transfers are unlimited.',
     verificar: 'Verify this page',
-    salaEstado: 'Post-quantum encrypted', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
+    salaEstado: 'Post-quantum encrypted', movilConectadoPasando: 'Your phone has connected. Moving the call…', vueltaNoEspera: 'The other device is no longer waiting. If you want, move it again with the QR code.', volviendoPc: 'Going back to the computer…', pcHechoEtiqueta: 'ON YOUR COMPUTER', pcHechoTitulo: 'The call is back on your computer.', pcHechoTexto: 'To move it to this phone again, press “Move to phone” on the computer. Keep this page open.', movilHechoVuelta: 'To bring it back, press “Back to computer” on your phone. Keep this page open.', traspasoEsperaPc: 'The other person is moving the conversation to their computer…', continuaAquiPc: 'The conversation continues on this computer · new keys', continuaSuPc: 'The conversation continues on their computer · new keys', volverPc: 'Back to computer', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
     coinciden: 'They match', noCoinciden: 'No match', palabrasHechas: 'Verified by you. The other person must verify them too.', suComprobacion: 'The other person verified the words',
     videoEtiqueta: 'VIDEO CALL', pruebaLimite: 'Trial: up to 3 minutes', videollamada: 'Start video call', aceptar: 'Accept', rechazar: 'Decline',
     capaActiva: 'Picture and sound with post-quantum layer', micro: 'Mic', camara: 'Camera', colgar: 'Hang up',

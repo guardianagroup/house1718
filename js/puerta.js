@@ -343,10 +343,10 @@
     semillaMovil.fill(0); semillaMovil = null;
   });
   if (M) {
-    M.on('par-palabras', (w) => {
+    // (dueño, 23 nov 09:37: «como en GUARDIANA»): sin palabras que comparar; en cuanto se conecta, la llamada pasa sola
+    M.on('par-palabras', () => {
       if (abierta !== 'movil') return;
-      const p = $('#movil-aqui-palabras'); p.textContent = ''; for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
-      p.hidden = false; $('#movil-continuar').hidden = true; textoMovil('movilCompruebaPc');
+      $('#movil-aqui-palabras').hidden = true; $('#movil-continuar').hidden = true; textoMovil('movilPasando');
     });
     M.on('par-ocupada', () => { if (abierta === 'movil') { errorMovil('movilUsado'); textoMovil('movilAquiTexto'); } });
     M.on('par-fin', () => { if (abierta === 'movil') { $('#movil-aqui-palabras').hidden = true; errorMovil('movilCancelado'); textoMovil('movilAquiTexto'); } });
@@ -478,7 +478,7 @@
     const VERSION = ((s && /[?&]v=([\w-]+)/.exec(s.getAttribute('src') || '')) || [])[1];
     try { const q = new URLSearchParams(location.search); if (q.has('v')) { q.delete('v'); const t = q.toString(); history.replaceState(history.state, '', location.pathname + (t ? '?' + t : '') + location.hash); } } catch (_) {}
     let mirada = 0;
-    const tranquila = () => !abierta && !ocupado && !(M && M.activa) && !invitacion && !codigoEnlace && !semillaMovil && !document.body.classList.contains('cerrado') && scrollY < innerHeight * 0.5;
+    const tranquila = () => !abierta && !ocupado && !(M && (M.activa || M.esperando)) && !invitacion && !codigoEnlace && !semillaMovil && !document.body.classList.contains('cerrado') && scrollY < innerHeight * 0.5;
     const miraVersion = async () => {
       if (!VERSION || document.hidden || Date.now() - mirada < 30000 || !tranquila()) return;
       mirada = Date.now();

@@ -1933,3 +1933,8 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 /* (23 nov) lo que es solo del ordenador nunca sale en el móvil, tampoco dentro de la botonera (allí «.par .seg» pesaba más) */
 @media (max-width:760px),(pointer:coarse){ .sala .controles .seg.solo-pc,.sala .solo-pc{display:none!important} }
 .raya-division::before{bottom:112px}
+/* «Volver al ordenador» en el móvil (como «Volver al PC» de GUARDIANA): arriba de «Cambiar voz», con el filo de hielo */
+@media (max-width:760px){
+  .sala .controles .seg.b-filtro[hidden]{display:none!important}
+  .sala .controles .seg#b-volver-pc{bottom:calc(100% + 132px);border-color:rgba(156,195,228,.6);color:#CFE2F3}
+}

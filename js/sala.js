@@ -909,30 +909,52 @@
   // ---------- pasar la conversación al móvil con un QR (motor.js: pasaMovil) ----------
   const dm = $('#movil');
   function cierraMovil() { dm.hidden = true; $('#movil-qr').removeAttribute('src'); }
-  function pasoMovil(n) { $('#movil-paso1').hidden = n !== 1; $('#movil-paso2').hidden = n !== 2; $('#movil-si').hidden = n !== 2; $('#movil-si').disabled = false; const x = $('#movil-no-texto'); x.dataset.t = n === 2 ? 'movilNo' : 'cancelar'; x.textContent = tr(x.dataset.t); }
+  // (dueño, 23 nov 09:37: «como en GUARDIANA»): sin palabras que comparar ni «Sí, es mi móvil»: en cuanto el móvil se conecta, la llamada pasa sola
+  function pasoMovil(n) {
+    $('#movil-paso1').hidden = n !== 1; $('#movil-paso2').hidden = n !== 2; $('#movil-si').hidden = true; $('#movil-palabras').hidden = true;
+    const x = $('#movil-no-texto'); x.dataset.t = 'cancelar'; x.textContent = tr('cancelar');
+    if (n === 2) { const t = $('#movil-paso2 p:not(.palabras)'); if (t) { t.dataset.t = 'movilConectadoPasando'; t.textContent = tr('movilConectadoPasando'); } }
+  }
   const errorDm = (k) => { const e = $('#movil-error'); if (k) e.dataset.t = k; e.textContent = k ? tr(k) : ''; };
   $('#b-movil').addEventListener('click', async () => {
+    // el móvil ya espera (la llamada vino de él): pasa directa, sin QR
+    if (M.puedeVolver) { const r0 = await M.devuelve(); if (r0.ok) { $('#movil-qr').removeAttribute('src'); errorDm(''); pasoMovil(2); dm.hidden = false; return; } }
     const r = await M.pasaMovil(); if (!r.ok || typeof window.qrSvg !== 'function') return;
     $('#movil-qr').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(window.qrSvg(r.enlace + '&l=' + (window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en')));
     errorDm(''); pasoMovil(1); dm.hidden = false; setTimeout(() => $('#movil-no').focus(), 50);
   });
   $('#movil-no').addEventListener('click', () => { M.cancelaMovil(); cierraMovil(); });
   $('#movil-si').addEventListener('click', () => { if (M.confirmaMovil()) { $('#movil-si').disabled = true; errorDm(''); const e = $('#movil-error'); e.dataset.t = 'movilPasando'; e.textContent = tr('movilPasando'); } });
-  M.on('par-palabras', (w) => {
-    if (dm.hidden) return;
-    const p = $('#movil-palabras'); p.textContent = ''; for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
-    pasoMovil(2);
+  M.on('par-palabras', () => { if (!dm.hidden) pasoMovil(2); });
+  M.on('par-fin', (f) => {
+    if (f && f.motivo === 'no-espera') { if (!dm.hidden) { pasoMovil(1); errorDm('vueltaNoEspera'); } else if (abierta) sistema('vueltaNoEspera'); pintaVolver(); return; }
+    if (!dm.hidden) { pasoMovil(1); $('#movil-qr').removeAttribute('src'); errorDm(f && f.motivo === 'caduca' ? 'movilCaducado' : 'movilCancelado'); }
   });
-  M.on('par-fin', (f) => { if (!dm.hidden) { pasoMovil(1); $('#movil-qr').removeAttribute('src'); errorDm(f && f.motivo === 'caduca' ? 'movilCaducado' : 'movilCancelado'); } });
-  M.on('traspasada', () => { cierraMovil(); cierra(); aviso('movilHechoEtiqueta', 'movilHechoTitulo', 'movilHechoTexto', false); });
-  // la otra persona pasa al móvil: esta sala sigue abierta y continúa con su móvil, con claves nuevas
-  M.on('traspaso', () => { if (abierta) { ponEstado('traspasoEspera', false); sistema('traspasoEspera'); } });
+  // la llamada pasó al otro aparato: este se queda esperando, por si vuelve
+  M.on('traspasada', (x) => {
+    cierraMovil(); cierra();
+    if (x && x.aPc) aviso('pcHechoEtiqueta', 'pcHechoTitulo', x.vuelta ? 'pcHechoTexto' : 'movilHechoTexto', false);
+    else aviso('movilHechoEtiqueta', 'movilHechoTitulo', x && x.vuelta ? 'movilHechoVuelta' : 'movilHechoTexto', false);
+  });
+  // la otra persona pasa a otro aparato: esta sala sigue abierta y continúa con él, con claves nuevas
+  M.on('traspaso', (x) => { if (abierta) { const k = x && x.dest === 'pc' ? 'traspasoEsperaPc' : 'traspasoEspera'; ponEstado(k, false); sistema(k); } });
   M.on('continua', (e) => {
-    continuada = true;
+    continuada = true; $('#aviso').hidden = true;
+    // la llamada llega a este aparato (por el QR o de vuelta): se contesta sola
+    if (e && e.movil && e.reanuda && window.Elixire) window.Elixire.contestaSola = true;
     if (!abierta) abre();
     $('#sala-palabras').hidden = true; sala.classList.remove('por-comprobar'); ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
-    sistema(e && e.movil ? 'continuaAqui' : 'continuaSuMovil');
+    sistema(e && e.movil ? (e.tel ? 'continuaAqui' : 'continuaAquiPc') : e && e.dest === 'pc' ? 'continuaSuPc' : 'continuaSuMovil');
+    pintaVolver();
   });
+  // en el móvil, «Volver al ordenador» (como «Volver al PC» de GUARDIANA): la llamada vuelve sola al ordenador que la dio
+  const bVolver = $('#b-volver-pc');
+  function pintaVolver() { if (bVolver) bVolver.hidden = !(movil.matches && M.puedeVolver && abierta); }
+  if (bVolver) bVolver.addEventListener('click', async () => {
+    bVolver.disabled = true; const r = await M.devuelve(); bVolver.disabled = false;
+    if (r.ok) { bVolver.hidden = true; sistema('volviendoPc'); toast('vuelta', { icono: 'ok', titulo: tr('volviendoPc'), ms: 8000 }); } else pintaVolver();
+  });
+  M.on('llamada', () => pintaVolver());
   // (las claves se renuevan solas y sin avisos en la conversación: dueño, 22 nov 23:16, «desordenado»)
   M.on('se-va', () => { otroFuera = true; if (abierta) { ponEstado('seFue', true); sistema('seFue'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
   M.on('vuelve', () => { otroFuera = false; if (abierta) { ponEstado('salaEstado', false); sistema('vuelve'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
