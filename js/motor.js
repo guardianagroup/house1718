@@ -14,6 +14,17 @@
 //     «cada uno con cada uno»): un motor por cada otra persona. window.ElixireMotor es la conversación de siempre; los demás los
 //     crea grupo.js con window.ElixireMotorNuevo({ medios }) y cada pareja tiene su propia sesión poscuántica y su propia llamada.
 'use strict';
+// un solo contexto de sonido para la mezcla del grupo y el nivel de voz, compartido por todos los tramos (en el iPhone cada contexto
+// cuesta batería y hay pocos)
+let audioComun = null;
+function audioCompartido() {
+  if (audioComun && audioComun.state !== 'closed') { if (audioComun.state === 'suspended') audioComun.resume().catch(() => {}); return audioComun; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+  try { audioComun = new AC({ latencyHint: 'interactive', sampleRate: 48000 }); } catch (_) { try { audioComun = new AC({ latencyHint: 'interactive' }); } catch (_) { return null; } }
+  const c = audioComun; c.onstatechange = () => { if (audioComun === c && c.state === 'suspended') c.resume().catch(() => {}); };
+  return c;
+}
+window.ElixireAudio = audioCompartido;
 const creaMotor = (OPC) => {
   OPC = OPC || {};
   const C = window.GuardianaCripto, B = C && C.B;
@@ -777,6 +788,11 @@ const creaMotor = (OPC) => {
     try { const cam = nuevo && L && L.local && L.local.getVideoTracks()[0], st = cam && cam.getSettings ? cam.getSettings() : {}; if (cam && Math.min(st.width || 0, st.height || 0) > 1100) cam.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } }).catch(() => {}); } catch (_) {}
     if (L && L.pc) topes(L.pc);
   }
+  // el tope de cada imagen reenviada: como el del grupo; en un teléfono, algo más ligero (no se calienta y no pierde fluidez)
+  function topeReenvio() {
+    const t = topeGrupo || { bps: 1500000, escala: 1.5, fps: 30 };
+    return TEL ? { bps: Math.min(t.bps, t.bps >= 1500000 ? 900000 : 600000), escala: Math.max(t.escala, t.escala >= 2 ? 2.5 : 2), fps: Math.min(t.fps, t.fps >= 30 ? 24 : 20) } : t;
+  }
   async function topes(pc) {
     // (las imágenes reenviadas del grupo, siempre con tope: cada una se vuelve a codificar en este equipo)
     const propios = L && L.pc === pc && L.base ? new Set([...L.base].map((t) => t.sender)) : null;
@@ -784,7 +800,7 @@ const creaMotor = (OPC) => {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-        const tg = propios && !propios.has(snd) ? topeGrupo || { bps: 1500000, escala: 1.5, fps: 30 } : topeGrupo;
+        const tg = propios && !propios.has(snd) ? topeReenvio() : topeGrupo;
         if (tg !== topeGrupo && snd.track.kind === 'video' && snd.track.contentHint !== 'detail') { p.encodings[0].maxBitrate = tg.bps; p.encodings[0].maxFramerate = tg.fps; p.encodings[0].scaleResolutionDownBy = tg.escala; p.degradationPreference = 'balanced'; }
         else if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
         else if (topeGrupo && snd.track.contentHint === 'detail') { p.encodings[0].maxBitrate = Math.max(topeGrupo.bps, 1500000); p.encodings[0].maxFramerate = 15; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-resolution'; }
@@ -1150,21 +1166,22 @@ const creaMotor = (OPC) => {
   // los demás tramos (nunca la del propio tramo) y, además de su imagen, las imágenes que le llegan por los demás. Cada tramo es una
   // llamada normal, con su capa poscuántica: las imágenes reenviadas salen con la llave de este tramo. ----
   let mz = null;
-  function mezclaFin() { const m = mz; mz = null; if (!m) return; for (const n of m.nodos.values()) { try { n.disconnect(); } catch (_) {} } try { m.ctx.close(); } catch (_) {} }
+  function mezclaFin() { const m = mz; mz = null; if (!m) return; for (const n of m.nodos.values()) { try { n.disconnect(); } catch (_) {} } try { m.entrada.disconnect(); } catch (_) {} try { m.dst.stream.getTracks().forEach((t) => t.stop()); } catch (_) {} }
   const vozBase = () => (vozN ? vozN.pista : (L && L.local && L.local.getAudioTracks()[0]) || null);
   async function ponVoz() {
     const x = L, snd = emisorDe(x, 'audio'); if (!x || !snd) return;
     const base = vozBase(), otras = (x.voces || []).filter((t) => t && t.readyState === 'live');
-    if (!otras.length) { if (mz) mezclaFin(); if (base && snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } return; }
+    if (!otras.length) { if (base && snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } if (mz) mezclaFin(); return; }
     if (!mz) {
-      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-      let c = null; try { c = new AC({ latencyHint: 'interactive', sampleRate: 48000 }); } catch (_) { try { c = new AC({ latencyHint: 'interactive' }); } catch (_) { return; } }
-      mz = { ctx: c, dst: c.createMediaStreamDestination(), nodos: new Map() };
-      c.onstatechange = () => { if (mz && mz.ctx === c && c.state === 'suspended') c.resume().catch(() => {}); };
+      const c = audioCompartido(); if (!c) return;
+      // un limitador suave a la salida: si hablan varios a la vez, la voz no se satura (por debajo, no toca nada)
+      const lim = c.createDynamicsCompressor(); lim.threshold.value = -6; lim.knee.value = 4; lim.ratio.value = 12; lim.attack.value = 0.002; lim.release.value = 0.15;
+      const dst = c.createMediaStreamDestination(); lim.connect(dst);
+      mz = { ctx: c, dst, entrada: lim, nodos: new Map() };
     }
     if (mz.ctx.state !== 'running') mz.ctx.resume().catch(() => {});
     const quiero = [base, ...otras].filter(Boolean);
-    for (const t of quiero) if (!mz.nodos.has(t)) { try { const n = mz.ctx.createMediaStreamSource(new MediaStream([t])); n.connect(mz.dst); mz.nodos.set(t, n); } catch (_) {} }
+    for (const t of quiero) if (!mz.nodos.has(t)) { try { const n = mz.ctx.createMediaStreamSource(new MediaStream([t])); n.connect(mz.entrada); mz.nodos.set(t, n); } catch (_) {} }
     for (const [t, n] of mz.nodos) if (!quiero.includes(t)) { try { n.disconnect(); } catch (_) {} mz.nodos.delete(t); }
     const pista = mz.dst.stream.getAudioTracks()[0];
     if (pista && L === x && snd.track !== pista) { try { await snd.replaceTrack(pista); } catch (_) {} }
@@ -1177,22 +1194,24 @@ const creaMotor = (OPC) => {
     const x = L; if (!x || !x.pc || !x.t0 || x.pc.signalingState === 'closed') return null;
     x.salen = x.salen || new Map();
     const quiero = new Map(); for (const f of lista || []) if (f && f.clave && f.pista && f.pista.readyState === 'live' && !quiero.has(f.clave)) quiero.set(String(f.clave), f.pista);
-    let nuevo = false;
+    let nuevo = false, cambio = false;
     for (const [clave, pista] of quiero) {
       const t = x.salen.get(clave);
-      if (t) { if (t.sender.track !== pista) { try { await t.sender.replaceTrack(pista); } catch (_) {} } continue; }
+      if (t) { if (t.sender.track !== pista) { cambio = true; try { await t.sender.replaceTrack(pista); } catch (_) {} } continue; }
       const libre = [...x.salen.entries()].find(([k]) => !quiero.has(k));
-      if (libre) { x.salen.delete(libre[0]); try { await libre[1].sender.replaceTrack(pista); } catch (_) {} x.salen.set(clave, libre[1]); continue; }
-      try { const tr = x.pc.addTransceiver(pista, { direction: 'sendonly', streams: [new MediaStream([pista])] }); x.salen.set(clave, tr); nuevo = true; } catch (e) { console.warn('reenvía', e); }
+      if (libre) { x.salen.delete(libre[0]); cambio = true; try { await libre[1].sender.replaceTrack(pista); } catch (_) {} x.salen.set(clave, libre[1]); continue; }
+      try { const tr = x.pc.addTransceiver(pista, { direction: 'sendonly', streams: [new MediaStream([pista])] }); x.salen.set(clave, tr); nuevo = true; cambio = true; } catch (e) { console.warn('reenvía', e); }
     }
     for (const [clave, t] of x.salen) if (!quiero.has(clave) && t.sender.track) { try { await t.sender.replaceTrack(null); } catch (_) {} }
+    // (el tope de una imagen que pasa a ser pantalla compartida, o al revés)
+    for (const [clave, t] of x.salen) { const h = t.sender.track && t.sender.track.contentHint; if (t.sender.track && t.hint !== h) { t.hint = h; if (quiero.has(clave)) cambio = true; } }
     if (nuevo && L === x) {
       prefiereCodecs(x.pc, !!x.compat); ponCapa(x.pc);
       // en cuanto la oferta está hecha, cada imagen ya tiene su hueco: no hace falta esperar la respuesta para decir quién va en él
       const ofrecida = new Promise((res) => { x.alOfrecer = res; setTimeout(res, 4000); });
       renegocia(x); await ofrecida; x.alOfrecer = null;
     }
-    if (L === x && x.pc.signalingState !== 'closed') topes(x.pc);
+    if (cambio && L === x && x.pc.signalingState !== 'closed') topes(x.pc);
     return salen(x);
   }
   function salen(x) { const out = {}; if (x && x.salen) for (const [clave, t] of x.salen) if (t.sender.track && t.mid != null) out[clave] = String(t.mid); return out; }

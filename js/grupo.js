@@ -479,13 +479,13 @@
   // varias personas, quién de ellas habla lo dice la otra persona («habla»). Y cada equipo dice, por cada tramo, quién habla de su
   // lado (él mismo o alguien de otro tramo). ----
   let hablaT = null, ultimoId = null, ultimoT = 0, nv = null;
-  function paraNivel() { if (nv) { try { nv.src.disconnect(); } catch (_) {} try { nv.ctx.close(); } catch (_) {} nv = null; } }
+  function paraNivel() { if (nv) { try { nv.src.disconnect(); } catch (_) {} nv = null; } }
   function nivelMio() {
     if (propio.mic === false) return 0;
     const st = M.propias || (enCurso()[0] && enCurso()[0].m.propias), t = st && st.getAudioTracks()[0];
     if (!t || t.readyState !== 'live' || !t.enabled) return 0;
     try {
-      if (!nv) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return 0; const ctx = new AC(); nv = { ctx, pista: null }; }
+      if (!nv) { const ctx = window.ElixireAudio && window.ElixireAudio(); if (!ctx) return 0; nv = { ctx, pista: null }; }
       if (nv.ctx.state === 'suspended') nv.ctx.resume().catch(() => {});
       if (nv.pista !== t) { if (nv.src) { try { nv.src.disconnect(); } catch (_) {} } nv.src = nv.ctx.createMediaStreamSource(new MediaStream([t])); nv.an = nv.ctx.createAnalyser(); nv.an.fftSize = 512; nv.src.connect(nv.an); nv.buf = new Float32Array(nv.an.fftSize); nv.pista = t; }
       nv.an.getFloatTimeDomainData(nv.buf); let s = 0; for (const v of nv.buf) s += v * v; return Math.sqrt(s / nv.buf.length) * 3;

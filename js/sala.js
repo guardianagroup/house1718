@@ -722,7 +722,7 @@
   // En el móvil (dueño, 15:49–15:53: «simplificado al máximo… como tenemos en GUARDIANA el modo móvil»): la llamada a pantalla
   // completa y abajo, botones redondos: rojo para colgar; al colgar o si se corta, verde para volver a llamar (css/elixir.css). Sin
   // palabras ni chat. Mientras la llamada de la invitación está por llegar, «Conectando la llamada…» (sin botón, para no cruzarse).
-  let ultimo = { estado: 'libre' }, esperaLlamada = false, esperaT = null;
+  let ultimo = { estado: 'libre' }, esperaLlamada = false, esperaT = null, finGrupoMio = true;
   // (dueño, 23 nov 13:56: «cuando paso la llamada del PC al móvil y del móvil al PC… no tiene que aparecer "Llamar" ni "Volver a
   // llamar"… puede decir "Pasando la llamada", pum, y ya»): mientras la llamada cambia de aparato, en los tres lados solo «Pasando la
   // llamada…», sin botones, sin tonos y sin avisos de fin; se quita en cuanto la llamada nueva habla (o a los 25 s, por si algo falla)
@@ -1081,8 +1081,8 @@
     if (vuelve && !pas && !fuera && !e.prueba) {
       // (si se cortó sin que nadie colgara, vuelve sola: solo «Volviendo a la llamada…»)
       const sola = (e.estado === 'fin' && ['caida', 'fallo', 'sin-respuesta'].includes(e.motivo) && window.ElixireGrupo.vuelveSola) || (e.estado === 'libre' && window.ElixireGrupo.volviendo);
-      if (sola) { pon('grupoVuelve'); boton.hidden = true; }
-      else if (e.estado === 'libre' || e.estado === 'fin') { pon('grupoFuera'); rotuloLlamar('volverLlamada'); boton.disabled = false; boton.hidden = false; }
+      if (sola) { pon('grupoVuelve'); boton.hidden = true; finGrupoMio = false; }
+      else if (e.estado === 'libre' || e.estado === 'fin') { if (e.estado === 'fin') finGrupoMio = e.motivo === 'mio'; pon(finGrupoMio ? 'grupoFuera' : 'grupoCortada'); rotuloLlamar('volverLlamada'); boton.disabled = false; boton.hidden = false; }
       else if (['preparando', 'llamando', 'conectando'].includes(e.estado)) pon('grupoVuelve');
     }
   }
