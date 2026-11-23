@@ -370,6 +370,7 @@ const creaMotor = (OPC) => {
         if (typeof j.semilla === 'string' && /^[A-Za-z0-9_-]{43}$/.test(j.semilla)) g.semilla = j.semilla;
         if (typeof j.con === 'string') g.con = j.con.slice(0, 16);
         if (j.rol === 'crea' || j.rol === 'entra') g.rol = j.rol;
+        if (typeof j.v === 'string' && /^\d{8}-\d{2}$/.test(j.v)) g.v = j.v; // la versión de la web de la otra persona
         g.n = Math.max(0, Math.min(8, j.n | 0));
         emite('grupo', g); return;
       }

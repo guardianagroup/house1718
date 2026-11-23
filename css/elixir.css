@@ -2125,3 +2125,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .vg-escaner.fin{background-color:rgba(3,7,12,.55)}
 @keyframes vgVelo{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.vg-escaner{animation:none}}
+/* (dueño, 23 nov 13:37, captura del iPhone): en grupo, en el móvil, la línea de arriba en una sola fila: las barras de la conexión,
+   el tiempo y cuántas personas (el texto «Conexión excelente» sobra ahí) */
+.sala.en-grupo .video-tiempo{white-space:nowrap}
+@media (max-width:760px){ .sala.en-grupo .video-tiempo .cal-t{display:none} }

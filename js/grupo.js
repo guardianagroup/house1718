@@ -25,6 +25,8 @@
   const PRUEBA = true;
   const sala = $('#sala'), esc = $('#escena-video');
   const yo = hex(6);
+  // la versión de esta web (la de los scripts): va en el saludo, para saber si alguien del grupo tiene la web sin actualizar
+  const VERSION = ((((document.querySelector('script[src*="js/grupo.js"]') || {}).src || '').split('?v=')[1]) || '').replace(/[^\d-]/g, '');
   const principal = { m: M, id: null, n: 1, principal: true, clave: 'p' };
   const extras = new Map(); // clave → { m, id, rol, llama, n, video, rotulo, invitado, presentado, caduca, visto }
   let numero = 1, promovido = null, t0Grupo = 0, principalEnLlamada = false, principalVisto = false, pantallaG = null;
@@ -61,7 +63,7 @@
     // quien tiene que llamar lo intenta hasta que la llamada arranca (la sesión puede tardar un instante en estar en línea)
     const llamaYa = (k) => { if (!extras.has(p.clave) || m.terminada || m.estadoLlamada().estado !== 'libre') return; if (!m.puedeLlamar()) { m.llamar(); return; } if (k < 40) setTimeout(() => llamaYa(k + 1), 500); };
     m.on('conectado', () => {
-      clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo });
+      clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo, v: VERSION });
       if (p.llama) setTimeout(() => llamaYa(0), 250);
       if (invitaPC === p) pintaTarjeta('anadirEntra');
       pinta();
@@ -117,12 +119,18 @@
     if (pantallaG) { try { pantallaG.stop(); } catch (_) {} pantallaG = null; }
     const S = SALA(); if (S.finGrupo) S.finGrupo();
   }
+  // (dueño, 23 nov 13:37: «yo sí los veo a ellos y los escucho, pero ellos entre ellos no»): quien tiene la web sin actualizar no
+  // puede unirse a las demás personas del grupo; quien lo ve todo recibe un aviso con su nombre (una vez por persona)
+  const viejoAvisado = new Set();
+  function avisaViejo(q) { const k = q.principal ? 'p:' + (q.id || 'x') : q.clave; if (viejoAvisado.has(k)) return; viejoAvisado.add(k); aviso(tr('grupoViejo').replace('{p}', etiqueta(q))); }
   // quien invitó presenta a la persona nueva a cada una de las demás: una semilla nueva por pareja, dentro de las sesiones
   function presenta(nuevo) {
     if (!nuevo || !nuevo.id) return;
     nuevo.presentado = true;
+    if (nuevo.viejo) avisaViejo(nuevo);
     for (const q of [principal, ...pares()]) {
-      if (q === nuevo || !q.id || q.id === nuevo.id || !enLlamada(q)) continue;
+      if (q === nuevo || q.id === nuevo.id || !enLlamada(q)) continue;
+      if (!q.id || q.viejo) { avisaViejo(q); if (!q.id) continue; }
       const semilla = b64u(crypto.getRandomValues(new Uint8Array(32)));
       q.m.grupo({ que: 'conecta', semilla, con: nuevo.id, rol: 'crea' });
       nuevo.m.grupo({ que: 'conecta', semilla, con: q.id, rol: 'entra' });
@@ -132,6 +140,7 @@
     if (!g || !g.que) return;
     if (g.que === 'hola') {
       if (g.id && g.id !== yo) p.id = g.id;
+      p.viejo = !g.v || g.v < VERSION; // (sin versión: una web de antes de hoy a las 13:40)
       if (p.invitado && !p.presentado && p.id && enLlamada(p)) presenta(p);
       pinta(); return;
     }
@@ -460,7 +469,7 @@
   };
   if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.ElixireGrupo._estado = () => ({ yo, principal: principal.id, enLlamada: enLlamada(principal), promovido: promovido && promovido.n, extras: pares().map((p) => ({ n: p.n, id: p.id, rol: p.rol, llama: p.llama, conectada: p.m.conectada, estado: p.m.estadoLlamada().estado, capa: p.m.estadoLlamada().capa })) });
 
-  M.on('conectado', () => { M.grupo({ que: 'hola', id: yo }); });
+  M.on('conectado', () => { M.grupo({ que: 'hola', id: yo, v: VERSION }); });
   M.on('grupo', (g) => recibe(principal, g));
   M.on('llamada', (e) => {
     // lo propio que tenía puesto la llamada principal pasa a ser lo del grupo (al formarse el grupo, las demás lo copian)
