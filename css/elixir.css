@@ -2129,3 +2129,45 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    el tiempo y cuántas personas (el texto «Conexión excelente» sobra ahí) */
 .sala.en-grupo .video-tiempo{white-space:nowrap}
 @media (max-width:760px){ .sala.en-grupo .video-tiempo .cal-t{display:none} }
+
+/* ---------- las fotos, como en WhatsApp (dueño, 23 nov 13:42: «cuando recibo una foto está muy difícil… ponlo como WhatsApp
+   exacto»): en el chat, la foto sola en su burbuja con la hora y los ✓ encima; al tocarla, a pantalla completa ---------- */
+.msg.archivo.foto,.sala.en-chat .msg.archivo.foto{display:block;min-width:0;width:auto;max-width:none;padding:3px!important;gap:0;white-space:normal}
+.msg.archivo.foto>b.de{margin:4px 8px 5px}
+.msg.foto .fw{position:relative;display:block;width:min(270px,68vw);aspect-ratio:4/3;max-height:360px;padding:0;border:0;border-radius:12px;overflow:hidden;background:#0B0F15;cursor:zoom-in;-webkit-tap-highlight-color:transparent}
+.msg.foto .fw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.msg.foto .fw::after{content:'';position:absolute;left:0;right:0;bottom:0;height:42px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));pointer-events:none}
+.msg.foto .fw .hora,.sala.en-chat .msg.foto .fw .hora{position:absolute;z-index:1;right:9px;bottom:7px;margin:0;float:none;display:block;font:500 11px/1 var(--ui);letter-spacing:0;color:#FFFFFF;opacity:.95;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.msg.foto.mia.leido .fw .hora::after,.sala.en-chat .msg.foto.mia.leido .fw .hora::after{color:#53BDEB}
+.msg.foto>.barra{display:none}
+/* el avance: un círculo en el centro, como en WhatsApp (mientras sale la tuya o llega la suya) */
+.msg.foto .fw-anillo{position:absolute;z-index:1;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center}
+.msg.foto .fw-anillo svg{width:46px;height:46px;transform:rotate(-90deg);fill:none;stroke-width:3}
+.msg.foto .fw-anillo circle{stroke:rgba(255,255,255,.28)}
+.msg.foto .fw-anillo .fw-avance{stroke:#FFFFFF;stroke-linecap:round;stroke-dasharray:97.4;stroke-dashoffset:calc(97.4 * (1 - var(--p,.04)));transition:stroke-dashoffset .25s}
+.msg.foto.mia.subida .fw-anillo,.msg.foto.suya.lista .fw-anillo{display:none}
+
+/* el visor, como el de WhatsApp: negro, a pantalla completa, con las barras encima de la foto */
+.sala .visor-foto:not([hidden]){display:block!important;position:fixed;inset:0;z-index:70;padding:0!important;background:rgba(0,0,0,var(--fondo,1));color:#F4F6F8;text-align:left}
+.sala .visor-foto .visor-cuerpo{position:absolute;inset:0;margin:0;touch-action:none;overflow:hidden}
+.sala .visor-foto .visor-cuerpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;user-select:none;-webkit-user-drag:none;will-change:transform}
+.sala .visor-foto .visor-cab{position:absolute;z-index:2;left:0;right:0;top:0;display:flex;align-items:center;justify-content:flex-start;gap:6px;min-height:0;padding:calc(env(safe-area-inset-top) + 8px) 12px 22px 6px;
+  background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,0));transition:opacity .2s}
+.sala .visor-foto .visor-cerrar{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:#F4F6F8;cursor:pointer}
+.sala .visor-foto .visor-cerrar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.sala .visor-foto .visor-quien{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sala .visor-foto .visor-quien b{font:600 16.5px/1.2 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sala .visor-foto .visor-quien small{font:400 12.5px/1.2 var(--ui);color:#B9C6D3}
+.sala .visor-foto .visor-pie{position:absolute;z-index:2;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 16px calc(env(safe-area-inset-bottom) + 16px);
+  background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,0));transition:opacity .2s}
+.sala .visor-foto .visor-accion{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:220px;height:50px;padding:0 22px;border:0;border-radius:999px;
+  background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#FFFFFF;font:600 15.5px/1 var(--ui);text-decoration:none;cursor:pointer}
+.sala .visor-foto .visor-accion[hidden]{display:none}
+.sala .visor-foto .visor-accion svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sala .visor-foto .visor-accion:active{transform:scale(.97)}
+.sala .visor-foto .visor-pie small{max-width:40ch;font:400 11.5px/1.4 var(--ui);color:#9FB3C4;text-align:center}
+.sala .visor-foto.limpio .visor-cab,.sala .visor-foto.limpio .visor-pie{opacity:0;pointer-events:none}
+/* la persona con la que se está conectando: su recuadro con el círculo latiendo y «Conectando…» */
+.tesela-sin.conecta .ts-circulo{animation:tsLate 1.3s ease-in-out infinite}
+@keyframes tsLate{0%,100%{opacity:.45;transform:scale(.94)}50%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.tesela-sin.conecta .ts-circulo{animation:none}}

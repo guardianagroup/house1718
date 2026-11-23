@@ -56,6 +56,7 @@
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
+    for (const im of lista.querySelectorAll('img[src^="blob:"]')) URL.revokeObjectURL(im.src);
     paraNota(false); descartaRevision(); cierraPrevia(false); cierraHoja(); cierraChat(); ponVistaLl(''); sueltaCompleta(); sinLeer = 0; pintaCuenta(); paraReproductor(); for (const n of notas.values()) if (n.mia && n.url) URL.revokeObjectURL(n.url); notas.clear();
     lista.textContent = ''; texto.value = ''; ajusta(); pintaVoz(); avisos.textContent = ''; menuEnviar.hidden = true; visor.hidden = true; $('#visor-img').removeAttribute('src'); archivosVivos.clear(); for (const u of previas.values()) URL.revokeObjectURL(u); previas.clear();
     const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
@@ -221,8 +222,68 @@
   const quitaToast = (id) => { const li = avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]'); if (li) li.remove(); };
   // la foto recibida, a pantalla completa
   const visor = $('#visor-foto');
-  function abreVisor(url, nombre) { $('#visor-img').src = url; const g = $('#visor-guardar'); g.href = url; g.download = nombre || 'foto.jpg'; visor.hidden = false; }
-  $('#visor-cerrar').addEventListener('click', () => { visor.hidden = true; $('#visor-img').removeAttribute('src'); });
+  // el visor de fotos, como el de WhatsApp: a pantalla completa y en negro; arriba, quién la mandó y cuándo; abajo, «Guardar en
+  // Fotos» (en el iPhone, el menú de compartir, con «Guardar imagen») o «Descargar» (en el ordenador). Un toque esconde o enseña las
+  // barras; dos dedos o un doble toque acercan; deslizar hacia abajo la cierra.
+  const IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
+  let visorAct = null;
+  function abreVisor(url, nombre, info) {
+    info = info || {}; const img = $('#visor-img'); img.src = url; img.style.transform = ''; visor.style.removeProperty('--fondo');
+    const t = $('#visor-t'); t.dataset.t = info.mia ? 'tu' : info.de ? '' : 'fotoRecibida'; t.textContent = info.mia ? tr('tu') : info.de || tr('fotoRecibida');
+    $('#visor-hora').textContent = info.t ? hora(info.t) : '';
+    const g = $('#visor-guardar'); g.href = url; g.download = nombre || 'foto.jpg';
+    visorAct = { url, nombre: nombre || 'foto.jpg', file: null };
+    const v = visorAct; fetch(url).then((r) => r.blob()).then((bl) => { if (visorAct === v) v.file = new File([bl], v.nombre, { type: bl.type || 'image/jpeg' }); }).catch(() => {});
+    $('#visor-compartir').hidden = !(IOS && navigator.share); g.hidden = !$('#visor-compartir').hidden;
+    visor.classList.remove('limpio'); visor.hidden = false;
+  }
+  function cierraVisor() { visor.hidden = true; visorAct = null; $('#visor-img').removeAttribute('src'); }
+  $('#visor-cerrar').addEventListener('click', cierraVisor);
+  $('#visor-compartir').addEventListener('click', () => {
+    const v = visorAct; if (!v) return;
+    const f = v.file; if (f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f] }).catch(() => {}); return; }
+    $('#visor-guardar').click();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !visor.hidden) cierraVisor(); });
+  {
+    const cuerpo = visor.querySelector('.visor-cuerpo'), img = $('#visor-img'), pts = new Map();
+    let z = 1, tx = 0, ty = 0, ini = null, dy = 0, ultToque = 0, toqueT = 0;
+    const lim = (v, a, b) => Math.max(a, Math.min(b, v));
+    const aplica = (anim) => { img.style.transition = anim ? 'transform .2s ease' : 'none'; img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')'; };
+    const vuelve = () => { z = 1; tx = 0; ty = 0; aplica(true); };
+    cuerpo.addEventListener('pointerdown', (e) => {
+      try { cuerpo.setPointerCapture(e.pointerId); } catch (_) {} pts.set(e.pointerId, [e.clientX, e.clientY]);
+      if (pts.size === 1) ini = { x: e.clientX, y: e.clientY, tx, ty, mov: false };
+      else if (pts.size === 2) { const [a, b] = [...pts.values()]; ini = { pinza: true, d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, tx, ty, mov: true }; }
+    });
+    cuerpo.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId) || !ini) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+      if (ini.pinza && pts.size >= 2) {
+        const [a, b] = [...pts.values()], nz = lim(ini.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / ini.d, 1, 5), r = cuerpo.getBoundingClientRect();
+        const cx = ini.cx - r.left - r.width / 2, cy = ini.cy - r.top - r.height / 2;
+        tx = cx - (cx - ini.tx) * nz / ini.z; ty = cy - (cy - ini.ty) * nz / ini.z; z = nz; aplica(false); return;
+      }
+      const ddx = e.clientX - ini.x, ddy = e.clientY - ini.y; if (Math.hypot(ddx, ddy) > 6) ini.mov = true;
+      if (z > 1.02) { tx = ini.tx + ddx; ty = ini.ty + ddy; aplica(false); }
+      else if (ini.mov && Math.abs(ddy) > Math.abs(ddx)) { dy = ddy; img.style.transition = 'none'; img.style.transform = 'translateY(' + dy + 'px) scale(' + (1 - Math.min(0.18, Math.abs(dy) / 1800)) + ')'; visor.style.setProperty('--fondo', String(Math.max(0.25, 1 - Math.abs(dy) / 420))); }
+    });
+    const suelta = (e) => {
+      if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId);
+      if (pts.size) { const [q] = [...pts.values()]; ini = { x: q[0], y: q[1], tx, ty, mov: true }; return; }
+      const i = ini; ini = null; if (!i) return;
+      if (z <= 1.02 && Math.abs(dy) > 110) { dy = 0; cierraVisor(); return; }
+      if (dy) { dy = 0; visor.style.removeProperty('--fondo'); vuelve(); return; }
+      if (!i.mov) {
+        const ahora = performance.now();
+        if (ahora - ultToque < 300) {
+          ultToque = 0; clearTimeout(toqueT);
+          if (z > 1.02) vuelve(); else { const r = cuerpo.getBoundingClientRect(), cx = e.clientX - r.left - r.width / 2, cy = e.clientY - r.top - r.height / 2; z = 2.5; tx = -cx * 1.5; ty = -cy * 1.5; aplica(true); }
+        } else { ultToque = ahora; toqueT = setTimeout(() => visor.classList.toggle('limpio'), 300); }
+      } else if (z < 1.02) vuelve();
+    };
+    cuerpo.addEventListener('pointerup', suelta); cuerpo.addEventListener('pointercancel', suelta);
+    cuerpo.addEventListener('wheel', (e) => { e.preventDefault(); z = lim(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), 1, 5); if (z <= 1.02) { z = 1; tx = 0; ty = 0; } aplica(true); }, { passive: false });
+  }
   async function comprimeFoto(f) {
     if (!/^image\/(jpe?g|png|webp|heic|heif)$/i.test(f.type || '') || f.size < 700 * 1024 || typeof createImageBitmap !== 'function') return f;
     try {
@@ -300,12 +361,12 @@
     }
     const foto = esFoto(a.mime) || previas.has(a.id);
     if (a.dir === 'mia') {
-      if (fase === 'hecho') { toast(id, { img: previas.get(a.id), ok: !previas.has(a.id), titulo: tr(foto ? 'fotoEnviada' : 'archivoEnviadoT'), sub: a.nombre && !foto ? a.nombre : '', ms: 2600 }); const u = previas.get(a.id); if (u) setTimeout(() => URL.revokeObjectURL(u), 4000); previas.delete(a.id); return; }
+      if (fase === 'hecho') { toast(id, { img: previas.get(a.id), ok: !previas.has(a.id), titulo: tr(foto ? 'fotoEnviada' : 'archivoEnviadoT'), sub: a.nombre && !foto ? a.nombre : '', ms: 2600 }); const u = previas.get(a.id); if (u && !foto) setTimeout(() => URL.revokeObjectURL(u), 4000); previas.delete(a.id); return; }
       toast(id, { img: previas.get(a.id), icono: foto ? 'foto' : 'doc', titulo: tr(foto ? 'enviandoFoto' : 'enviandoArchivo'), sub: foto ? '' : a.nombre, progreso: hecho || 0 });
       return;
     }
     if (fase === 'listo') {
-      if (esFoto(a.mime)) toast(id, { img: a.url, titulo: tr('fotoRecibida'), sub: tr('tocaParaVer'), accion: { texto: tr('verFoto'), fn: () => abreVisor(a.url, a.nombre) }, ms: 30000 });
+      if (esFoto(a.mime)) toast(id, { img: a.url, titulo: tr('fotoRecibida'), sub: tr('tocaParaVer'), accion: { texto: tr('verFoto'), fn: () => abreVisor(a.url, a.nombre, { de: a.de || '', t: Date.now() }) }, ms: 30000 });
       else toast(id, { icono: 'doc', titulo: tr('archivoRecibido'), sub: a.nombre + ' · ' + tam(a.tam), accion: { texto: tr('guardar'), href: a.url, descarga: a.nombre }, ms: 40000 });
       return;
     }
@@ -320,6 +381,23 @@
     if (a.dir !== 'mia') li.dataset.de = a.quien || 'p';
     const de = () => { if (a.dir !== 'mia' && a.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = a.de; li.prepend(d); } };
     if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); de(); lista.append(li); abajo(); return li; }
+    // (dueño, 23 nov 13:42: «cuando recibo una foto está muy difícil… ponlo como WhatsApp exacto»): la foto sola en su burbuja,
+    // con la hora y los ✓ encima; mientras sale o llega, un círculo con el avance; un toque la abre a pantalla completa
+    if (esFoto(a.mime)) {
+      const t0 = Date.now();
+      li.className = 'msg archivo foto ' + a.dir + (a.dir === 'mia' ? ' enviado' : '');
+      const caja = document.createElement('button'); caja.type = 'button'; caja.className = 'fw'; caja.setAttribute('aria-label', tr(a.dir === 'mia' ? 'fotoEnviada' : 'fotoRecibida'));
+      const im = document.createElement('img'); im.alt = ''; im.decoding = 'async';
+      im.addEventListener('load', () => { if (im.naturalWidth && im.naturalHeight) caja.style.aspectRatio = im.naturalWidth + ' / ' + im.naturalHeight; li.classList.add('con-img'); abajo(); });
+      const url = previas.get(a.id); if (url) im.src = url;
+      const an = document.createElement('span'); an.className = 'fw-anillo'; an.innerHTML = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5"/><circle class="fw-avance" cx="18" cy="18" r="15.5"/></svg>';
+      const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(t0);
+      caja.append(im, an, h);
+      caja.addEventListener('click', () => { const u = im.currentSrc || im.src; if (u) abreVisor(u, a.nombre, { mia: a.dir === 'mia', de: a.dir === 'mia' ? '' : a.de || '', t: t0 }); });
+      const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i'));
+      li.append(caja, b); de(); lista.append(li); abajo();
+      return li;
+    }
     li.className = 'msg archivo ' + a.dir + (esFoto(a.mime) ? ' foto' : '');
     if (esFoto(a.mime) && previas.get(a.id)) li.append(miniatura(previas.get(a.id), a.nombre));
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
@@ -350,15 +428,16 @@
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
   M.on('archivo', (a) => { if (a.dir !== 'mia') { a.quien = 'p'; const g = G(); if (g) a.de = g.nombrePrincipal(); } filaArchivo(a); });
-  const alProgreso = (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
+  const alProgreso = (p) => { const li = fila(p.id); if (li) { li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; if (li.classList.contains('foto')) li.style.setProperty('--p', String(Math.max(0.04, Math.min(1, p.hecho)))); } const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
   M.on('archivo-progreso', alProgreso);
-  const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
+  const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } if (li.classList.contains('foto')) { li.classList.add('subida', 'llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
   M.on('archivo-enviado', alEnviado);
   const alListo = (a) => {
     { const v = archivosVivos.get(a.id) || {}; toastArchivo(Object.assign({ dir: 'suya' }, v, a), 'listo'); archivosVivos.delete(a.id); }
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
     if (li.classList.contains('nota')) { notaLista(li, a); abajo(); return; }
+    if (li.classList.contains('foto')) { const im = li.querySelector('.fw img'); if (im) im.src = a.url; li.classList.add('lista'); return; }
     if (esFoto(a.mime)) li.prepend(miniatura(a.url, a.nombre));
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;
     const s = document.createElement('span'); s.dataset.t = 'descargar'; s.textContent = tr('descargar'); d.append(s); li.append(d); abajo();

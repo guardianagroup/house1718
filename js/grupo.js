@@ -16,7 +16,7 @@
   const $ = (s) => document.querySelector(s);
   const tr = (k) => (window.ElixireIdioma ? window.ElixireIdioma.t(k) : k);
   const SALA = () => window.ElixireSala || {};
-  const MAX = 4, CADUCA_MS = 10 * 60 * 1000, ESPERA_PAR_MS = 90 * 1000;
+  const MAX = 4, CADUCA_MS = 10 * 60 * 1000, ESPERA_PAR_MS = 45 * 1000;
   const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const b64u = (u) => btoa(String.fromCharCode(...u)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const deB64u = (s) => { let b = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; return Uint8Array.from(atob(b), (c) => c.charCodeAt(0)); };
@@ -63,7 +63,7 @@
     // quien tiene que llamar lo intenta hasta que la llamada arranca (la sesión puede tardar un instante en estar en línea)
     const llamaYa = (k) => { if (!extras.has(p.clave) || m.terminada || m.estadoLlamada().estado !== 'libre') return; if (!m.puedeLlamar()) { m.llamar(); return; } if (k < 40) setTimeout(() => llamaYa(k + 1), 500); };
     m.on('conectado', () => {
-      clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo, v: VERSION });
+      if (p.invitado) clearTimeout(p.caduca); m.grupo({ que: 'hola', id: yo, v: VERSION });
       if (p.llama) setTimeout(() => llamaYa(0), 250);
       if (invitaPC === p) pintaTarjeta('anadirEntra');
       pinta();
@@ -71,11 +71,12 @@
     m.on('llamada', (e) => {
       if (e.estado === 'entrante') m.contestar();
       if (e.estado === 'hablando') {
-        clearTimeout(p.esperaT);
+        clearTimeout(p.esperaT); clearTimeout(p.caduca);
         if (!p.visto) { p.visto = true; ponPropio(m); aviso(tr('grupoEntra').replace('{p}', etiqueta(p))); if (invitaPC === p) cierraTarjeta(); }
         if (p.invitado && !p.presentado && p.id) presenta(p); // (ya en la llamada: ahora, a las demás)
       }
       if (e.estado === 'fin') {
+        p.motivo = (e.motivo || '') + (e.diag ? ' ' + e.diag : '');
         // la llamada con esta persona se ha cortado sin colgar nadie: quien llama vuelve a llamar (dos veces como mucho) y la otra
         // la espera; si colgó, se va del grupo
         const cortada = ['fallo', 'caida', 'sin-respuesta'].includes(e.motivo) && !m.terminada && m.conectada && p.reintentos < 2;
@@ -90,7 +91,7 @@
       const S = SALA(); if (S.repinta && extras.has(p.clave)) S.repinta();
     });
     m.on('grupo', (g) => recibe(p, g));
-    m.on('fin', () => quita(p));
+    m.on('fin', (f) => { if (!p.motivo && f && f.motivo) p.motivo = f.motivo; quita(p); });
     m.on('filtro', () => pinta());
     if (SALA().engancha) SALA().engancha(m, () => etiqueta(p), p.clave);
     if (o.semilla) {
@@ -98,7 +99,7 @@
       Promise.resolve(r).then((x) => { if (!x || !x.ok) quita(p); }).catch(() => quita(p));
     }
     // una invitación sin abrir caduca a los 10 minutos; una pareja presentada que no conecta, a los 90 s
-    p.caduca = setTimeout(() => { if (!m.conectada) { if (invitaPC === p) pintaTarjeta('anadirCaduca'); quita(p); } }, p.invitado ? CADUCA_MS : ESPERA_PAR_MS);
+    p.caduca = setTimeout(() => { if (!m.conectada || !p.visto) { if (invitaPC === p) pintaTarjeta('anadirCaduca'); if (!p.motivo) p.motivo = m.conectada ? 'sin-llamada' : 'sin-sesion'; quita(p); } }, p.invitado ? CADUCA_MS : ESPERA_PAR_MS);
     pinta(); return p;
   }
   function quita(p) {
@@ -108,6 +109,7 @@
     if (invitaPC === p) { invitaPC = null; }
     quitaTesela(p);
     if (p.visto) aviso(tr('grupoSale').replace('{p}', etiqueta(p)));
+    else if (!p.invitado && !saliendo) aviso(tr('grupoNoConecta').replace('{p}', etiqueta(p)) + (p.motivo ? ' (' + p.motivo + ')' : ''));
     try { if (p.m.estadoLlamada().estado !== 'libre') p.m.colgar(); } catch (_) {}
     try { if (!p.m.terminada) p.m.termina('mio'); } catch (_) {}
     pinta();
@@ -148,9 +150,10 @@
       // solo de alguien con quien hay una llamada en marcha o empezando (su sesión está verificada), para conectar con quien aún
       // no está, sin pasar de 4
       const est = p.m.estadoLlamada().estado;
-      if (!g.semilla || !g.con || g.con === yo || !['hablando', 'reconectando', 'preparando', 'llamando', 'conectando', 'entrante'].includes(est)) return;
+      if (!g.semilla || !g.con || g.con === yo) return;
+      if (!['hablando', 'reconectando', 'preparando', 'llamando', 'conectando', 'entrante'].includes(est)) { aviso(tr('grupoNoConecta').replace('{p}', tr('persona')) + ' (' + est + ')'); return; }
       if ([principal, ...pares()].some((q) => q.id === g.con && (q.principal ? enLlamada(q) : !q.m.terminada))) return;
-      if (personas() >= MAX) return;
+      if (personas() >= MAX) { aviso(tr('grupoLleno')); return; }
       nuevoPar({ semilla: deB64u(g.semilla), rol: g.rol === 'crea' ? 'crea' : 'entra', llama: g.rol === 'crea', id: g.con });
     }
   }
@@ -279,9 +282,14 @@
         tesela(p);
         if (p.video.srcObject !== e.remoto) { p.video.srcObject = e.remoto; const x = p.video.play(); if (x && x.catch) x.catch(() => {}); }
         lista.push({ el: p.video, p, r: p.rotulo });
+      } else if (!p.invitado && !p.visto && !p.m.terminada && (pEn || enCurso().length)) {
+        // (dueño, 23 nov 13:46: «no se ven entre ellos»): la persona con la que este equipo se está conectando ya tiene su recuadro,
+        // con «Conectando…»; así se ve en el acto si la conexión llega y cuándo
+        tesela(p); if (p.video.srcObject) p.video.srcObject = null;
+        lista.push({ el: p.video, p, r: p.rotulo, conectando: true });
       } else quitaTesela(p);
     }
-    const n = lista.length, grupo = n >= 2;
+    const n = lista.length, grupo = n >= 2 || (n >= 1 && lista.some((x) => x.conectando));
     const antes = sala.classList.contains('en-grupo');
     sala.classList.toggle('en-grupo', grupo); if (grupo) sala.dataset.grupo = String(n + 1); else delete sala.dataset.grupo;
     if (grupo) lista.push({ el: $('#video-mio'), yo: true, r: rotulo('par-yo') });
@@ -322,7 +330,7 @@
       const vw = el.videoWidth, vh = el.videoHeight, ar = vw && vh ? vw / vh : 16 / 9;
       const entera = !!(comp && comp.pantalla) || (!m && Math.abs(Math.log(ar / (r.w / r.h))) > 0.45);
       pon('object-fit', entera ? 'contain' : 'cover');
-      { const sinCam = x.yo ? (propio.cam === false || propio.chat) : !!(comp && (comp.cam === false || comp.chat)); placa(el, r, sinCam, (x.yo ? propio.chat : comp && comp.chat) ? 'etChatLargo' : 'camaraApagada'); }
+      { const sinCam = x.conectando || (x.yo ? (propio.cam === false || propio.chat) : !!(comp && (comp.cam === false || comp.chat))); placa(el, r, sinCam, x.conectando ? 'grupoConectando' : (x.yo ? propio.chat : comp && comp.chat) ? 'etChatLargo' : 'camaraApagada'); if (el._placa) el._placa.classList.toggle('conecta', !!x.conectando); }
       if (x.r) {
         // el nombre y, si hace falta, lo que tiene puesto (voz cambiada, cara oculta, pantalla, en el chat): se ve en su recuadro
         const f = x.yo ? { voz: propio.voz, cara: propio.cara, pantalla: !!pantallaG, chat: propio.chat } : comp || {};
@@ -435,7 +443,9 @@
     return ok;
   }
   // colgar: el grupo se acaba para mí (cada llamada y cada sesión del grupo); la conversación principal la cuelga la pantalla
+  let saliendo = false;
   function sal() {
+    saliendo = true; setTimeout(() => { saliendo = false; }, 0);
     if (pantallaG) { try { pantallaG.stop(); } catch (_) {} pantallaG = null; }
     for (const p of pares()) { try { if (p.m.estadoLlamada().estado !== 'libre') p.m.colgar(); } catch (_) {} try { p.m.termina('mio'); } catch (_) {} }
     for (const p of pares()) { extras.delete(p.clave); clearTimeout(p.caduca); quitaTesela(p); }
