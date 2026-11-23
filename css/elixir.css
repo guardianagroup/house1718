@@ -1687,15 +1687,3 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 }
 /* la app del iPhone: la portada y la roca, a pantalla entera (el botón baja la altura de la barra de estado) */
 @media (max-width:760px){ .app-ios .portada{height:var(--alto-app,100svh)} .app-ios .lienzo3d{height:var(--alto-app,100vh)} }
-/* (22 nov 23:45) la comparativa con la columna nueva «Pide pruebas en directo»: en el móvil, los títulos de columna en vertical
-   (como en las tablas de comparación densas) para que las 7 columnas y los nombres quepan enteros, sin cortar ni desplazar */
-@media (max-width:760px){
-  .comparar thead th:not(:first-child){writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;vertical-align:middle;white-space:nowrap;
-    -webkit-hyphens:manual;hyphens:manual;overflow-wrap:normal;padding:10px 0 2px!important;font-size:10.5px!important;line-height:1.15!important;letter-spacing:.03em}
-  .comparar thead th[data-t="e7C7"]{color:#9CC3E4}
-  table.comparar{table-layout:fixed!important}
-  .comparar thead th:first-child{width:136px}
-  .comparar tbody th{max-width:none!important;white-space:nowrap!important;padding-left:10px!important;padding-right:6px!important}
-  .comparar td{padding-left:2px!important;padding-right:2px!important}
-}
-.comparar thead th[data-t="e7C7"]{color:#9CC3E4}
