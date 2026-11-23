@@ -53,7 +53,13 @@
       const s = document.createElement('script'); s.src = HUMAN.src; s.integrity = HUMAN.sri; s.async = true;
       s.onload = () => (window.Human ? res(window.Human) : rej(new Error('human'))); s.onerror = () => rej(new Error('human'));
       document.head.append(s);
-    }).then(async (H) => { const h = new H.Human(CONFIG); await h.load(); humano = h; return h; });
+    }).then(async (H) => {
+      const h = new H.Human(CONFIG); await h.load();
+      // (dueño, 23 nov 09:34: «que gaste el mínimo de memoria, sin reducir la calidad»): la tarjeta gráfica no guarda de reserva las
+      // texturas que ya no se usan (las suelta al momento); el análisis es el mismo
+      try { if (h.tf && h.tf.getBackend && h.tf.getBackend() === 'webgl') h.tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 0); } catch (_) {}
+      humano = h; return h;
+    });
     cargando.catch((e) => { fallo = String(e && e.message || e); cargando = null; });
     return cargando;
   }
@@ -651,9 +657,14 @@
     // hacerlas. Las pasivas (parpadear, labios con la voz, gestos, relieve, pulso) también las tiene un vídeo de una persona real
     // (dueño, 22 nov 19:57: «un vídeo de YouTube… lo ha dado como 97 % humano»): solo suman un poco.
     const { A, F, L } = cuentas();
+    // (dueño, 23 nov 09:32: «falla bastante, nos dice un 55 % y los dos somos reales»): sin ninguna prueba activa superada ni
+    // fallada (no se vio bien, no le dio tiempo, se giró a medias), no hay base para un número: «sin terminar», y a repetir. A una
+    // persona real no se la marca como rara por eso; un vídeo o un avatar, al pedírselo, fallan (y eso sí baja).
+    S.inconcluso = false;
+    if (medias === 0 && A === 0 && F === 0) { S.inconcluso = true; return null; }
     if (medias >= 2) return Math.max(3, 14 - debiles * 3);
     if (medias === 1) return Math.max(8, Math.min(55, 10 + A * 15 + L * 3 - F * 5 - debiles * 3));
-    const p = A >= 2 ? (A === 3 || L >= 2 ? 98 : 97) : A === 1 ? (F ? 70 : 85 + L * 2) : (F ? 20 + L * 5 : 50 + L * 5);
+    const p = A >= 2 ? (A >= 3 || L >= 2 ? 98 : 97) : A === 1 ? (F ? 72 : 88 + L * 2) : (F ? 20 + L * 5 : 50 + L * 5);
     return Math.max(A === 0 && F ? 10 : 40, p - debiles * 3);
   }
   // A: pruebas activas superadas; F: pedidas y no hechas (con la cara a la vista); L: señales pasivas de vida (como mucho 2)
@@ -838,11 +849,11 @@
       // la cara se perdió al girar (de perfil el detector deja de verla) y vuelve en el mismo sitio (no un corte de vídeo)
       if (tPerd) { if (performance.now() - tPerd >= 400 && (!u0 || d2(u.centro, u0.centro) < 0.8 * u0.io)) { if (previo >= 0.05) perdPos++; else if (previo <= -0.05) perdNeg++; else if (!signoExigido) perdSin++; } tPerd = 0; }
       visto++; const g = u.giro || 0; previo = g; maximo = Math.max(maximo, Math.abs(g)); pos = Math.max(pos, g); neg = Math.max(neg, -g);
-      const hecho = (vale(1) && (pos >= 0.22 || perdPos)) || (vale(-1) && (neg >= 0.22 || perdNeg)) || perdSin;
+      const hecho = (vale(1) && (pos >= 0.18 || perdPos)) || (vale(-1) && (neg >= 0.18 || perdNeg)) || perdSin;
       if (hecho && Math.abs(g) < 0.12 && performance.now() - t0 > 1300) break; // giró y volvió
     }
     S.giroMax = Math.max(S.giroMax || 0, maximo); S.giroBueno = Math.max(S.giroBueno || 0, signoExigido ? (signoExigido > 0 ? pos : neg) : Math.max(pos, neg)); S.giroPerdida = (S.giroPerdida || 0) + perdPos + perdNeg;
-    const okPos = vale(1) && (pos >= 0.22 || perdPos), okNeg = vale(-1) && (neg >= 0.22 || perdNeg);
+    const okPos = vale(1) && (pos >= 0.18 || perdPos), okNeg = vale(-1) && (neg >= 0.18 || perdNeg);
     if (okPos || okNeg) return { estado: 'si', signo: okPos && (!okNeg || pos >= neg) ? 1 : -1 };
     if (perdSin) return { estado: 'si', signo: 0 }; // se fue de la imagen al girar, sin saber hacia dónde: el segundo vale hacia cualquier lado
     if (visto >= 6 && !seFue && maximo < 0.12) return { estado: 'no' }; // con la cara siempre a la vista (6 análisis o más), no se movió nada
@@ -1023,14 +1034,14 @@
     const pct = poco ? null : porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).filter((x) => FUERZA[x] >= 2).sort((a, b) => FUERZA[b] - FUERZA[a]);
     const nivel = pct == null ? 'nd' : pct >= 85 ? 'real' : pct >= 60 ? 'bien' : pct >= 30 ? 'raro' : 'falso';
     if (compr.fase === 'fin' && compr.pct === pct) return;
-    compr.fase = 'fin'; compr.poco = poco; veredicto = nivel === 'real' || nivel === 'bien' ? 'normal' : nivel === 'raro' ? 'atencion' : nivel === 'falso' ? 'riesgo' : 'sinCara';
+    compr.fase = 'fin'; compr.poco = poco; veredicto = nivel === 'real' || nivel === 'bien' ? 'normal' : nivel === 'raro' ? 'atencion' : nivel === 'falso' ? 'riesgo' : S && S.inconcluso ? null : 'sinCara';
     clearTimeout(tReposo); tReposo = setTimeout(() => { if (!compr || compr.fase === 'fin') reposo(); }, 6000); if (humano) humano.config.face.description.enabled = false; avisaFin(); compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
     compr.color = { real: '143,224,174', bien: '207,230,250', raro: '240,199,127', falso: '242,160,148', nd: '207,230,250' }[nivel];
     cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
     res.dataset.n = nivel; cuentaPct(pct);
     res.querySelector('.vg-r-et').textContent = tr('vc_probabilidad');
     const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), { A, F } = cuentas(), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : A === 0 && F ? tr('vg_noResponde') : A === 0 ? tr('vg_inconcluso') : S && S.vozReto === 'no' ? tr('vg_noVoz') : S && S.giro === 'no' ? tr('vg_noGira') : S && S.mano === 'no' ? tr('vg_noMano') : '';
-    res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr(poco ? 'vc_noMira' : 'vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? (tr('vc_bien') + (motivo ? ' ' + motivo : '')) : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
+    res.querySelector('.vg-r-txt').textContent = nivel === 'nd' && S && S.inconcluso && !poco ? tr('vc_inconcluso') : nivel === 'nd' ? tr(poco ? 'vc_noMira' : 'vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? (tr('vc_bien') + (motivo ? ' ' + motivo : '')) : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
     const lista = res.querySelector('.vg-r-pruebas'); lista.textContent = '';
     if (S) for (const [k, v] of [['vc_pLuz', S.reflejo === 'si' ? 'si' : 'nd'], ['vc_pVoz', S.vozReto === 'si' ? 'si' : S.vozReto === 'no' || S.vozReto === 'mudo' ? 'no' : 'nd'], ['vc_pMano', S.mano === 'si' ? 'si' : S.mano === 'no' || S.mano === 'oculta' ? 'no' : 'nd'], ['vc_pGiro', S.giro === 'si' ? 'si' : S.giro === 'no' ? 'no' : 'nd']]) {
       const li = document.createElement('li'); li.className = 'vg-p-' + v; li.textContent = tr(k); lista.append(li);
