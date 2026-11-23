@@ -218,16 +218,32 @@
   // ---- la pantalla: un recuadro por persona, también el tuyo (como Meet, FaceTime o WhatsApp). La persona de la conversación (o
   // quien la sustituya si cuelga) va en #video-suyo; cada una de las demás, en su recuadro. En el ordenador, recuadros 16:9 con aire
   // entre ellos; en el móvil, a sangre, la pantalla entera repartida. ----
+  const MUDO = '<svg class="tn-mudo" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.6-1.5"/><path d="M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11c0 .9-.2 1.8-.5 2.6M12 17.5V21"/><path d="M4 4l16 16"/></svg><span class="tn-t"></span>';
+  const nuevoRotulo = () => { const r = document.createElement('span'); r.className = 'tesela-nombre'; r.innerHTML = MUDO; return r; };
   function tesela(p) {
     if (p.video) return;
     const v = document.createElement('video'); v.className = 'video-par'; v.autoplay = true; v.playsInline = true; v.setAttribute('playsinline', '');
-    const r = document.createElement('span'); r.className = 'tesela-nombre';
+    const r = nuevoRotulo();
     const ref = $('#raya-division'); esc.insertBefore(v, ref); esc.insertBefore(r, ref);
     v.addEventListener('resize', programa); v.addEventListener('loadedmetadata', programa);
     p.video = v; p.rotulo = r;
   }
-  function quitaTesela(p) { if (!p.video) return; try { p.video.srcObject = null; } catch (_) {} p.video.remove(); p.rotulo.remove(); p.video = null; p.rotulo = null; }
-  const rotulo = (id) => { let r = document.getElementById(id); if (!r) { r = document.createElement('span'); r.id = id; r.className = 'tesela-nombre'; esc.insertBefore(r, $('#raya-division')); } return r; };
+  function quitaTesela(p) { if (!p.video) return; try { p.video.srcObject = null; } catch (_) {} if (p.video._placa) p.video._placa.remove(); p.video.remove(); p.rotulo.remove(); p.video = null; p.rotulo = null; }
+  const rotulo = (id) => { let r = document.getElementById(id); if (!r) { r = nuevoRotulo(); r.id = id; esc.insertBefore(r, $('#raya-division')); } return r; };
+  // sin cámara (o en el chat): en su recuadro, un círculo con la silueta y «Cámara apagada», como en Meet, Zoom o FaceTime
+  function placa(el, r, si, k) {
+    let pl = el._placa;
+    if (!si) { if (pl) pl.hidden = true; return; }
+    if (!pl) {
+      pl = document.createElement('div'); pl.className = 'tesela-sin'; pl.setAttribute('aria-hidden', 'true');
+      pl.innerHTML = '<span class="ts-circulo"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.9"/><path d="M4.4 20.2c.7-4 3.9-6.7 7.6-6.7s6.9 2.7 7.6 6.7"/></svg></span><span class="ts-texto"></span>';
+      esc.insertBefore(pl, $('#raya-division')); el._placa = pl;
+    }
+    pl.hidden = false; pl.style.left = r.x + 'px'; pl.style.top = r.y + 'px'; pl.style.width = r.w + 'px'; pl.style.height = r.h + 'px';
+    pl.style.setProperty('--ts', Math.round(Math.max(34, Math.min(96, Math.min(r.w, r.h) * 0.3))) + 'px');
+    const t = pl.querySelector('.ts-texto'); if (t.dataset.t !== k) { t.dataset.t = k; t.textContent = tr(k); }
+    pl.classList.toggle('pequena', r.h < 150);
+  }
   let programaT = 0;
   function programa() { if (!programaT) programaT = requestAnimationFrame(() => { programaT = 0; pinta(); }); }
   function pinta() {
@@ -262,6 +278,7 @@
     sala.classList.toggle('en-grupo', grupo); if (grupo) sala.dataset.grupo = String(n + 1); else delete sala.dataset.grupo;
     if (grupo) lista.push({ el: $('#video-mio'), yo: true, r: rotulo('par-yo') });
     coloca(grupo ? lista : []);
+    { const t = $('#video-tiempo'); if (t) { if (grupo) t.dataset.gente = tr('personasN').replace('{n}', String(n + 1)); else delete t.dataset.gente; } }
     if (grupo !== antes) { const S = SALA(); if (S.grupoCambia) S.grupoCambia(grupo); }
     // «Añadir»: con la llamada en marcha y sitio para alguien más
     const b = $('#b-anadir'); if (b) b.hidden = !(PRUEBA && (pEn || enCurso().length) && personas() < MAX);
@@ -277,6 +294,7 @@
   function coloca(lista) {
     for (const el of esc.querySelectorAll('.en-tesela')) if (!lista.some((x) => x.el === el)) { el.classList.remove('en-tesela', 'habla'); for (const k of PROPS) el.style.removeProperty(k); }
     for (const r of esc.querySelectorAll('.tesela-nombre')) if (!lista.some((x) => x.r === r)) r.hidden = true;
+    for (const pl of esc.querySelectorAll('.tesela-sin')) if (!lista.some((x) => x.el._placa === pl) || sala.classList.contains('en-chat')) pl.hidden = true;
     if (!lista.length || sala.classList.contains('en-chat')) { if (lista.length) for (const x of lista) { x.el.classList.remove('en-tesela', 'habla'); for (const k of PROPS) x.el.style.removeProperty(k); } return; }
     const W = esc.clientWidth, H = esc.clientHeight; if (!W || !H) return;
     const m = movil.matches, mini = sala.classList.contains('mini');
@@ -297,11 +315,13 @@
       const vw = el.videoWidth, vh = el.videoHeight, ar = vw && vh ? vw / vh : 16 / 9;
       const entera = !!(comp && comp.pantalla) || (!m && Math.abs(Math.log(ar / (r.w / r.h))) > 0.45);
       pon('object-fit', entera ? 'contain' : 'cover');
+      { const sinCam = x.yo ? (propio.cam === false || propio.chat) : !!(comp && (comp.cam === false || comp.chat)); placa(el, r, sinCam, (x.yo ? propio.chat : comp && comp.chat) ? 'etChatLargo' : 'camaraApagada'); }
       if (x.r) {
         // el nombre y, si hace falta, lo que tiene puesto (voz cambiada, cara oculta, pantalla, en el chat): se ve en su recuadro
         const f = x.yo ? { voz: propio.voz, cara: propio.cara, pantalla: !!pantallaG, chat: propio.chat } : comp || {};
         const mas = [f.pantalla ? tr('etPantalla') : '', f.voz ? tr('etVoz') : '', f.cara && !f.pantalla ? tr('etCara') : '', f.chat ? tr('etChat') : ''].filter(Boolean);
-        x.r.textContent = (x.yo ? tr('tu') : etiqueta(x.p)) + (mas.length ? ' · ' + mas.join(' · ') : ''); x.r.hidden = mini;
+        x.r.querySelector('.tn-t').textContent = (x.yo ? tr('tu') : etiqueta(x.p)) + (mas.length ? ' · ' + mas.join(' · ') : ''); x.r.hidden = mini;
+        x.r.classList.toggle('mudo', x.yo ? propio.mic === false : !!(comp && comp.mic === false));
         const arriba = m && r.y > 4; // en el móvil, las de abajo llevan el nombre arriba (abajo están los botones)
         x.r.style.left = r.x + 10 + 'px'; x.r.style.top = (arriba ? r.y + 10 : r.y + r.h - 36) + 'px'; x.r.style.maxWidth = Math.max(60, r.w - 20) + 'px';
       }

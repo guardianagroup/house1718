@@ -975,7 +975,7 @@ const creaMotor = (OPC) => {
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
     if (que === 'calidad' && L.estado === 'hablando') { L.ac = L.ac || { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null }; L.ac.remoto = Math.max(0, +j.alto || 0); }
-    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat, pantalla: !!j.pantalla }; emite('filtro', L.otroFiltro); }
+    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat, pantalla: !!j.pantalla, mic: j.mic !== false, cam: j.cam !== false }; emite('filtro', L.otroFiltro); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
@@ -1067,7 +1067,7 @@ const creaMotor = (OPC) => {
   const verJs = (((document.querySelector('script[src*="js/motor.js"]') || {}).src || '').split('?v=')[1] || '').replace(/[^\w.-]/g, '');
   let actx = null, vozN = null, ocu = null;
   const emisor = (kind) => L && L.pc && L.pc.getSenders().find((x) => x.track && x.track.kind === kind);
-  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat, pantalla: !!L.pantalla }); }
+  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat, pantalla: !!L.pantalla, mic: L.mic !== false, cam: L.cam !== false }); }
   // en el chat del móvil, la cámara propia se apaga (la voz sigue) y vuelve como estaba al volver al vídeo; la otra persona lo ve
   function modoChat(si) {
     if (!L || L.estado !== 'hablando' || !!L.enChat === !!si) return;
@@ -1188,8 +1188,8 @@ const creaMotor = (OPC) => {
   }
   // los avisos del grupo (quién soy, a quién conectar): por la sesión encriptada de esta pareja, nunca por el relé a la vista
   function enviaGrupo(obj) { const s = S; if (!s || !s.conectado || s.fin || !obj) return false; return enviaControl(s, Object.assign({}, obj, { tipo: 'grupo' })); }
-  function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
-  function camara(si) { if (!L || !L.local) return; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
+  function micro(si) { if (!L || !L.local) return; const antes = L.mic !== false; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; if (antes !== !!si) avisaFiltros(); emite('llamada', estadoLlamada()); }
+  function camara(si) { if (!L || !L.local) return; const antes = L.cam !== false; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; if (antes !== !!si) avisaFiltros(); emite('llamada', estadoLlamada()); }
 
   // ---------- final: alarma, terminar y borrar ----------
   function quitaCodigo(s) { if (s && s.ucod) { try { R.retira(s.ucod.buzon); } catch (_) {} s.ucod = null; } }
