@@ -27,8 +27,8 @@
   const HUMAN = { src: 'js/terceros/human.js?v=3.3.6', sri: 'sha384-vASLsXJSh9FIgw41jM2fwBSF2MoEPlegwV4SO9G3NeyRMcWf7XjSdYvU6MlwOfQl' };
   const CONFIG = {
     debug: false, backend: /[?&]motor=cpu\b/.test(location.search) ? 'cpu' : 'humangl', modelBasePath: 'modelos/human/', warmup: 'none', cacheSensitivity: 0, deallocate: false,
-    filter: { enabled: false }, gesture: { enabled: false }, body: { enabled: false },
-    hand: { enabled: false, rotation: false, landmarks: false, skipFrames: 0, skipTime: 0, minConfidence: 0.4, iouThreshold: 0.2, maxDetected: 2, detector: { modelPath: 'handtrack.json' } }, object: { enabled: false }, segmentation: { enabled: false },
+    filter: { enabled: false }, gesture: { enabled: false }, body: { enabled: false, modelPath: 'movenet-lightning.json', maxDetected: 1, minConfidence: 0.2, skipFrames: 3, skipTime: 350 },
+    hand: { enabled: false, rotation: false, landmarks: false, skipFrames: 0, skipTime: 0, minConfidence: 0.4, iouThreshold: 0.2, maxDetected: 2, detector: { modelPath: 'handtrack.json' } }, object: { enabled: false, modelPath: 'centernet.json', maxDetected: 6, minConfidence: 0.3, iouThreshold: 0.4, skipFrames: 15, skipTime: 1200 }, segmentation: { enabled: false },
     face: {
       enabled: true,
       detector: { modelPath: 'blazeface.json', rotation: false, maxDetected: 1, minConfidence: 0.3, skipFrames: 10, skipTime: 1200, return: false },
@@ -140,7 +140,7 @@
   const nuevo = () => ({
     t0: performance.now(), n: 0, conCara: 0, ultima: null, dtMedio: 0, analizado: 0,
     ear: [], parpadeos: [], cerrado: false, ojosMs: 0, tOjos: 0,
-    boca: [], voz: [], piel: [], fondo: [], cuello: [], ojos: [], iris: [], tex: [], temblor: [], manos: [], ident: [], pulso: { ok: 0, no: 0, ultimo: null },
+    boca: [], voz: [], piel: [], fondo: [], cuello: [], ojos: [], iris: [], tex: [], temblor: [], manos: [], ident: [], cuerpos: [], cuerpo: null, objetos: null, pulso: { ok: 0, no: 0, ultimo: null },
     poses: [], plano: { si: 0, no: 0, ultimo: null }, gestos: [], refGestos: null,
     modelos: [], firmas: [], quietas: [], repes: [], prevFirma: null, prevCaraF: null, bucle: { racha: 0, lag: 0 },
     cortes: [], fuente: null, fuenteT: 0, frames: 0, ultFrame: 0, indicios: {}, vida: [], nivel: null, mostrado: null, cerradoPor: null,
@@ -271,6 +271,10 @@
     if (!S) return;
     const dt = performance.now() - t; S.dtMedio = S.dtMedio ? S.dtMedio * 0.9 + dt * 0.1 : dt; S.n++;
     S.tFrame = t; procesa(r, performance.now());
+    if (visionLista && r) {
+      const b = r.body && r.body[0]; if (b && b.keypoints && (b.score || 0) >= 0.2) { S.cuerpo = { t, kp: b.keypoints }; S.cuerpos.push({ t, kp: b.keypoints }); corta(S.cuerpos, t, 12000); }
+      if (Array.isArray(r.object)) { S.objetos = { t, o: r.object.filter((o) => (o.score || 0) >= 0.3 && o.box).map((o) => ({ l: o.label, s: o.score, b: o.box })) }; }
+    } else if (!visionLista && !cargandoVision && S.n >= 4 && t - S.t0 > 8000) precargaVision();
     if (compr && r && r.face && r.face[0] && r.face[0].embedding && r.face[0].embedding.length && S.ultima) { S.ident.push({ t, e: Array.from(r.face[0].embedding), g: S.ultima.giro || 0 }); if (S.ident.length > 120) S.ident.shift(); }
     if (compr && compr.manoReto && humano.config.hand.enabled) { S.manos.push({ t, cajas: ((r && r.hand) || []).filter((h) => (h.score || 0) >= 0.45 && h.box).map((h) => h.box) }); corta(S.manos, t, 15000); }
     tDet = setTimeout(detecta, compr ? Math.max(90, S.dtMedio * 0.9) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
@@ -365,10 +369,10 @@
   // ---------- las señales y el aviso (cada segundo) ----------
   const TXT = {
     congelada: 'vg_congelada', bucle: 'vg_bucle', virtual: 'vg_virtual', sinParpadeo: 'vg_sinParpadeo', labios: 'vg_labios', plano: 'vg_plano',
-    cortes: 'vg_cortes', sinGestos: 'vg_sinGestos', metronomo: 'vg_metronomo', modelos: 'vg_modelos', sinPulso: 'vg_sinPulso', noGira: 'vg_noGira', desfase: 'vg_desfase', costura: 'vg_costura', manoOculta: 'vg_manoOculta', perfil: 'vg_perfil', suave: 'vg_suave', noMano: 'vg_noMano', pantalla: 'vg_pantalla', otraCara: 'vg_otraCara', vozSinLabios: 'vg_vozSinLabios', noVoz: 'vg_noVoz',
+    cortes: 'vg_cortes', enPantalla: 'vg_enPantalla', sinGestos: 'vg_sinGestos', metronomo: 'vg_metronomo', modelos: 'vg_modelos', sinPulso: 'vg_sinPulso', noGira: 'vg_noGira', desfase: 'vg_desfase', costura: 'vg_costura', manoOculta: 'vg_manoOculta', perfil: 'vg_perfil', suave: 'vg_suave', noMano: 'vg_noMano', pantalla: 'vg_pantalla', otraCara: 'vg_otraCara', vozSinLabios: 'vg_vozSinLabios', noVoz: 'vg_noVoz',
   };
   // (22 nov 17:56: los cortes pasan a débiles: en una prueba real, mover el móvil deprisa o dejar de mirar los imitaba)
-  const FUERZA = { congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 1, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1, noGira: 1, desfase: 1, costura: 2, manoOculta: 2, pantalla: 2, otraCara: 2, vozSinLabios: 2, perfil: 1, suave: 1, noMano: 1, noVoz: 1 };
+  const FUERZA = { enPantalla: 2, congelada: 3, bucle: 3, virtual: 3, sinParpadeo: 2, labios: 2, plano: 2, cortes: 1, sinGestos: 1, metronomo: 1, modelos: 1, sinPulso: 1, noGira: 1, desfase: 1, costura: 2, manoOculta: 2, pantalla: 2, otraCara: 2, vozSinLabios: 2, perfil: 1, suave: 1, noMano: 1, noVoz: 1 };
   const UNA_VEZ = { costura: 1, manoOculta: 1, pantalla: 1, otraCara: 1, vozSinLabios: 1 }; // pruebas de un momento (en «Comprobar»): cuentan ya, sin esperar 8 s
   function evalua() {
     if (!S) return;
@@ -426,6 +430,9 @@
     if (S.pantalla) I.pantalla = 1;
     if (compr) identidad(); if (S.otraCara) I.otraCara = 1;
     if (S.perfilMal) I.perfil = 1;
+    const ob = S.objetos && t - S.objetos.t < 4000 ? S.objetos.o : [], cara = S.ultima && S.ultima.caja;
+    if (cara) { const cx = cara[0] + cara[2] / 2, cy = cara[1] + cara[3] / 2; if (ob.some((o) => PANTALLAS[o.l] && cx > o.b[0] && cx < o.b[0] + o.b[2] && cy > o.b[1] && cy < o.b[1] + o.b[3] && o.b[2] * o.b[3] > cara[2] * cara[3] * 1.3)) I.enPantalla = 1; }
+    { const cs = S.cuerpos.filter((c) => c.kp[5] && c.kp[6] && c.kp[5].score > 0.3 && c.kp[6].score > 0.3); if (cs.length >= 5) { const xs = cs.map((c) => (c.kp[5].position[0] + c.kp[6].position[0]) / 2); if (desv(xs) > 1.5) vida.push('cuerpo'); } }
     if (S.tex.length >= 12) { S.texR = cuantil(S.tex.map((x) => x.r), 0.5); if (S.texR < 0.25) I.suave = 1; }
     const J = {}; S.cuenta = S.cuenta || {};
     for (const x of Object.keys(FUERZA)) { S.cuenta[x] = I[x] ? (S.cuenta[x] || 0) + 1 : 0; if (I[x] && (FUERZA[x] !== 2 || UNA_VEZ[x] || S.cuenta[x] >= 8)) J[x] = 1; }
@@ -481,7 +488,13 @@
   // señales raras, algo raro, riesgo, no se ve la cara) y al tocarla se abre un panel con las señales en directo y «Comprobar a fondo».
   // Las señales débiles, sin calibrar con móviles de verdad, nunca se pintan como «raro»: como mucho, «aún no».
   let chip = null, panel = null;
-  const SENALES = ['directo', 'camara', 'parpadeo', 'labios', 'pulso', 'relieve'];
+  const SENALES = ['directo', 'camara', 'parpadeo', 'labios', 'pulso', 'relieve', 'cuerpo', 'pantallas'];
+  // lo que puede aparecer en pantalla (las etiquetas de CenterNet, del conjunto COCO), en español y en inglés
+  const PANTALLAS = { 'cell phone': 1, tv: 1, laptop: 1 };
+  const OBJ = { person: ['Persona', 'Person'], 'cell phone': ['Móvil', 'Phone'], tv: ['Pantalla', 'Screen'], laptop: ['Portátil', 'Laptop'], cup: ['Taza', 'Cup'], bottle: ['Botella', 'Bottle'], 'wine glass': ['Copa', 'Glass'], book: ['Libro', 'Book'], chair: ['Silla', 'Chair'], couch: ['Sofá', 'Couch'], bed: ['Cama', 'Bed'], 'dining table': ['Mesa', 'Table'], keyboard: ['Teclado', 'Keyboard'], mouse: ['Ratón', 'Mouse'], remote: ['Mando', 'Remote'], clock: ['Reloj', 'Clock'], vase: ['Jarrón', 'Vase'], 'potted plant': ['Planta', 'Plant'], tie: ['Corbata', 'Tie'], backpack: ['Mochila', 'Backpack'], handbag: ['Bolso', 'Handbag'], dog: ['Perro', 'Dog'], cat: ['Gato', 'Cat'], car: ['Coche', 'Car'], umbrella: ['Paraguas', 'Umbrella'], scissors: ['Tijeras', 'Scissors'], 'teddy bear': ['Peluche', 'Teddy bear'], 'hair drier': ['Secador', 'Hair dryer'], toothbrush: ['Cepillo de dientes', 'Toothbrush'], refrigerator: ['Nevera', 'Fridge'], microwave: ['Microondas', 'Microwave'], oven: ['Horno', 'Oven'], sink: ['Lavabo', 'Sink'], bicycle: ['Bicicleta', 'Bicycle'], banana: ['Plátano', 'Banana'], apple: ['Manzana', 'Apple'] };
+  const enIngles = () => (document.documentElement.lang || '').toLowerCase().startsWith('en');
+  const nombreObj = (l) => (OBJ[l] ? OBJ[l][enIngles() ? 1 : 0] : (enIngles() ? l : 'Objeto'));
+  let marcas = true; try { marcas = localStorage.getItem('elixire-marcas') !== '0'; } catch (_) {}
   function creaChip() {
     chip = document.createElement('button'); chip.type = 'button'; chip.className = 'vigia-estado'; chip.hidden = true; chip.setAttribute('aria-expanded', 'false');
     chip.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ESCUDO + '"/><path class="ve-ok" d="m9 12.2 2.1 2.1 4-4.2"/></svg><b></b><span class="ve-txt"></span>';
@@ -489,9 +502,11 @@
     panel = document.createElement('div'); panel.className = 'vigia-panel'; panel.hidden = true; panel.setAttribute('role', 'dialog');
     panel.innerHTML = '<div class="vp-cab"><b></b><button type="button" class="vp-cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div><p class="vp-sub"></p>' +
       '<ul class="vp-lista">' + SENALES.map((k) => '<li data-k="' + k + '"><i aria-hidden="true"></i><span></span><em></em></li>').join('') + '</ul>' +
+      '<p class="vp-ve"><b></b><span></span></p><button type="button" class="vp-marcas" aria-pressed="true"><i aria-hidden="true"></i><span></span></button>' +
       '<button type="button" class="vp-comprobar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9 10h.01M15 10h.01M9.5 14.5c1.4 1.2 3.6 1.2 5 0"/></svg><span></span></button>';
     panel.querySelector('.vp-cerrar').addEventListener('click', () => abrePanel(false));
     panel.querySelector('.vp-comprobar').addEventListener('click', () => { abrePanel(false); comprueba(); });
+    panel.querySelector('.vp-marcas').addEventListener('click', () => { marcas = !marcas; try { localStorage.setItem('elixire-marcas', marcas ? '1' : '0'); } catch (_) {} pintaPanel(); });
     caja.append(chip, panel);
   }
   function abrePanel(si) { if (!panel) return; panel.hidden = !si; chip.setAttribute('aria-expanded', String(!!si)); chip.classList.toggle('abierto', !!si); document.body.classList.toggle('vigia-abierto', !!si); if (si) pintaPanel(); }
@@ -505,6 +520,8 @@
     o.labios = c.labios ? 'raro' : v.includes('labios') ? 'bien' : 'espera';
     o.pulso = v.includes('pulso') ? 'bien' : 'espera';
     o.relieve = c.plano ? 'raro' : v.includes('relieve') ? 'bien' : 'espera';
+    o.cuerpo = v.includes('cuerpo') ? 'bien' : 'espera';
+    o.pantallas = c.enPantalla ? 'raro' : visionLista && S && S.objetos && t - S.t0 > 15000 ? 'bien' : 'espera';
     return o;
   }
   function estadoChip() {
@@ -516,12 +533,13 @@
     const J = S.indicios || {}, k = Object.keys(J);
     if (k.some((x) => FUERZA[x] === 3) || k.filter((x) => FUERZA[x] === 2).length >= 3) return 'riesgo';
     if (k.some((x) => FUERZA[x] === 2)) return 'atencion';
-    const mirado = t - S.t0; return mirado > 20000 && ((S.vida || []).length >= 2 || mirado > 45000) ? 'normal' : 'analiza';
+    const mirado = t - S.t0; return S.n >= 15 && mirado > 20000 && ((S.vida || []).length >= 2 || mirado > 45000) ? 'normal' : 'analiza'; // sin pocas detecciones, nunca «sin señales raras»
   }
   function pintaChip() {
     if (!S) { if (chip) { chip.hidden = true; abrePanel(false); } return; }
     if (!chip) creaChip();
     const ocultar = !!compr || !!S.mostrado; chip.hidden = ocultar; if (ocultar) { abrePanel(false); return; }
+    if (!rafVision && marcas && !compr) rafVision = requestAnimationFrame(pintaVision);
     const est = estadoChip(); chip.dataset.e = est;
     chip.querySelector('b').textContent = tr('vgp_vigia'); chip.querySelector('.ve-txt').textContent = tr('vgp_' + est);
     chip.setAttribute('aria-label', tr('vgp_vigia') + ': ' + tr('vgp_' + est));
@@ -532,6 +550,42 @@
     panel.querySelector('.vp-cerrar').setAttribute('aria-label', tr('vgp_cerrar')); panel.querySelector('.vp-comprobar span').textContent = tr('vgp_comprobar');
     const o = senales();
     for (const li of panel.querySelectorAll('li')) { const k = li.dataset.k; li.dataset.e = o[k]; li.querySelector('span').textContent = tr('vgp_' + k); li.querySelector('em').textContent = tr('vgp_' + o[k]); }
+    const ve = panel.querySelector('.vp-ve'), ob = S && S.objetos && performance.now() - S.objetos.t < 4000 ? S.objetos.o : [];
+    const nombres = [...new Set(ob.map((x) => nombreObj(x.l)))]; if (S && S.ultima && performance.now() - S.ultima.t < 3000) nombres.unshift(tr('vgp_cara'));
+    ve.hidden = !nombres.length; ve.querySelector('b').textContent = tr('vgp_ve'); ve.querySelector('span').textContent = nombres.join(' · ');
+    const bm = panel.querySelector('.vp-marcas'); bm.setAttribute('aria-pressed', String(marcas)); bm.querySelector('span').textContent = tr('vgp_marcas');
+  }
+  // las marcas sobre el vídeo: la cara, el cuerpo (su esqueleto) y lo que haya en pantalla, con su nombre; solo en este lado
+  const vision = document.createElement('canvas'); vision.className = 'vg-vision'; vision.setAttribute('aria-hidden', 'true'); vision.hidden = true; caja.append(vision);
+  let rafVision = 0, tVision = 0;
+  const HUESOS = [[5, 6], [5, 7], [7, 9], [6, 8], [8, 10], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]];
+  function pintaVision() {
+    rafVision = 0;
+    if (!S || compr || !marcas || document.hidden || !video.videoWidth) { vision.hidden = true; return; }
+    rafVision = requestAnimationFrame(pintaVision);
+    const ahora = performance.now(); if (ahora - tVision < 66) return; tVision = ahora;
+    const rc = caja.getBoundingClientRect(); if (!rc.width) return;
+    const d = Math.min(1.5, devicePixelRatio || 1), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
+    if (vision.width !== W || vision.height !== H) { vision.width = W; vision.height = H; }
+    vision.hidden = false; const g = vision.getContext('2d'); g.clearRect(0, 0, W, H);
+    const vw = video.videoWidth, vh = video.videoHeight, r = video.getBoundingClientRect(), ajuste = getComputedStyle(video).objectFit === 'contain' ? Math.min : Math.max, k = ajuste(r.width / vw, r.height / vh) * d;
+    const ox = (r.left - rc.left) * d + (r.width * d - vw * k) / 2, oy = (r.top - rc.top) * d + (r.height * d - vh * k) / 2, P = (x, y) => [ox + x * k, oy + y * k];
+    const etiqueta = (txt, x, y, col) => { g.font = '600 ' + Math.round(11 * d) + 'px Inter, system-ui, sans-serif'; const w = g.measureText(txt).width + 12 * d, h = 18 * d; g.fillStyle = 'rgba(6,8,12,.72)'; g.fillRect(x, y - h, w, h); g.fillStyle = col; g.fillText(txt, x + 6 * d, y - 5 * d); };
+    const marco = (x0, y0, x1, y1, col, txt) => { g.strokeStyle = col; g.lineWidth = 1.6 * d; esquinas(g, x0, y0, x1 - x0, y1 - y0, Math.min(22 * d, (x1 - x0) / 4, (y1 - y0) / 4)); if (txt) etiqueta(txt, x0, Math.max(18 * d, y0 - 4 * d), col); };
+    // lo que hay en pantalla (sin la persona, que ya se ve por su cuerpo y su cara)
+    const ob = S.objetos && ahora - S.objetos.t < 3000 ? S.objetos.o : [];
+    for (const o of ob) { if (o.l === 'person') continue; const [a, b] = P(o.b[0], o.b[1]), [c, e] = P(o.b[0] + o.b[2], o.b[1] + o.b[3]); marco(a, b, c, e, PANTALLAS[o.l] ? 'rgba(240,199,127,.95)' : 'rgba(201,214,227,.85)', nombreObj(o.l)); }
+    // el cuerpo: su esqueleto, fino
+    const cu = S.cuerpo && ahora - S.cuerpo.t < 1500 ? S.cuerpo.kp : null;
+    if (cu) {
+      g.strokeStyle = 'rgba(156,195,228,.55)'; g.lineWidth = 2 * d; g.lineCap = 'round';
+      for (const [i, j] of HUESOS) { const a = cu[i], b = cu[j]; if (!a || !b || a.score < 0.3 || b.score < 0.3) continue; const p = P(a.position[0], a.position[1]), q = P(b.position[0], b.position[1]); g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke(); }
+      g.fillStyle = 'rgba(207,230,250,.85)'; for (let i = 5; i < cu.length; i++) { const a = cu[i]; if (!a || a.score < 0.3) continue; const p = P(a.position[0], a.position[1]); g.beginPath(); g.arc(p[0], p[1], 2.6 * d, 0, Math.PI * 2); g.fill(); }
+      const hs = [cu[5], cu[6]].filter((x) => x && x.score >= 0.3); if (hs.length) { const p = P(hs[0].position[0], hs[0].position[1]); etiqueta(tr('vgp_persona'), p[0] + 8 * d, p[1] - 8 * d, 'rgba(156,195,228,.95)'); }
+    }
+    // la cara
+    const u = S.ultima && ahora - S.ultima.t < 1500 ? S.ultima : null;
+    if (u && u.caja) { const [a, b] = P(u.caja[0], u.caja[1]), [c, e] = P(u.caja[0] + u.caja[2], u.caja[1] + u.caja[3]); marco(a, b, c, e, 'rgba(92,201,138,.9)', tr('vgp_cara')); }
   }
 
   // ---------- el modo diagnóstico, para calibrar con móviles de verdad (?diag, o mantener pulsado el tiempo de la llamada) ----------
@@ -799,7 +853,14 @@
   // franja a cada lado de su cara, a la altura de ojos y nariz, y la cara. Si la mano cruza de un lado al otro (cambian las dos
   // franjas) y la cara no cambia nada, la cara está superpuesta. Si la cara se tapa, es lo normal. Antes, todo quieto (si ya se movía
   // mucho, no se juzga) y sin mover la cabeza durante la prueba (eso no sería la mano).
-  let manosListas = false, cargandoManos = false;
+  let manosListas = false, cargandoManos = false, visionLista = false, cargandoVision = false;
+  // (dueño, 23 nov 08:02: «que detecte caras y cuerpo y todo lo que aparezca en pantalla») el cuerpo (MoveNet) y los objetos (CenterNet),
+  // de código abierto y en el propio equipo; se cargan cuando la llamada ya va estable, para no quitarle red ni fluidez al empezar
+  function precargaVision() {
+    if (visionLista || cargandoVision || !humano || CONFIG.backend === 'cpu') return;
+    cargandoVision = true; humano.config.body.enabled = true; humano.config.object.enabled = true;
+    humano.load().then(() => { visionLista = true; }).catch(() => { humano.config.body.enabled = false; humano.config.object.enabled = false; }).finally(() => { cargandoVision = false; });
+  }
   // la misma cara de principio a fin: FaceRes (incluido en Human) solo mientras dura la comprobación
   let identLista = false;
   function precargaIdent() {
