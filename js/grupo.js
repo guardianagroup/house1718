@@ -21,9 +21,8 @@
   const b64u = (u) => btoa(String.fromCharCode(...u)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const deB64u = (s) => { let b = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; return Uint8Array.from(atob(b), (c) => c.charCodeAt(0)); };
   const movil = matchMedia('(max-width: 760px)');
-  // En pruebas (dueño, 23 nov: «no la publico hasta que la pruebes tú»): el botón «Añadir» sale solo en este navegador después de
-  // abrir la web con «?grupo» una vez. Lo demás (entrar en un grupo al que te añaden) funciona para todos.
-  const PRUEBA = (() => { const si = /[?&]grupo\b/.test(location.search); try { if (si) localStorage.setItem('elixire-grupo', '1'); return si || localStorage.getItem('elixire-grupo') === '1'; } catch (_) { return si; } })();
+  // (dueño, 23 nov 13:24: «sí, para todos»): «Añadir» sale a cualquiera en la videollamada, sin enlace especial
+  const PRUEBA = true;
   const sala = $('#sala'), esc = $('#escena-video');
   const yo = hex(6);
   const principal = { m: M, id: null, n: 1, principal: true, clave: 'p' };
