@@ -505,7 +505,7 @@
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, vozCambiada: !!L.vozCambiada, caraOculta: !!L.caraOculta, otroFiltro: L.otroFiltro || null, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: (L.caraOculta && ocu && ocu.vista) || L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, vozCambiada: !!L.vozCambiada, caraOculta: !!L.caraOculta, pantalla: !!L.pantalla, otroFiltro: L.otroFiltro || null, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: (L.caraOculta && ocu && ocu.vista) || L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -552,6 +552,17 @@
   //   · la voz: Opus a 48 kHz, hasta 96 kb/s, con corrección de errores, y va por delante de la imagen cuando la red se aprieta.
   const TEL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
   const MAX_BPS_AUDIO = 96000, MAX_BPS_VIDEO = 20000000; // 4K en el móvil y en el ordenador (dueño, 23 nov 07:31)
+  // (dueño, 23 nov 09:19: «nos va muy lento a los dos») el techo de la imagen, según el escalón en que esté: lo justo para que se vea
+  // nítida sin llenar la red (con 20 Mb/s para todo, en una red justa o lejos del relé, se ahogaba y la llamada se cortaba)
+  const BPS = { 2160: 16000000, 1440: 9000000, 1080: 5000000, 720: 2500000, 540: 1200000 };
+  function techoVideo(x, h) {
+    try {
+      const snd = x && x.pc && x.pc.getSenders().find((q) => q.track && q.track.kind === 'video'); if (!snd) return;
+      const p = snd.getParameters(); if (!p.encodings || !p.encodings[0]) return;
+      const b = Math.min(MAX_BPS_VIDEO, BPS[h] || BPS[1080]); if (p.encodings[0].maxBitrate === b) return;
+      p.encodings[0].maxBitrate = b; snd.setParameters(p).catch(() => {});
+    } catch (_) {}
+  }
   async function medios() {
     const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, voiceIsolation: { ideal: true } };
     const VIDEO = TEL ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' } : { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' };
@@ -626,16 +637,19 @@
       }
       const e = { tt: o.totalEncodeTime || 0, n: o.framesEncoded || 0 }, encMs = ac.e0 && e.n > ac.e0.n ? (e.tt - ac.e0.tt) * 1000 / (e.n - ac.e0.n) : null; ac.e0 = e;
       const fps = o.framesPerSecond || 0, lim = o.qualityLimitationReason || 'none', red = par && par.availableOutgoingBitrate;
-      const mal = lim === 'cpu' || (fps > 0 && fps < 20 && encMs != null && encMs > 30 && perdida < 0.03 && (!red || red > 1500000));
-      const bien = lim !== 'cpu' && (fps === 0 || fps >= 27) && (encMs == null || encMs < 16);
+      const rtt = par && par.currentRoundTripTime != null ? par.currentRoundTripTime : null;
+      const redMal = t - ac.tCambio > 15000 && (perdida > 0.05 || (rtt != null && rtt > 0.45) || (lim === 'bandwidth' && red && red < (BPS[NIV[ac.n]] || BPS[1080]) * 0.5));
+      const mal = lim === 'cpu' || (fps > 0 && fps < 20 && encMs != null && encMs > 30 && perdida < 0.03 && (!red || red > 1500000)) || redMal;
+      const bien = lim === 'none' && (fps === 0 || fps >= 27) && (encMs == null || encMs < 16) && perdida < 0.01 && (rtt == null || rtt < 0.3);
       ac.malos = mal ? ac.malos + 1 : 0; ac.buenos = bien ? ac.buenos + 1 : 0;
+      if (ac.n != null && !ac.techo) { ac.techo = true; techoVideo(x, NIV[ac.n]); }
       const capRemoto = ac.remoto ? nivelDe(ac.remoto) : 0, minimo = Math.max(ac.tope, capRemoto);
       let nuevo = ac.n;
       if (ac.n < capRemoto) nuevo = capRemoto;
       else if (ac.malos >= 3 && ac.n < NIV.length - 1) { nuevo = ac.n + 1; if (t - ac.tSube < 25000) ac.bloqueo = t + 180000; }
       else if (ac.buenos >= 15 && ac.n > minimo && t > ac.bloqueo && t - ac.tCambio > 30000 && (!red || red >= (NIV[ac.n - 1] >= 2160 ? 14000000 : NIV[ac.n - 1] >= 1440 ? 9000000 : 4000000))) { nuevo = ac.n - 1; ac.tSube = t; }
       if (nuevo !== ac.n) {
-        ac.n = nuevo; ac.malos = 0; ac.buenos = 0; ac.tCambio = t; const h = NIV[nuevo];
+        ac.n = nuevo; ac.malos = 0; ac.buenos = 0; ac.tCambio = t; const h = NIV[nuevo]; techoVideo(x, h);
         try { cam.applyConstraints({ width: { ideal: Math.round(h * 16 / 9) }, height: { ideal: h }, frameRate: { ideal: 30, max: 30 } }).catch(() => {}); } catch (_) {}
       }
       x.calidad.captura = NIV[ac.n];
@@ -716,7 +730,7 @@
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
         if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
-        else { p.encodings[0].maxBitrate = MAX_BPS_VIDEO; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
+        else { p.encodings[0].maxBitrate = BPS[1080]; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
         await snd.setParameters(p);
       } catch (_) {}
     }
@@ -867,7 +881,7 @@
     clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x);
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
-    paraVoz(); paraOcultar();
+    paraVoz(); paraOcultar(); paraPantalla();
     if (x.local) cede(x.local);
   }
   async function llamadaRecibe(s, j) {
@@ -926,7 +940,7 @@
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
     if (que === 'calidad' && L.estado === 'hablando') { L.ac = L.ac || { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null }; L.ac.remoto = Math.max(0, +j.alto || 0); }
-    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat }; emite('filtro', L.otroFiltro); }
+    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat, pantalla: !!j.pantalla }; emite('filtro', L.otroFiltro); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
@@ -1007,7 +1021,7 @@
       const nueva = st.getVideoTracks()[0]; try { nueva.contentHint = 'motion'; } catch (_) {} if (L && L.ac) { L.ac.n = null; L.ac.e0 = null; }
       nueva.enabled = L.cam !== false;
       const s = L.pc.getSenders().find((x) => x.track === vieja) || L.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
-      if (ocu) { ocu.v.srcObject = new MediaStream([nueva]); ocu.v.play().catch(() => {}); } else if (s) await s.replaceTrack(nueva);
+      if (ocu) { ocu.v.srcObject = new MediaStream([nueva]); ocu.v.play().catch(() => {}); } else if (s && !pantallaP) await s.replaceTrack(nueva);
       L.local.removeTrack(vieja); L.local.addTrack(nueva); L.mira = modo;
       emite('llamada', estadoLlamada()); return modo === otra;
     } catch (_) { emite('llamada', estadoLlamada()); return false; } finally { girando = false; }
@@ -1018,7 +1032,7 @@
   const verJs = (((document.querySelector('script[src*="js/motor.js"]') || {}).src || '').split('?v=')[1] || '').replace(/[^\w.-]/g, '');
   let actx = null, vozN = null, ocu = null;
   const emisor = (kind) => L && L.pc && L.pc.getSenders().find((x) => x.track && x.track.kind === kind);
-  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat }); }
+  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat, pantalla: !!L.pantalla }); }
   // en el chat del móvil, la cámara propia se apaga (la voz sigue) y vuelve como estaba al volver al vídeo; la otra persona lo ve
   function modoChat(si) {
     if (!L || L.estado !== 'hablando' || !!L.enChat === !!si) return;
@@ -1085,15 +1099,42 @@
         const pinta = () => { const v0 = v.videoWidth, h0 = v.videoHeight; if (!v0 || !h0) return; const vw = Math.min(v0, 1280), vh = Math.round(h0 * vw / v0); if (cv.width !== vw || cv.height !== vh) { cv.width = vw; cv.height = vh; } const bw = 22, bh = Math.max(1, Math.round(22 * vh / vw)); if (pe.width !== bw || pe.height !== bh) { pe.width = bw; pe.height = bh; } try { gp.drawImage(v, 0, 0, bw, bh); g.imageSmoothingEnabled = false; g.drawImage(pe, 0, 0, vw, vh); } catch (_) {} };
         g.fillStyle = '#05070A'; g.fillRect(0, 0, cv.width, cv.height);
         const tick = setInterval(pinta, 50), pista = cv.captureStream(20).getVideoTracks()[0];
-        await snd.replaceTrack(pista);
+        if (!pantallaP) await snd.replaceTrack(pista);
         ocu = { v, tick, pista, vista: new MediaStream([pista, ...L.local.getAudioTracks()]) }; L.caraOculta = true;
       } else {
-        if (cam) await snd.replaceTrack(cam); paraOcultar(); L.caraOculta = false;
+        if (cam && !pantallaP) await snd.replaceTrack(cam); paraOcultar(); L.caraOculta = false;
       }
       avisaFiltros(); emite('llamada', estadoLlamada()); return true;
     } catch (e) { console.warn('cara', e); return false; }
   }
   function paraOcultar() { if (ocu) { clearInterval(ocu.tick); try { ocu.pista.stop(); ocu.v.srcObject = null; } catch (_) {} ocu = null; } }
+  // ---------- compartir la pantalla (dueño, 23 nov 09:02: «añade el botón como en GUARDIANA, el de compartir pantalla») ----------
+  // En el ordenador. La imagen de la pantalla sale por el mismo emisor (replaceTrack): la capa poscuántica y el encriptado siguen igual.
+  // Al dejar de compartir (con el botón o con el aviso del propio navegador) vuelve lo de antes: la cámara, o la cara oculta si estaba
+  // puesta. La otra persona lo sabe (la ve entera, sin recortar, y con su aviso). Sin sonido de la pantalla: solo la imagen.
+  const PANTALLA = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function') && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  let pantallaP = null;
+  function paraPantalla() { if (pantallaP) { const p = pantallaP; pantallaP = null; try { p.stop(); } catch (_) {} } if (L) L.pantalla = false; }
+  async function pantalla(si) {
+    if (!PANTALLA || !L || !L.pc || L.estado !== 'hablando') return false;
+    if (si) {
+      if (pantallaP) return true;
+      let st = null; try { st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false }); } catch (_) { return false; }
+      const pista = st && st.getVideoTracks()[0]; if (!pista) return false;
+      const snd = emisor('video'); if (!L || L.estado !== 'hablando' || !snd) { pista.stop(); return false; }
+      try { pista.contentHint = 'detail'; } catch (_) {}
+      try { await snd.replaceTrack(pista); } catch (_) { pista.stop(); return false; }
+      pantallaP = pista; L.pantalla = true;
+      pista.addEventListener('ended', () => { if (pantallaP === pista) pantalla(false); });
+    } else {
+      if (!pantallaP) return true;
+      const p = pantallaP; pantallaP = null; L.pantalla = false;
+      const snd = emisor('video'), vuelta = ocu ? ocu.pista : L.local && L.local.getVideoTracks()[0];
+      try { if (snd && vuelta) await snd.replaceTrack(vuelta); } catch (_) {}
+      try { p.stop(); } catch (_) {}
+    }
+    avisaFiltros(); emite('llamada', estadoLlamada()); return true;
+  }
   function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
   function camara(si) { if (!L || !L.local) return; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
 
@@ -1222,7 +1263,7 @@
   }
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

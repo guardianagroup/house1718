@@ -1786,3 +1786,100 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .cristal.grande.codigo .ico-boton{left:8px;width:40px;height:40px;padding:10px}
   .cristal.grande.codigo>span{font-size:clamp(11px,3.4vw,13px)}
 }
+
+/* ---------- la sala en el ordenador (dueño, 23 nov 08:58) ---------- */
+/* arriba lo dice todo: «Encriptado poscuántico · Imagen, sonido y chat»; al tocarlo, las cuatro palabras (ya no salen solas) */
+.sala-estado{border:0;background:none;padding:6px 10px;margin:-6px -10px;border-radius:10px;cursor:default;color:var(--texto-2);-webkit-tap-highlight-color:transparent}
+.sala-estado.con-palabras{cursor:pointer}
+.sala-estado.con-palabras:hover,.sala-estado[aria-expanded="true"]{background:rgba(255,255,255,.05);color:#DDE5ED}
+.sala-estado-mas{margin-left:-2px}
+.sala-estado .se-flecha{display:none;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.sala-estado.con-palabras .se-flecha{display:block}
+.sala-estado[aria-expanded="true"] .se-flecha{transform:rotate(180deg)}
+.sala>.sala-cab{grid-row:1}.sala>.sala-cuerpo{grid-row:3}
+.sala-palabras{position:absolute;z-index:40;top:78px;left:50%;transform:translateX(-50%);width:min(780px,calc(100% - 32px));box-sizing:border-box;
+  border:1px solid rgba(156,195,228,.25);border-radius:16px;background:rgba(8,11,16,.95);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 24px 60px rgba(0,0,0,.6)}
+@media (max-width:760px){ .sala-palabras{top:calc(env(safe-area-inset-top) + 62px);width:calc(100% - 24px)} }
+/* el vigía, arriba a la izquierda (donde iba «Imagen y sonido con capa poscuántica»), y su panel debajo */
+@media (min-width:761px){
+  .vigia-estado{left:22px;right:auto;top:20px}
+  .vigia-panel{left:22px;right:auto;top:62px}
+}
+/* la botonera de abajo, como «Pasar al móvil» y «Terminar»: cada botón, su cristal */
+@media (min-width:761px){
+  .sala .controles{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;bottom:20px;padding:0;background:none;border:0;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;transform:translateX(-50%) scale(var(--k,1));transform-origin:50% 100%}
+  .sala .controles::before,.sala .controles::after,.sala .controles .seg+.seg::before{display:none}
+  .sala .controles .seg{flex:0 0 auto;min-width:0;height:44px;padding:0 16px;border-radius:14px;color:rgba(240,244,248,.9);font:400 11px/1 var(--ui);letter-spacing:.16em;
+    background:linear-gradient(180deg,rgba(255,255,255,.085) 0%,rgba(255,255,255,.028) 48%,rgba(255,255,255,.012) 52%,rgba(255,255,255,.04) 100%),rgba(6,8,12,.5);
+    border:1px solid rgba(255,255,255,.17);-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.25),0 18px 44px -22px rgba(0,0,0,.7);transition:border-color .35s,color .3s,background .35s}
+  .sala .controles .seg:hover,.sala .controles .seg:focus-visible{border-color:rgba(255,255,255,.4);color:#fff}
+  .sala .controles .seg .ico-ctl,.sala .controles .seg>svg{display:none}
+  .sala .controles .seg[aria-pressed="true"]:not(.b-filtro):not(#b-micro):not(#b-camara){border-color:rgba(156,195,228,.6);color:#CFE2F3}
+  .sala .controles #b-micro[aria-pressed="false"],.sala .controles #b-camara[aria-pressed="false"]{border-color:rgba(224,122,108,.55);color:#F2B8AE}
+  .sala .controles .seg.b-filtro[aria-pressed="true"]{border-color:rgba(240,199,127,.6);color:#F0C77F;background:linear-gradient(180deg,rgba(240,199,127,.14),rgba(240,199,127,.05)),rgba(6,8,12,.5)}
+  .sala .controles #b-colgar{border-color:rgba(224,122,108,.5);color:#F6C9C1}
+  .sala .controles #b-colgar:hover,.sala .controles #b-colgar:focus-visible{border-color:#E07A6C;color:#fff;background:rgba(224,122,108,.28)}
+  .sala .controles #b-ampliar{overflow:visible}
+  .sala .controles #b-ampliar::after{display:none}
+  .sala .controles #b-ampliar .cuenta{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#E07A6C;color:#05070A;font:700 11px/20px var(--ui);letter-spacing:0;text-align:center}
+  .sala .controles #b-ampliar .cuenta[hidden]{display:none}
+}
+/* el vídeo a toda la pantalla: sin la conversación ni la cabecera; lo que llega, en avisos arriba */
+@media (min-width:761px){
+  .sala.amplia{grid-template-rows:minmax(0,1fr)}
+  .sala.amplia>.sala-cuerpo{grid-row:1}
+  .sala.amplia .sala-cab,.sala.amplia .sala-palabras,.sala.amplia .chat{display:none!important}
+  .sala.amplia .sala-cuerpo{grid-template-columns:minmax(0,1fr)}
+  .sala.amplia .avisos-llamada{display:flex;position:absolute;z-index:6;top:20px;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 40px));flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;pointer-events:none}
+  .sala .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 8px;border-radius:18px;background:rgba(12,16,22,.94);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 14px 40px rgba(0,0,0,.55);color:#F4F6F8;animation:aparece .3s cubic-bezier(.2,.7,.2,1) both;transition:opacity .3s,transform .3s;cursor:pointer}
+  .sala .toast.se-va{opacity:0;transform:translateY(-8px)}
+  .sala .t-ico{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;overflow:hidden;background:rgba(156,195,228,.12);color:#9CC3E4}
+  .sala .t-ico img{width:100%;height:100%;object-fit:cover;display:block}
+  .sala .t-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+  .sala .toast.hecho .t-ico{background:rgba(92,201,138,.16);color:#5CC98A}
+  .sala .t-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sala .t-txt b{font:600 14px/1.25 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sala .t-txt small{font:400 12.5px/1.3 var(--ui);color:#A9B8C7;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .sala .t-barra{display:block;height:3px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  .sala .t-barra > i{display:block;height:100%;width:0;background:#9CC3E4;transition:width .25s}
+  .sala .t-accion{flex:0 0 auto;display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;border:0;background:#9CC3E4;color:#05070A;font:600 13px/1 var(--ui);text-decoration:none;cursor:pointer}
+}
+/* la pantalla que comparte la otra persona, entera (sin recortar) */
+.sala.otro-pantalla .video-suyo{object-fit:contain!important;background:#05070A}
+/* la foto recibida, también en el ordenador, a pantalla completa */
+@media (min-width:761px){
+  .sala .visor-foto:not([hidden]){display:flex;position:fixed;inset:0;z-index:70;flex-direction:column;background:#04060A;color:#F4F6F8;text-align:center;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 18px);animation:aparece .25s ease both}
+  .sala .visor-cab{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 4px 0 10px}
+  .sala .visor-cab b{font:600 17px/1.3 var(--ui)}
+  .sala .visor-cerrar{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(232,236,241,.1);color:#F4F6F8;cursor:pointer}
+  .sala .visor-cerrar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .sala .visor-cuerpo{position:relative;flex:1;min-height:0;margin:8px 0 14px}
+  .sala .visor-cuerpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .sala .visor-pie{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .sala .visor-guardar{display:inline-flex;align-items:center;justify-content:center;min-width:210px;height:52px;border-radius:14px;background:#9CC3E4;color:#05070A;font:600 16px/1 var(--ui);text-decoration:none}
+  .sala .visor-pie small{max-width:40ch;font:400 12.5px/1.45 var(--ui);color:#9FB3C4}
+  .sala .visor-foto:not([hidden]){padding:18px 28px 24px}
+}
+/* las notas de voz propias: el micro se pone azul cuando la otra persona la escucha (como en WhatsApp) */
+.msg.nota .hora .nota-oida{display:inline-block;width:13px;height:13px;margin-right:4px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.msg.nota.mia.leido .hora .nota-oida{color:#3B8BEA;opacity:1}
+
+/* «Escribiendo…», como en las demás apps (dueño, 23 nov 09:20: «en vez de decir escribiendo, mejor que salgan los puntos»): una
+   burbuja con tres puntos que laten */
+.escribiendo,.sala.en-chat .escribiendo{display:inline-flex;align-items:center;gap:4px;justify-self:start;align-self:start;width:max-content;margin:0 0 6px 16px;padding:11px 13px;
+  border-radius:16px 16px 16px 5px;background:rgba(255,255,255,.08);font-size:0;letter-spacing:0;line-height:0}
+.escribiendo i{display:block;width:7px;height:7px;border-radius:50%;background:#AFC0CF;animation:puntoEscribe 1.25s ease-in-out infinite}
+.escribiendo i:nth-child(2){animation-delay:.16s}.escribiendo i:nth-child(3){animation-delay:.32s}
+@keyframes puntoEscribe{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.escribiendo i{animation:none;opacity:.8}}
+
+/* (dueño, 23 nov 09:21: «los botones de la portada deben ser iguales de tamaño, y "Tengo un código" quita la llave») */
+@media (min-width:761px){
+  .portada-botones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:min(724px,94vw)}
+  .portada-botones .cristal.grande{width:100%;height:60px}
+}
+.cristal.grande.codigo{padding:0 24px}
+@media (max-width:760px){ .consola .cristal.grande.codigo{height:64px;padding:0 18px} }

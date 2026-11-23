@@ -262,13 +262,13 @@
   // ---------- la malla (unas 3–6 veces por segundo, según el equipo) ----------
   let tDet = 0;
   async function detecta() {
-    if (!S || !humano) return;
+    if (!S || !humano || !activo) return;
     const t = performance.now();
     if (t < enPausa || (compr && compr.manoReto && (CONFIG.backend === 'cpu' || t - (S.tDetMano || 0) < 380))) { tDet = setTimeout(detecta, 120); return; }
     if (compr && compr.manoReto) S.tDetMano = t;
     if (document.hidden || !video.videoWidth || video.readyState < 2 || (S.brillo != null && S.brillo < 12)) { tDet = setTimeout(detecta, 700); return; }
     let r = null; try { r = await humano.detect(video); } catch (e) { fallo = String(e && e.message || e); }
-    if (!S) return;
+    if (!S || !activo) return;
     const dt = performance.now() - t; S.dtMedio = S.dtMedio ? S.dtMedio * 0.9 + dt * 0.1 : dt; S.n++;
     S.tFrame = t; procesa(r, performance.now());
     if (visionLista && r) {
@@ -498,7 +498,7 @@
   function creaChip() {
     chip = document.createElement('button'); chip.type = 'button'; chip.className = 'vigia-estado'; chip.hidden = true; chip.setAttribute('aria-expanded', 'false');
     chip.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ESCUDO + '"/><path class="ve-ok" d="m9 12.2 2.1 2.1 4-4.2"/></svg><b></b><span class="ve-txt"></span>';
-    chip.addEventListener('click', () => abrePanel(panel.hidden));
+    chip.addEventListener('click', () => { if (!activo && !veredicto) { comprueba(); return; } abrePanel(panel.hidden); });
     panel = document.createElement('div'); panel.className = 'vigia-panel'; panel.hidden = true; panel.setAttribute('role', 'dialog');
     panel.innerHTML = '<div class="vp-cab"><b></b><button type="button" class="vp-cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div><p class="vp-sub"></p>' +
       '<ul class="vp-lista">' + SENALES.map((k) => '<li data-k="' + k + '"><i aria-hidden="true"></i><span></span><em></em></li>').join('') + '</ul>' +
@@ -526,7 +526,7 @@
   }
   function estadoChip() {
     const e = M.estadoLlamada ? M.estadoLlamada() : {}, f = e.otroFiltro || {};
-    if (f.cara || f.chat) return 'oculta';
+    if (f.cara || f.chat || f.pantalla) return 'oculta';
     const t = performance.now(); if (!S.crudos || t - S.t0 < 8000) return 'analiza';
     // «no se ve su cara» solo si las últimas detecciones no la encuentran durante más de 8 s (un fallo suelto no cuenta)
     if (S.tSinCara && S.tSinCara > (S.tCara || 0) && S.tSinCara - (S.tCara || S.t0) > 8000) return 'sinCara';
@@ -536,11 +536,12 @@
     const mirado = t - S.t0; return S.n >= 15 && mirado > 20000 && ((S.vida || []).length >= 2 || mirado > 45000) ? 'normal' : 'analiza'; // sin pocas detecciones, nunca «sin señales raras»
   }
   function pintaChip() {
-    if (!S) { if (chip) { chip.hidden = true; abrePanel(false); } return; }
+    if (!enLlamada) { if (chip) { chip.hidden = true; abrePanel(false); } return; }
     if (!chip) creaChip();
-    const ocultar = !!compr || !!S.mostrado; chip.hidden = ocultar; if (ocultar) { abrePanel(false); return; }
-    if (!rafVision && marcas && !compr) rafVision = requestAnimationFrame(pintaVision);
-    const est = estadoChip(); chip.dataset.e = est;
+    const ocultar = !!compr || !!(S && S.mostrado); chip.hidden = ocultar; if (ocultar) { abrePanel(false); return; }
+    if (activo && S && !rafVision && marcas && !compr) rafVision = requestAnimationFrame(pintaVision);
+    // en reposo (no analiza nada): «Toca para comprobar» o lo que dio la última comprobación
+    const est = activo && S ? estadoChip() : veredicto || 'pausa'; chip.dataset.e = est;
     chip.querySelector('b').textContent = tr('vgp_vigia'); chip.querySelector('.ve-txt').textContent = tr('vgp_' + est);
     chip.setAttribute('aria-label', tr('vgp_vigia') + ': ' + tr('vgp_' + est));
     if (!panel.hidden) pintaPanel();
@@ -548,9 +549,9 @@
   function pintaPanel() {
     panel.querySelector('.vp-cab b').textContent = tr('vgp_titulo'); panel.querySelector('.vp-sub').textContent = tr('vgp_sub');
     panel.querySelector('.vp-cerrar').setAttribute('aria-label', tr('vgp_cerrar')); panel.querySelector('.vp-comprobar span').textContent = tr('vgp_comprobar');
-    const o = senales();
+    const o = (!activo && S && S.fijas) || senales();
     for (const li of panel.querySelectorAll('li')) { const k = li.dataset.k; li.dataset.e = o[k]; li.querySelector('span').textContent = tr('vgp_' + k); li.querySelector('em').textContent = tr('vgp_' + o[k]); }
-    const ve = panel.querySelector('.vp-ve'), ob = S && S.objetos && performance.now() - S.objetos.t < 4000 ? S.objetos.o : [];
+    const ve = panel.querySelector('.vp-ve'), ob = activo && S && S.objetos && performance.now() - S.objetos.t < 4000 ? S.objetos.o : [];
     const nombres = [...new Set(ob.map((x) => nombreObj(x.l)))]; if (S && S.ultima && performance.now() - S.ultima.t < 3000) nombres.unshift(tr('vgp_cara'));
     ve.hidden = !nombres.length; ve.querySelector('b').textContent = tr('vgp_ve'); ve.querySelector('span').textContent = nombres.join(' · ');
     const bm = panel.querySelector('.vp-marcas'); bm.setAttribute('aria-pressed', String(marcas)); bm.querySelector('span').textContent = tr('vgp_marcas');
@@ -561,7 +562,7 @@
   const HUESOS = [[5, 6], [5, 7], [7, 9], [6, 8], [8, 10], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]];
   function pintaVision() {
     rafVision = 0;
-    if (!S || compr || !marcas || document.hidden || !video.videoWidth) { vision.hidden = true; return; }
+    if (!S || !activo || !marcas || document.hidden || !video.videoWidth) { vision.hidden = true; return; }
     rafVision = requestAnimationFrame(pintaVision);
     const ahora = performance.now(); if (ahora - tVision < 66) return; tVision = ahora;
     const rc = caja.getBoundingClientRect(); if (!rc.width) return;
@@ -585,7 +586,7 @@
     }
     // la cara
     const u = S.ultima && ahora - S.ultima.t < 1500 ? S.ultima : null;
-    if (u && u.caja) { const [a, b] = P(u.caja[0], u.caja[1]), [c, e] = P(u.caja[0] + u.caja[2], u.caja[1] + u.caja[3]); marco(a, b, c, e, 'rgba(92,201,138,.9)', tr('vgp_cara')); }
+    if (u && u.caja && !compr) { const [a, b] = P(u.caja[0], u.caja[1]), [c, e] = P(u.caja[0] + u.caja[2], u.caja[1] + u.caja[3]); marco(a, b, c, e, 'rgba(92,201,138,.9)', tr('vgp_cara')); }
   }
 
   // ---------- el modo diagnóstico, para calibrar con móviles de verdad (?diag, o mantener pulsado el tiempo de la llamada) ----------
@@ -754,7 +755,7 @@
     const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando') return;
     // si la otra persona te está comprobando a ti, la tuya espera a que termine (y empieza sola)
     if (teComprueban > performance.now()) { enEspera = true; muestraEspera(true); return; }
-    if (e.otroFiltro && (e.otroFiltro.cara || e.otroFiltro.chat)) { const kf = e.otroFiltro.chat ? 'vc_otroChat' : 'vc_otroOculta', tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr(kf); tx.dataset.k = kf; cabecera.classList.add('vg-espera'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible')); clearTimeout(cabecera._t); cabecera._t = setTimeout(() => { if (!compr) { cabecera.classList.remove('visible', 'vg-espera'); cabecera.hidden = true; } }, 3500); return; }
+    if (e.otroFiltro && (e.otroFiltro.cara || e.otroFiltro.chat || e.otroFiltro.pantalla)) { const kf = e.otroFiltro.chat ? 'vc_otroChat' : e.otroFiltro.pantalla ? 'vc_otroPantalla' : 'vc_otroOculta', tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr(kf); tx.dataset.k = kf; cabecera.classList.add('vg-espera'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible')); clearTimeout(cabecera._t); cabecera._t = setTimeout(() => { if (!compr) { cabecera.classList.remove('visible', 'vg-espera'); cabecera.hidden = true; } }, 3500); return; }
     enEspera = false; muestraEspera(false);
     try { M.gesto('inicio', 0, 0); } catch (_) {}
     compr = { t0: performance.now(), fase: 'prepara' };
@@ -762,7 +763,8 @@
     cabecera.querySelector('.vg-a-texto').textContent = tr('vc_analizando'); cabecera.querySelector('.vg-a-texto').dataset.k = 'vc_analizando'; cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
     lienzo.hidden = false; const sl = video.closest('.sala'); if (sl) sl.classList.add('comprobando'); pintaEscaner(); // (pantalla limpia: sin el recuadro propio ni la cabecera)
     try { if (navigator.vibrate) navigator.vibrate(20); } catch (_) {}
-    arranca(); // por si la vigilancia aún no había empezado
+    arranca(true); // el análisis empieza ahora (solo se analiza cuando alguien lo pide)
+    if (marcas && !rafVision) rafVision = requestAnimationFrame(pintaVision);
     const hasta = performance.now() + 15000;
     while (compr && (!humano || !S || !S.n) && performance.now() < hasta) await new Promise((r) => setTimeout(r, 250));
     if (!compr) return;
@@ -1021,7 +1023,8 @@
     const pct = poco ? null : porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).filter((x) => FUERZA[x] >= 2).sort((a, b) => FUERZA[b] - FUERZA[a]);
     const nivel = pct == null ? 'nd' : pct >= 85 ? 'real' : pct >= 60 ? 'bien' : pct >= 30 ? 'raro' : 'falso';
     if (compr.fase === 'fin' && compr.pct === pct) return;
-    compr.fase = 'fin'; compr.poco = poco; if (humano) humano.config.face.description.enabled = false; avisaFin(); compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
+    compr.fase = 'fin'; compr.poco = poco; veredicto = nivel === 'real' || nivel === 'bien' ? 'normal' : nivel === 'raro' ? 'atencion' : nivel === 'falso' ? 'riesgo' : 'sinCara';
+    clearTimeout(tReposo); tReposo = setTimeout(() => { if (!compr || compr.fase === 'fin') reposo(); }, 6000); if (humano) humano.config.face.description.enabled = false; avisaFin(); compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
     compr.color = { real: '143,224,174', bien: '207,230,250', raro: '240,199,127', falso: '242,160,148', nd: '207,230,250' }[nivel];
     cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
     res.dataset.n = nivel; cuentaPct(pct);
@@ -1052,15 +1055,28 @@
   }
   // el final de una comprobación entera se avisa con «fin» y n = 9 (los «fin» de cada prueba van con n = 0)
   function avisaFin() { if (compr && !compr.finAvisado) { compr.finAvisado = true; try { M.gesto('fin', 9, 0); } catch (_) {} } }
+  // (dueño, 23 nov 09:15: «que los dos no puedan analizar al mismo tiempo; si uno analiza, al otro le aparece en pantalla un mensaje»):
+  // mientras la otra persona comprueba, aquí no se analiza nada y arriba sale «La otra persona está haciendo una comprobación»; si
+  // aquí se pide «Comprobar», espera y empieza sola al terminar la suya (primero una y después la otra)
+  function avisoTeComprueban(si) {
+    if (compr || enEspera) return;
+    clearTimeout(cabecera._t);
+    if (si) {
+      const tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr('vc_teComprueban'); tx.dataset.k = 'vc_teComprueban';
+      cabecera.classList.add('vg-espera'); cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
+      cabecera._t = setTimeout(() => avisoTeComprueban(false), 40000);
+    } else { cabecera.classList.remove('visible', 'vg-espera'); cabecera.hidden = true; }
+  }
   M.on('gesto', (g) => {
     if (!g) return;
     if (g.q === 'inicio') {
       teComprueban = performance.now() + 40000;
       // las dos a la vez: sigue la de quien llamó; la otra se aparta y espera
       if (compr && compr.fase !== 'fin') { const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.rol !== 'llama') { cierraComprobacion(); enEspera = true; muestraEspera(true); } }
+      avisoTeComprueban(true);
     } else if (g.q === 'fin' && (g.n | 0) === 9) {
       teComprueban = 0;
-      if (enEspera) { enEspera = false; setTimeout(() => { if (!compr) comprueba(); }, 1200); }
+      if (enEspera) { enEspera = false; setTimeout(() => { if (!compr) comprueba(); }, 1200); } else avisoTeComprueban(false);
     }
   });
   function cierraComprobacion() {
@@ -1071,30 +1087,44 @@
     { const sl = video.closest('.sala'); if (sl) sl.classList.remove('comprobando'); }
     if (humano) humano.config.face.description.enabled = false;
     compr = null; lienzo.hidden = true; cabecera.classList.remove('visible'); cabecera.hidden = true; res.classList.remove('visible'); res.hidden = true;
+    if (activo) reposo(); else pintaChip();
   }
-  const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => { if (enEspera) { enEspera = false; muestraEspera(false); return; } if (compr) cierraComprobacion(); else comprueba(); });
+  const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => { if (enEspera) { enEspera = false; muestraEspera(false); if (teComprueban > performance.now()) avisoTeComprueban(true); return; } if (compr) cierraComprobacion(); else comprueba(); });
 
-  // ---------- en marcha durante toda la llamada ----------
-  let tEval = 0, tFuente = 0, tArranca = 0;
+  // ---------- solo cuando alguno de los dos lo pide (dueño, 23 nov 09:09: «está consumiendo muchos recursos lo de analizar
+  // constantemente; lo haremos únicamente cuando lo pida alguna de las dos partes») ----------
+  // En la llamada no se analiza nada: el vigía espera en reposo («Toca para comprobar»). Al pulsar «Comprobar» (o el vigía) se
+  // carga el motor, se analiza mientras dura la comprobación y, al terminar, todo se para otra vez; queda lo que se vio.
+  let tEval = 0, tFuente = 0, tArranca = 0, tReposo = 0, activo = false, enLlamada = false, veredicto = null;
   function preguntaFuente() { if (!S || !M.fuente) return; M.fuente().then((f) => { if (S && f) S.fuente = f; }).catch(() => {}); }
-  function arranca() {
-    if (S) return;
-    S = nuevo(); pintaChip();
+  function arranca(ya) {
+    if (activo) return;
+    clearTimeout(tReposo); activo = true; S = nuevo(); pintaChip();
+    const mio = S;
     tArranca = setTimeout(async () => {
-      if (!S) return;
+      if (S !== mio || !activo) return;
       try { await cargaHumano(); } catch (_) { if (diagOn || diagVisible) pintaDiag(); return; }
-      if (!S) return;
+      if (S !== mio || !activo) return;
       arrancaMuestreo(); detecta();
       tEval = setInterval(evalua, 1000);
       preguntaFuente(); tFuente = setInterval(preguntaFuente, 45000);
-    }, 2500);
+    }, ya ? 0 : 2500);
+  }
+  // a reposo: se para todo lo que gasta (fotogramas, malla, cuentas y marcas); queda lo último que se vio
+  function reposo() {
+    clearTimeout(tReposo); if (!activo) return;
+    if (S) { try { S.fijas = senales(); } catch (_) {} }
+    activo = false; clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); paraMuestreo();
+    if (rafVision) { cancelAnimationFrame(rafVision); rafVision = 0; } vision.hidden = true;
+    pintaChip();
   }
   function para() {
-    clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); clearTimeout(tBien); paraMuestreo();
+    clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); clearTimeout(tBien); clearTimeout(tReposo); paraMuestreo();
+    activo = false; enLlamada = false; veredicto = null;
     cierraComprobacion(); S = null; oculta(); pintaChip(); if (pre) pre.hidden = true;
   }
-  M.on('filtro', (f) => { if (compr && compr.fase !== 'fin' && f && (f.chat || f.cara)) { cierraComprobacion(); comprueba(); } });
-  M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) arranca(); else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });
+  M.on('filtro', (f) => { if (compr && compr.fase !== 'fin' && f && (f.chat || f.cara || f.pantalla)) { cierraComprobacion(); comprueba(); } pintaChip(); });
+  M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) { if (!enLlamada) { enLlamada = true; pintaChip(); } } else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });
   M.on('fin', () => para());
   window.ElixireVigia = { pausa(si) { enPausa = si ? performance.now() + 8000 : 0; }, get estado() { return S ? { reflejo: S.reflejo, reflejoDif: S.reflejoDif, giro: S.giro, giroMax: S.giroMax, giroPerdida: S.giroPerdida, giroBueno: S.giroBueno, giroContra: S.giroContra, espectro: S.reflejoEspectro, pantalla: S.pantalla, mano: S.mano, manoDatos: S.manoDatos, costura: S.costura, cuello: S.reflejoCuello, perfil: S.perfil, texR: S.texR, indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); }, comprueba: () => comprueba(), cierra: () => cierraComprobacion() };
 })();

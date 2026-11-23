@@ -19,6 +19,7 @@
     if (abierta) return; abierta = true;
     lista.textContent = ''; const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v);
     $('#sala-palabras').hidden = true; $('#sala-palabras').classList.remove('hecho'); $('#palabras-botones').hidden = false; sala.classList.remove('por-comprobar');
+    $('#sala-estado').classList.remove('con-palabras'); $('#sala-estado').setAttribute('aria-expanded', 'false');
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasAyuda'; a.textContent = tr('palabrasAyuda');
     ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false; rotuloLlamar('videollamada');
     pintaPalabras(M.palabras);
@@ -30,14 +31,20 @@
     if (!abierta) return; abierta = false;
     sala.hidden = true; document.body.classList.remove('en-sala');
     for (const a of lista.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
-    paraNota(false); descartaRevision(); cierraPrevia(false); cierraHoja(); cierraChat(); sinLeer = 0; pintaCuenta(); paraReproductor(); for (const n of notas.values()) if (n.mia && n.url) URL.revokeObjectURL(n.url); notas.clear();
+    paraNota(false); descartaRevision(); cierraPrevia(false); cierraHoja(); cierraChat(); ponAmplia(false); sinLeer = 0; pintaCuenta(); paraReproductor(); for (const n of notas.values()) if (n.mia && n.url) URL.revokeObjectURL(n.url); notas.clear();
     lista.textContent = ''; texto.value = ''; ajusta(); pintaVoz(); avisos.textContent = ''; menuEnviar.hidden = true; visor.hidden = true; $('#visor-img').removeAttribute('src'); archivosVivos.clear(); for (const u of previas.values()) URL.revokeObjectURL(u); previas.clear();
     const vs = $('#video-suyo'), vm = $('#video-mio'); vs.srcObject = null; vm.srcObject = null; $('#video-toca').hidden = true;
     for (const k of ['left', 'top', 'right', 'bottom']) vm.style.removeProperty(k);
     if (window.Sala3D && window.Sala3D.pausa) window.Sala3D.pausa(false);
     if (window.Elixire && window.Elixire.reinvitando) window.Elixire.reinvitando = false; else if (window.Elixire) window.Elixire.vuelve();
   }
-  function ponEstado(k, mal) { const e = $('#sala-estado'); e.classList.toggle('mal', !!mal); const x = $('#sala-estado-texto'); x.dataset.t = k; x.textContent = tr(k); }
+  // (dueño, 23 nov 08:58: «como arriba ya dice encriptado poscuántico, no hace falta que digas imagen y sonido con capa poscuántica;
+  // dilo todo arriba de una vez»): con la capa de la imagen y el sonido en marcha, la cabecera añade «· Imagen, sonido y chat»
+  let conCapa = false;
+  function ponEstado(k, mal) {
+    const e = $('#sala-estado'); e.classList.toggle('mal', !!mal); const x = $('#sala-estado-texto'); x.dataset.t = k; x.textContent = tr(k);
+    const mas = $('#sala-estado-mas'); if (mas) mas.hidden = !(conCapa && k === 'salaEstado');
+  }
 
   // ---------- mensajes ----------
   function quitaVacio() { const v = lista.querySelector('.vacio'); if (v) v.remove(); }
@@ -84,18 +91,21 @@
   let escribeT = null;
   M.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
   M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
-  // ✓ enviado · ✓✓ entregado · ✓✓ azul leído (dueño, 23:20: «como otras apps»). Se da por leído lo que llega con el chat delante
-  // (en el móvil, con el chat abierto; en el ordenador el chat siempre está a la vista) y la página visible.
+  // ✓ enviado · ✓✓ entregado · ✓✓ azul leído (dueño, 23:20: «como otras apps»). Como en WhatsApp (dueño, 23 nov 08:59: «le envío un
+  // audio y en cuanto se lo envío ya salen los dos checks como visto… una cosa es que llegue y otra cuando le da»): se da por leído
+  // solo lo que llega con la conversación de verdad delante (página visible, ventana activa y, en el móvil, el chat abierto; en el
+  // ordenador, sin ampliar el vídeo). Las notas de voz, en cambio, solo cuando se escuchan (al darle al play): hasta entonces, entregadas.
   let leeT = null;
   function marcaLeidos() {
     clearTimeout(leeT); leeT = setTimeout(() => {
-      if (document.visibilityState !== 'visible' || !abierta || (movil.matches && !enChat)) return;
-      const ids = [...lista.querySelectorAll('li.msg.suya[data-id]:not(.leida)')].map((li) => { li.classList.add('leida'); return li.dataset.id; });
+      if (document.visibilityState !== 'visible' || !document.hasFocus() || !abierta || (movil.matches && !enChat) || amplia) return;
+      const ids = [...lista.querySelectorAll('li.msg.suya[data-id]:not(.leida):not(.nota)')].map((li) => { li.classList.add('leida'); return li.dataset.id; });
       if (ids.length && M.leidos) M.leidos(ids);
     }, 300);
   }
   new MutationObserver(marcaLeidos).observe(lista, { childList: true });
   document.addEventListener('visibilitychange', marcaLeidos);
+  addEventListener('focus', marcaLeidos);
   M.on('leido', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego', 'leido'); } });
   // salir a otra app sin colgar (dueño, 23:21): la imagen de la otra persona pasa sola a una ventana flotante (imagen en imagen) donde el
   // navegador lo permite (Safari en iPhone y, con el aviso de la sesión de medios, Chrome). Tu cámara la pausa el propio móvil mientras
@@ -158,7 +168,7 @@
   M.on('llamada', (e) => { if (!e) return; if (e.estado === 'hablando') { if (!espias) vigilaEspias(true); } else if (['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) { vigilaEspias(false); espiaVisto = false; for (const d of sala.querySelectorAll('.escudo-aviso')) d.remove(); } });
 
   function toast(id, o) {
-    if (!movil.matches || !abierta || enChat) return null;
+    if ((!movil.matches && !amplia) || !abierta || enChat) return null; // (en el ordenador, solo con el vídeo ampliado)
     let li = avisos.querySelector('li[data-id="' + CSS.escape(id) + '"]');
     if (!li) { li = document.createElement('li'); li.dataset.id = id; avisos.append(li); }
     li.className = 'toast' + (o.ok ? ' hecho' : ''); li.textContent = '';
@@ -328,8 +338,24 @@
   // delante, lo que llega sale en un aviso con «Responder», y el botón «Chat» cuenta lo que no se ha leído.
   let enChat = false, sinLeer = 0;
   const cuentaChat = $('#chat-cuenta'), escena = $('#escena-video'), vv = window.visualViewport;
-  function pintaCuenta() { cuentaChat.hidden = !sinLeer; cuentaChat.textContent = sinLeer > 9 ? '9+' : String(sinLeer); }
-  function noLeido() { if (movil.matches && !enChat && abierta) { sinLeer++; pintaCuenta(); } }
+  function pintaCuenta() { cuentaChat.hidden = !sinLeer; cuentaChat.textContent = sinLeer > 9 ? '9+' : String(sinLeer); const ca = $('#ampliar-cuenta'); if (ca) { ca.hidden = !sinLeer || !amplia; ca.textContent = cuentaChat.textContent; } }
+  function noLeido() { if (abierta && ((movil.matches && !enChat) || amplia)) { sinLeer++; pintaCuenta(); } }
+  // ---------- el vídeo, a toda la pantalla, en el ordenador (dueño, 23 nov 08:58: «no puedo ampliarlo, que se vea todo imagen») ----------
+  // «Ampliar» deja solo el vídeo (sin la conversación ni la cabecera) y pone la pantalla completa; lo que llega sale en un aviso y se
+  // cuenta en «Ver chat», que lo devuelve todo. También con doble clic en el vídeo y con Esc.
+  let amplia = false, pusoPantalla = false;
+  function ponAmplia(si) {
+    si = !!si && abierta && !movil.matches;
+    if (si === amplia) return;
+    amplia = si; sala.classList.toggle('amplia', si);
+    const b = $('#b-ampliar'); if (b) { b.setAttribute('aria-pressed', String(si)); const sp = b.querySelector('span'); sp.dataset.t = si ? 'verChat' : 'ampliar'; sp.textContent = tr(sp.dataset.t); }
+    if (!si) { avisos.textContent = ''; sinLeer = 0; marcaLeidos(); }
+    pintaCuenta();
+    try {
+      if (si && !document.fullscreenElement && document.documentElement.requestFullscreen) { pusoPantalla = true; const q = document.documentElement.requestFullscreen(); if (q && q.catch) q.catch(() => { pusoPantalla = false; }); }
+      else if (!si && pusoPantalla && document.fullscreenElement) { pusoPantalla = false; const q = document.exitFullscreen(); if (q && q.catch) q.catch(() => {}); }
+    } catch (_) {}
+  }
   function ajustaVista() {
     if (!enChat) return;
     const h = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
@@ -338,7 +364,8 @@
   }
   if (vv) { vv.addEventListener('resize', () => { ajustaVista(); if (enChat) abajo(); }); vv.addEventListener('scroll', ajustaVista); }
   function abreChat() {
-    if (!movil.matches || enChat || !abierta) return;
+    if (!movil.matches) { ponAmplia(false); return; } // en el ordenador, «Responder» devuelve la conversación
+    if (enChat || !abierta) return;
     if (window.ElixireComprueba && window.ElixireComprueba.cierra) window.ElixireComprueba.cierra();
     if (window.ElixireVigia && window.ElixireVigia.cierra) window.ElixireVigia.cierra();
     enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
@@ -461,6 +488,7 @@
     const t = document.createElement('span'); t.className = 'nota-t'; t.textContent = n.dur ? mmss(n.dur) : '0:00';
     const ba = document.createElement('span'); ba.className = 'barra'; ba.append(document.createElement('i'));
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(Date.now());
+    if (n.mia) { const mic = icono('mic'); mic.classList.add('nota-oida'); h.prepend(mic); }
     li.append(b, onda, t, h, ba);
     b.addEventListener('click', () => tocaNota(a.id));
     onda.addEventListener('click', (e) => { const r = onda.getBoundingClientRect(); tocaNota(a.id, Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))); });
@@ -488,6 +516,7 @@
   }
   function tocaNota(id, donde) {
     const n = notas.get(id); if (!n || !n.url) return;
+    if (n.li && n.li.classList.contains('suya') && !n.li.classList.contains('leida')) { n.li.classList.add('leida'); if (M.leidos) M.leidos([id]); }
     if (sonando !== id) { reproductor.src = n.url; sonando = id; }
     else if (donde == null && !reproductor.paused) { reproductor.pause(); return; }
     if (donde != null && n.dur) { try { reproductor.currentTime = donde * n.dur / 1000; } catch (_) {} }
@@ -515,12 +544,20 @@
     if (!w) return;
     const p = $('#palabras'); p.textContent = '';
     for (const x of w) { const s = document.createElement('span'); s.textContent = x; p.append(s); }
-    $('#sala-palabras').hidden = false; sala.classList.add('por-comprobar');
+    // (dueño, 23 nov 08:58: «quita las palabras de verificación, no hacen falta ya»): ya no salen solas en la pantalla. Siguen ahí
+    // para quien quiera comprobarlas: se abren tocando «Encriptado poscuántico», arriba.
+    $('#sala-estado').classList.add('con-palabras');
   }
+  const bEstado = $('#sala-estado'), cajaPal = $('#sala-palabras');
+  function verPalabras(si) { if (si && !bEstado.classList.contains('con-palabras')) return; cajaPal.hidden = !si; bEstado.setAttribute('aria-expanded', String(!!si)); }
+  bEstado.addEventListener('click', () => verPalabras(cajaPal.hidden));
+  document.addEventListener('pointerdown', (e) => { if (!cajaPal.hidden && !cajaPal.contains(e.target) && !bEstado.contains(e.target)) verPalabras(false); }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cajaPal.hidden) verPalabras(false); });
   M.on('palabras', (w) => { if (abierta && !continuada) pintaPalabras(w); });
   $('#coinciden').addEventListener('click', () => {
     M.comprobadas(); $('#sala-palabras').classList.add('hecho'); $('#palabras-botones').hidden = true; sala.classList.remove('por-comprobar');
     const a = $('#palabras-ayuda'); a.dataset.t = 'palabrasHechas'; a.textContent = tr('palabrasHechas');
+    setTimeout(() => verPalabras(false), 1800);
   });
   $('#no-coinciden').addEventListener('click', () => M.termina('no-coinciden'));
   M.on('su-comprobacion', () => sistema('suComprobacion'));
@@ -593,13 +630,40 @@
     let c = $('#otro-chat');
     if (f && f.chat && !c) { c = document.createElement('div'); c.id = 'otro-chat'; c.className = 'otro-chat'; c.setAttribute('role', 'status'); c.innerHTML = '<span class="otro-chat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M8 10h8M8 13h5"/></svg></span><b data-t="otroChatTit"></b><small data-t="otroChatTxt"></small>'; c.querySelector('b').textContent = tr('otroChatTit'); c.querySelector('small').textContent = tr('otroChatTxt'); $('#escena-video').append(c); }
     if (c) c.hidden = !(f && f.chat);
-    let a = $('#filtro-otro'); const txt = [f && f.voz ? tr('otroVoz') : '', f && f.cara && !f.chat ? tr('otroCara') : ''].filter(Boolean).join(' · ');
+    sala.classList.toggle('otro-pantalla', !!(f && f.pantalla && !f.chat));
+    let a = $('#filtro-otro'); const txt = [f && f.pantalla && !f.chat ? tr('otroPantalla') : '', f && f.voz ? tr('otroVoz') : '', f && f.cara && !f.chat && !f.pantalla ? tr('otroCara') : ''].filter(Boolean).join(' · ');
     if (!txt) { if (a) a.hidden = true; return; }
     if (!a) { a = document.createElement('p'); a.id = 'filtro-otro'; a.className = 'filtro-otro'; a.setAttribute('role', 'status'); $('#escena-video').append(a); }
     a.textContent = txt; a.hidden = false;
   }
   M.on('filtro', (f) => avisoOtro(f));
   M.on('llamada', (e) => filtrosDe(e));
+  // compartir la pantalla (dueño, 23 nov 09:02: «añade el botón como en GUARDIANA, el de compartir pantalla»), en el ordenador
+  const bPantalla = $('#b-pantalla');
+  function pintaPantalla(e) {
+    if (!bPantalla) return;
+    bPantalla.hidden = !(M.puedePantalla && e && e.estado === 'hablando' && e.video !== false);
+    const si = !!(e && e.pantalla), sp = bPantalla.querySelector('span'), k = si ? 'dejarPantalla' : 'compartirPantalla';
+    bPantalla.setAttribute('aria-pressed', String(si)); if (sp.dataset.t !== k) { sp.dataset.t = k; sp.textContent = tr(k); }
+    sala.classList.toggle('compartiendo', si);
+  }
+  if (bPantalla && M.pantalla) bPantalla.addEventListener('click', async () => {
+    const si = bPantalla.getAttribute('aria-pressed') !== 'true'; bPantalla.disabled = true;
+    try { await M.pantalla(si); } catch (_) {}
+    bPantalla.disabled = false; pintaPantalla(M.estadoLlamada ? M.estadoLlamada() : null);
+  });
+  M.on('llamada', (e) => pintaPantalla(e));
+  // en el ordenador, la botonera siempre en una fila: si no cabe en el vídeo, se reduce un poco entera
+  if (window.ResizeObserver) {
+    const ctlB = $('#controles'), escB = $('#escena-video');
+    const encaja = () => { if (movil.matches) { ctlB.style.removeProperty('--k'); return; } const w = ctlB.offsetWidth, a = escB.clientWidth - 32; ctlB.style.setProperty('--k', w && a > 0 && w > a ? Math.max(0.6, a / w).toFixed(3) : '1'); };
+    new ResizeObserver(encaja).observe(escB); new ResizeObserver(encaja).observe(ctlB);
+  }
+  // «Ampliar» / «Ver chat», doble clic en el vídeo y Esc
+  { const b = $('#b-ampliar'); if (b) b.addEventListener('click', () => ponAmplia(!amplia)); }
+  $('#escena-video').addEventListener('dblclick', (e) => { if (movil.matches || !sala.classList.contains('en-llamada') || e.target.closest('button, a, input, .vigia-panel, .comprobacion, .vg-resultado')) return; ponAmplia(!amplia); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && amplia) ponAmplia(false); });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && pusoPantalla) { pusoPantalla = false; ponAmplia(false); } });
   // Arriba, cómo va la llamada (dueño, 16:44): «Encriptado poscuántico de extremo a extremo» solo cuando la capa ya está descifrando
   // lo que llega (antes, «Comprobando…»); si no hay capa, «Encriptado estándar» y lo que se ha negociado de verdad (DTLS y SRTP, de
   // las estadísticas del navegador); y la calidad de la conexión, junto al tiempo.
@@ -710,7 +774,9 @@
     $('#salir-llamada').hidden = !(e.estado === 'libre' || e.estado === 'fin');
     ctl.hidden = !activa;
     velo.hidden = hablando;
-    $('#video-capa').hidden = !(e.estado === 'hablando' && e.capa);
+    $('#video-capa').hidden = true; // (todo arriba, en la cabecera)
+    { const c = e.estado === 'hablando' && !!e.capa; if (c !== conCapa) { conCapa = c; const mas = $('#sala-estado-mas'), x = $('#sala-estado-texto'); if (mas) mas.hidden = !(conCapa && x.dataset.t === 'salaEstado'); } }
+    if (!hablando) ponAmplia(false);
     if (e.estado === 'libre') { if (m) { if (esperaLlamada) pon('conectandoLlamada'); else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); rotuloLlamar('llamar'); } else if (M.sinLimite) txt.textContent = ''; else pon('pruebaLimite'); }
     else if (e.estado === 'preparando') pon('llPreparando');
     else if (e.estado === 'llamando') pon('llLlamando');
