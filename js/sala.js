@@ -1105,56 +1105,30 @@
   // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
-  // ---- por dónde suena (dueño, 23 nov 16:25: «En llamada de voz parece en altavoz, podemos cambiarla a normal?»; 17:24–17:26: «el
-  // audio sale en altavoz y no se cambia a normal»): la llamada de voz, por el auricular, como una llamada de teléfono, y «Altavoz», al
-  // altavoz y vuelta. El tipo de sesión de sonido («play-and-record») solo no basta: el iPhone lo deja en el altavoz. Lo que sí lo
-  // cambia es elegir la salida de cada elemento que suena (setSinkId, que Safari tiene desde iOS 26 y que lista el auricular y el
-  // altavoz). Sin eso (iOS anterior), el navegador no deja elegirlo y el botón no sale. La videollamada, por el altavoz, como siempre.
-  const TEL_SALIDA = /iPhone|iPod|Android/i.test(navigator.userAgent);
-  const TIPO_SESION = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
-  const SALIDAS = TEL_SALIDA && typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype && !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices);
-  const ES_ALTAVOZ = /speaker|altavoz|haut-parleur|lautsprecher|altoparlante|alto-falante|luidspreker/i;
-  const ES_AURICULAR = /receiver|receptor|auricular|earpiece|iphone|écouteur|hörer|ricevitore|handset/i;
-  const bAltavoz = $('#b-altavoz');
-  let altavoz = false, enVoz = false, salidas = null, leyendo = null, pendiente = false;
-  function leeSalidas() {
-    if (!SALIDAS) return Promise.resolve(null);
-    if (!leyendo) leyendo = navigator.mediaDevices.enumerateDevices().then((ds) => {
-      const out = ds.filter((d) => d.kind === 'audiooutput' && d.deviceId);
-      const alt = out.find((d) => ES_ALTAVOZ.test(d.label || ''));
-      let aur = out.find((d) => d !== alt && ES_AURICULAR.test(d.label || '') && !ES_ALTAVOZ.test(d.label || ''));
-      if (!aur && alt) { const resto = out.filter((d) => d !== alt && d.deviceId !== 'default'); if (resto.length === 1) aur = resto[0]; }
-      salidas = alt && aur ? { altavoz: alt.deviceId, auricular: aur.deviceId } : null; return salidas;
-    }).catch(() => null).finally(() => { leyendo = null; });
-    return leyendo;
+  // ---- por dónde suena (dueño, 23 nov 17:55: «Déjalo en altavoz y que se pueda escuchar con auriculares por cable y bluetooth»):
+  // por el altavoz, como siempre, y con auriculares (de cable o bluetooth), por ellos: lo elige el teléfono. En el iPhone, al abrir
+  // el micrófono, Safari a veces se queda con el del iPhone y saca el sonido por su altavoz aunque haya auriculares puestos (WebKit,
+  // error 282939); con auriculares, poner el tipo de sesión en «auto» y luego en «play-and-record» hace que el iPhone vuelva a
+  // ellos. Sin auriculares (o al quitarlos), «auto»: el altavoz. Al acabar la llamada, «auto».
+  const SESION_IPHONE = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
+  let audioEnLlamada = false, sesionT = 0;
+  const DEL_TELEFONO = /iphone|ipad|altavoz|speaker|receptor|receiver|default|predeterminad/i;
+  async function conAuriculares() {
+    try { return (await navigator.mediaDevices.enumerateDevices()).some((d) => (d.kind === 'audioinput' || d.kind === 'audiooutput') && d.label && !DEL_TELEFONO.test(d.label)); } catch (_) { return false; }
   }
-  // los elementos que suenan: la persona de la llamada y los recuadros del grupo (nunca mi propia imagen)
-  const suenan = () => [...document.querySelectorAll('#escena-video video')].filter((v) => v.id !== 'video-mio' && !v.classList.contains('video-mio') && v.srcObject && v.srcObject.getAudioTracks && v.srcObject.getAudioTracks().length);
-  function aplicaSalida(forzar) {
-    if (!salidas) return;
-    const id = enVoz && !altavoz ? salidas.auricular : salidas.altavoz;
-    for (const v of suenan()) {
-      if (!forzar && v.sinkId === id) continue;
-      // (sin un toque, el iPhone puede no dejar cambiarla: entonces se cambia en el primer toque en la llamada)
-      try { const p = v.setSinkId(id); if (p && p.catch) p.catch(() => { pendiente = true; }); } catch (_) { pendiente = true; }
-    }
+  function tipoSesion(t) { try { if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } catch (_) {} }
+  async function haciaAuriculares() {
+    if (!SESION_IPHONE || !audioEnLlamada) return;
+    const con = await conAuriculares(); clearTimeout(sesionT);
+    if (!con || !audioEnLlamada) { tipoSesion('auto'); return; }
+    tipoSesion('auto'); sesionT = setTimeout(() => { if (audioEnLlamada) tipoSesion('play-and-record'); }, 300);
   }
-  function ponTipo() { if (!TIPO_SESION) return; const t = enVoz && !altavoz ? 'play-and-record' : 'auto'; try { if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } catch (_) {} }
-  function pintaAltavoz() { if (!bAltavoz) return; bAltavoz.hidden = !(enVoz && salidas); bAltavoz.setAttribute('aria-pressed', String(altavoz)); }
-  let salidaT = 0;
-  function ponAudio(voz) {
-    if (voz !== enVoz) {
-      enVoz = voz; if (!voz) altavoz = false; ponTipo();
-      clearInterval(salidaT); salidaT = voz && SALIDAS ? setInterval(() => aplicaSalida(false), 2000) : 0;
-      if (voz && SALIDAS) leeSalidas().then(() => { pintaAltavoz(); aplicaSalida(true); }); else aplicaSalida(true);
-    } else aplicaSalida(false); // (los recuadros nuevos del grupo, a la misma salida)
-    pintaAltavoz();
+  function ponAudio(enCurso) {
+    if (enCurso === audioEnLlamada) return; audioEnLlamada = enCurso;
+    if (enCurso) haciaAuriculares(); else if (SESION_IPHONE) { clearTimeout(sesionT); tipoSesion('auto'); }
   }
-  if (bAltavoz) bAltavoz.addEventListener('click', () => { altavoz = !altavoz; pendiente = false; ponTipo(); aplicaSalida(true); pintaAltavoz(); });
-  document.addEventListener('pointerdown', () => { if (pendiente && enVoz && salidas) { pendiente = false; aplicaSalida(true); } }, true);
-  if (SALIDAS && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (enVoz) leeSalidas().then(() => { pintaAltavoz(); aplicaSalida(true); }); });
+  if (SESION_IPHONE && navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { haciaAuriculares(); });
   function pintaLlamadaVoz(si, e) {
-    ponAudio(si);
     const bc = $('#b-camara'), s0 = bc && bc.querySelector('span');
     if (bc) { const sinCam = !!(e && (e.estado === 'hablando' || e.estado === 'reconectando') && e.videoMio === false); bc.classList.toggle('a-video', sinCam); if (s0) { const k = sinCam ? 'pasarVideo' : 'camara'; if (s0.dataset.t !== k) { s0.dataset.t = k; s0.textContent = tr(k); } } if (sinCam) bc.setAttribute('aria-pressed', 'false'); }
     if (!si) { if (tarjetaVoz) tarjetaVoz.hidden = true; clearInterval(vozT); vozT = null; return; }
@@ -1190,7 +1164,7 @@
     const hablando = !pas && (e.estado === 'hablando' || e.estado === 'reconectando');
     const activa = hablando || pas || ['preparando', 'llamando', 'conectando'].includes(e.estado);
     sala.classList.toggle('en-llamada', hablando); sala.classList.toggle('con-video', activa || e.estado === 'entrante');
-    { const voz = hablando && e.video === false; sala.classList.toggle('solo-voz', voz); sala.classList.toggle('sin-cam-propia', !!((hablando || activa) && e.videoMio === false)); pintaLlamadaVoz(voz, e); }
+    { const voz = hablando && e.video === false; sala.classList.toggle('solo-voz', voz); sala.classList.toggle('sin-cam-propia', !!((hablando || activa) && e.videoMio === false)); pintaLlamadaVoz(voz, e); ponAudio(hablando); }
     $('#video-reconecta').hidden = e.estado !== 'reconectando' || pas;
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando && !pas) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);

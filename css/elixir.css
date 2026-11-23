@@ -2251,12 +2251,12 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .sala.solo-voz:not(.en-chat) .controles{--hueco:clamp(26px,9vw,44px);display:flex!important;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:40px var(--hueco);
     width:calc(3 * 64px + 2 * var(--hueco) + 4px);padding:0!important;left:0;right:0;margin:0 auto;bottom:calc(env(safe-area-inset-bottom) + 30px);transform:none!important}
   .sala.solo-voz:not(.en-chat) .controles>.seg,.sala.solo-voz:not(.en-chat) .controles>.seg:is(#b-enviar,#b-comprobar,#b-girar,#b-ocultacara,#b-reto,#b-pantalla,#b-vista,#b-ampliar,#b-grande){display:none!important}
-  .sala.solo-voz:not(.en-chat) .controles>:is(#b-micro,#b-altavoz,#b-camara,#b-anadir,#b-cambiavoz,#b-chat,#b-volver-pc,#b-colgar):not([hidden]){display:grid!important;place-items:center;position:relative!important;inset:auto!important;
+  .sala.solo-voz:not(.en-chat) .controles>:is(#b-micro,#b-camara,#b-anadir,#b-cambiavoz,#b-chat,#b-volver-pc,#b-colgar):not([hidden]){display:grid!important;place-items:center;position:relative!important;inset:auto!important;
     flex:0 0 64px!important;width:64px!important;height:64px!important;min-width:0!important;margin:0!important;padding:0!important;border-radius:50%!important;letter-spacing:0;text-transform:none;
     background:rgba(232,236,241,.1)!important;border:1px solid rgba(255,255,255,.26)!important;color:#F4F6F8!important;box-shadow:0 12px 34px -10px rgba(0,0,0,.7)!important;
     -webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important;overflow:visible!important;transform:none!important;transition:background-color .18s ease,color .18s ease,border-color .18s ease;
     justify-content:center!important;align-content:center!important;justify-items:center!important;align-items:center!important;gap:0!important;text-align:center}
-  .sala.solo-voz:not(.en-chat) .controles>#b-micro{order:1}.sala.solo-voz:not(.en-chat) .controles>#b-altavoz{order:2}.sala.solo-voz:not(.en-chat) .controles>#b-camara{order:3}
+  .sala.solo-voz:not(.en-chat) .controles>#b-micro{order:1}.sala.solo-voz:not(.en-chat) .controles>#b-camara{order:3}
   .sala.solo-voz:not(.en-chat) .controles>#b-anadir{order:4}.sala.solo-voz:not(.en-chat) .controles>#b-cambiavoz{order:5}.sala.solo-voz:not(.en-chat) .controles>#b-chat{order:6}
   .sala.solo-voz:not(.en-chat) .controles>#b-volver-pc{order:7}.sala.solo-voz:not(.en-chat) .controles>#b-colgar{order:9}
   .sala.solo-voz:not(.en-chat) .controles>.seg>svg{display:block!important;box-sizing:border-box;width:26px!important;height:26px!important;padding:0!important;margin:0!important;background:none!important;border:0!important;
@@ -2265,7 +2265,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
     font:400 12.5px/1.2 var(--ui)!important;color:#C9D2DC!important;text-shadow:0 1px 6px rgba(0,0,0,.9)!important;letter-spacing:0!important;text-transform:none!important}
   .sala.solo-voz:not(.en-chat) .controles>#b-colgar:not([hidden]){margin:0 calc((100% - 64px) / 2)!important;background:#E07A6C!important;border-color:#E07A6C!important;color:#05070A!important}
   .sala.solo-voz:not(.en-chat) .controles>#b-colgar>svg{fill:currentColor!important;stroke:none!important;width:28px!important;height:28px!important;transform:rotate(135deg)!important}
-  .sala.solo-voz:not(.en-chat) .controles>:is(#b-altavoz,#b-cambiavoz)[aria-pressed="true"],.sala.solo-voz:not(.en-chat) .controles>#b-micro[aria-pressed="false"]{background:#F4F6F8!important;border-color:#F4F6F8!important;color:#0A0E14!important}
+  .sala.solo-voz:not(.en-chat) .controles>#b-cambiavoz[aria-pressed="true"],.sala.solo-voz:not(.en-chat) .controles>#b-micro[aria-pressed="false"]{background:#F4F6F8!important;border-color:#F4F6F8!important;color:#0A0E14!important}
   .sala.solo-voz:not(.en-chat) .controles>#b-camara.a-video>svg{stroke:#5CC98A!important}
   .sala.solo-voz .controles .tachado{display:none}
   .sala.solo-voz .controles #b-micro[aria-pressed="false"] .tachado{display:inline}
@@ -2273,7 +2273,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 }
 @media (max-width:760px) and (max-height:720px){
   .sala.solo-voz:not(.en-chat) .controles{--hueco:clamp(22px,8vw,36px);gap:32px var(--hueco);width:calc(3 * 56px + 2 * var(--hueco) + 4px);bottom:calc(env(safe-area-inset-bottom) + 20px)}
-  .sala.solo-voz:not(.en-chat) .controles>:is(#b-micro,#b-altavoz,#b-camara,#b-anadir,#b-cambiavoz,#b-chat,#b-volver-pc,#b-colgar):not([hidden]){flex-basis:56px!important;width:56px!important;height:56px!important}
+  .sala.solo-voz:not(.en-chat) .controles>:is(#b-micro,#b-camara,#b-anadir,#b-cambiavoz,#b-chat,#b-volver-pc,#b-colgar):not([hidden]){flex-basis:56px!important;width:56px!important;height:56px!important}
   .sala.solo-voz:not(.en-chat) .controles>#b-colgar:not([hidden]){margin:0 calc((100% - 56px) / 2)!important}
   .sala.solo-voz:not(.en-chat) .controles>.seg>span{top:calc(100% + 7px)!important;font-size:11.5px!important}
 }
