@@ -1601,3 +1601,34 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .vg-analiza.vg-espera .vg-a-barra{opacity:.25}
 .vg-analiza.vg-espera .vg-a-punto{background:#F0C77F;box-shadow:0 0 10px rgba(240,199,127,.8)}
 .vg-analiza.vg-espera .vg-a-texto{letter-spacing:.06em;text-transform:none;font-size:13px}
+
+/* (22 nov 21:03) privacidad propia: cambiar la voz y ocultar la cara. En el ordenador, dos segmentos más (en ámbar si están activos);
+   en el móvil, dos píldoras de cristal a la izquierda, encima de los botones (se esconden con ellos) */
+.sala .controles .seg.b-filtro[aria-pressed="true"]{color:#F0C77F}
+@media (max-width:760px){
+  .sala .controles .seg.b-filtro{display:inline-flex!important;position:absolute;left:12px;width:auto;height:40px;min-width:0;margin:0;padding:0 14px 0 11px;gap:8px;align-items:center;justify-content:flex-start;
+    border-radius:20px;background:rgba(18,24,32,.62);border:1px solid rgba(255,255,255,.22);color:#F4F6F8;box-shadow:0 10px 26px -10px rgba(0,0,0,.75);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transition:background-color .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
+  .sala .controles .seg#b-cambiavoz{bottom:calc(100% + 82px)}
+  .sala .controles .seg#b-ocultacara{bottom:calc(100% + 32px)}
+  .sala .controles .seg.b-filtro > span{position:static!important;transform:none!important;font:500 13px/1 var(--ui)!important;color:inherit!important;text-shadow:none!important;letter-spacing:0!important}
+  .sala .controles .seg.b-filtro .ico-env{width:19px!important;height:19px!important}
+  .sala .controles .seg.b-filtro[aria-pressed="true"]{background:rgba(240,199,127,.16);border-color:rgba(240,199,127,.7);color:#F0C77F}
+  .sala.comprobando .controles .seg.b-filtro{opacity:0;pointer-events:none}
+}
+.filtro-otro{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 124px);transform:translateX(-50%);z-index:5;margin:0;padding:7px 14px;border-radius:16px;white-space:nowrap;
+  font:600 12.5px/1 var(--ui);letter-spacing:.02em;color:#F0C77F;background:rgba(10,12,16,.62);border:1px solid rgba(240,199,127,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);pointer-events:none}
+@media (min-width:761px){ .filtro-otro{top:84px} }
+
+/* (22 nov 21:09) el aviso de fin de llamada, más claro: sello verde, titular, una frase y la lista de lo borrado */
+.aviso-icono{display:none}
+.aviso.fin .aviso-icono{display:grid;place-items:center;width:58px;height:58px;margin:0 0 2px;border-radius:50%;color:#5CC98A;
+  background:radial-gradient(closest-side,rgba(92,201,138,.16),rgba(92,201,138,.04) 70%,rgba(92,201,138,0));box-shadow:inset 0 0 0 1px rgba(92,201,138,.45),0 0 32px rgba(92,201,138,.18)}
+.aviso.fin .aviso-icono svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.aviso.fin .etiqueta{color:#8FE0AE}
+.aviso-lista{display:grid;gap:11px;margin:2px 0 10px;padding:16px 18px;list-style:none;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);width:100%;box-sizing:border-box}
+.aviso-lista li{position:relative;padding-left:30px;text-align:left;font:400 14.5px/1.35 var(--ui);color:#DDE5ED}
+.aviso-lista li::before{content:'';position:absolute;left:0;top:50%;width:19px;height:19px;margin-top:-9.5px;border-radius:50%;background:rgba(92,201,138,.16);box-shadow:inset 0 0 0 1px rgba(92,201,138,.5)}
+.aviso-lista li::after{content:'';position:absolute;left:6.5px;top:50%;width:6px;height:9px;margin-top:-6px;border:solid #5CC98A;border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+.aviso.fin .aviso-caja h2{font-size:30px}
+.aviso.fin #aviso-texto{margin-bottom:0}

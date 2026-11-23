@@ -28,8 +28,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261122-14" integrity="sha384-42Xk5yp12sUFY0X+qwHmSGfc2/nEEKmP7cl4JguhSAGlvT3fPl4WbBQGCpcEJ6M0">
-<script src="js/idioma-inicio.js?v=20261122-14" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261122-15" integrity="sha384-X6cRzv88l2nKp5CzP5KbSNWKV+37sHgtGNj6lRUEhySd8b1UkqGNgwV0FKQDGZUo">
+<script src="js/idioma-inicio.js?v=20261122-15" integrity="sha384-Iv7vwD3f6kBfdcb0kENSGgk4pzHOKNylHP9fcgF/I2AcJXQ2MpoDags+MicPKZen"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -315,7 +315,7 @@
 <p class="video-tiempo" id="video-tiempo" hidden></p>
 <p class="video-capa reconecta" id="video-reconecta" hidden role="status"><span class="punto" aria-hidden="true"></span><span data-t="reconectando">Reconectando la llamada…</span></p>
 <p class="video-reto" id="video-reto" hidden role="status"><span class="etiqueta" id="reto-etiqueta"></span><span class="reto-texto" id="reto-texto"></span></p>
-<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg solo-movil" id="b-chat"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z"/></svg><span id="b-chat-texto" data-t="chat">Chat</span><i class="cuenta" id="chat-cuenta" hidden></i></button><button type="button" class="seg" id="b-comprobar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9.2 10.2h.01M14.8 10.2h.01M9.4 14.6a3.6 3.6 0 0 0 5.2 0"/></svg><span data-t="comprobar">Comprobar</span></button><button type="button" class="seg solo-movil" id="b-enviar" aria-haspopup="menu" aria-controls="menu-enviar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 14.4 20.9a.5.5 0 0 1-.9 0L10.6 13.4 3.1 10.5a.5.5 0 0 1 0-.9z"/><path d="M21 3 10.6 13.4"/></svg><span data-t="enviarCosas">Enviar</span></button><button type="button" class="seg b-girar" id="b-girar" hidden aria-label="Girar la cámara" data-t-aria="girarCamara"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.3 11.2a3.4 3.4 0 0 0-6.1-.9M8.7 13.8a3.4 3.4 0 0 0 6.1.9"/><path d="M9.2 8.9v1.6h1.6M14.8 17.1v-1.6h-1.6"/></svg><span data-t="girarBoton">Girar</span></button><button type="button" class="seg" id="b-colgar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="colgar">Colgar</span></button></div>
+<div class="par controles" role="group" id="controles" hidden><button type="button" class="seg" id="b-micro" aria-pressed="true" data-t="micro">Micro</button><button type="button" class="seg" id="b-camara" aria-pressed="true" data-t="camara">Cámara</button><button type="button" class="seg" id="b-reto" data-t="pruebaVida">Prueba de vida</button><button type="button" class="seg b-filtro" id="b-cambiavoz" aria-pressed="false"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12h1.6M7.2 8.5v7M10.4 5.5v13M13.6 8v8M16.8 10v4M19.9 11.2v1.6"/></svg><span data-t="cambiaVoz">Cambiar voz</span></button><button type="button" class="seg b-filtro" id="b-ocultacara" aria-pressed="false"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="5"/><path d="M5 10h14M5 15h14M10 4v16M14 4v16"/></svg><span data-t="ocultaCara">Ocultar cara</span></button><button type="button" class="seg solo-movil" id="b-chat"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z"/></svg><span id="b-chat-texto" data-t="chat">Chat</span><i class="cuenta" id="chat-cuenta" hidden></i></button><button type="button" class="seg" id="b-comprobar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9.2 10.2h.01M14.8 10.2h.01M9.4 14.6a3.6 3.6 0 0 0 5.2 0"/></svg><span data-t="comprobar">Comprobar</span></button><button type="button" class="seg solo-movil" id="b-enviar" aria-haspopup="menu" aria-controls="menu-enviar"><svg class="ico-tel ico-env" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 14.4 20.9a.5.5 0 0 1-.9 0L10.6 13.4 3.1 10.5a.5.5 0 0 1 0-.9z"/><path d="M21 3 10.6 13.4"/></svg><span data-t="enviarCosas">Enviar</span></button><button type="button" class="seg b-girar" id="b-girar" hidden aria-label="Girar la cámara" data-t-aria="girarCamara"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.3 11.2a3.4 3.4 0 0 0-6.1-.9M8.7 13.8a3.4 3.4 0 0 0 6.1.9"/><path d="M9.2 8.9v1.6h1.6M14.8 17.1v-1.6h-1.6"/></svg><span data-t="girarBoton">Girar</span></button><button type="button" class="seg" id="b-colgar"><svg class="ico-tel" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg><span data-t="colgar">Colgar</span></button></div>
 </div>
 <div class="chat" id="chat">
 <div class="chat-cab" id="chat-cab"><button type="button" class="chat-volver" id="chat-volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg><span data-t="video">Vídeo</span></button><div class="chat-cab-txt"><b data-t="chat">Chat</b><small><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="11" width="13" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg><span id="chat-cifrado" data-t="chatCifrado">Encriptado poscuántico</span><span id="chat-tiempo"></span></small></div></div>
@@ -371,28 +371,30 @@
 
 <div class="aviso" id="aviso" hidden role="alertdialog" aria-modal="true" aria-labelledby="aviso-titulo">
 <div class="aviso-caja">
+<i class="aviso-icono" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 5.2 5.8v5.6c0 4.3 2.9 7.9 6.8 9.4 3.9-1.5 6.8-5.1 6.8-9.4V5.8z"/><path d="m8.9 12.1 2.2 2.2 4.2-4.4"/></svg></i>
 <span class="etiqueta" id="aviso-etiqueta"></span>
 <h2 id="aviso-titulo"></h2>
 <p id="aviso-texto"></p>
+<ul class="aviso-lista" id="aviso-lista" hidden></ul>
 <div class="aviso-botones"><button type="button" class="cristal vivo" id="aviso-invitar" hidden><span data-t="invitarDeNuevo">Invitar de nuevo</span></button><a class="cristal" id="aviso-enlace" href="https://github.com/guardianagroup/house1718" target="_blank" rel="noopener noreferrer" hidden><span data-t="verRepositorio">Ver el código</span></a><button type="button" class="cristal" id="aviso-ok"><span data-t="entendido">Entendido</span></button></div>
 </div>
 </div>
 
-<script src="js/luz.js?v=20261122-14" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
-<script src="js/idioma.js?v=20261122-14" integrity="sha384-0Ws4G6c0+x+TMafLbtJeU0aZMVtR7bKKR9p46kAvPvt1fkRops/J2fZTaodiw8iF"></script>
-<script src="js/pq-cnsa.js?v=20261122-14" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261122-14" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261122-14" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261122-14" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
-<script src="js/qr.js?v=20261122-14" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261122-14" integrity="sha384-NBZjnBVk59VRH8M38Ne9o253qQipJ2PkRd7OeyKtYbDJxdCKx7+/aSnGfNzHbwo4"></script>
-<script type="module" src="js/sala3d.js?v=20261122-14" integrity="sha384-MHWdTS9e+1aru58RTkjuITrWTIbQIV0w4A1A9f5Kbp+ZdHP4E9DbEdRFaGQgnXd1"></script>
-<script src="js/holo.js?v=20261122-14" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
-<script src="js/puerta.js?v=20261122-14" integrity="sha384-vPgWXhHzgKvbiE0Q+497ksHdObRfTXhlXOvCNMLgYoo9oz2mfRmYBfIprrzjtpIP"></script>
-<script src="js/comprueba.js?v=20261122-14" integrity="sha384-bmN1nJVAyfs/8fiSdeZnbdqN++pVIds3SeG5xxilvGwr+m1ryMSN/3LdDcCohAUl"></script>
-<script src="js/vigia.js?v=20261122-14" integrity="sha384-YHGgfhlm5uMQCLEGKkM1IECaECwdEh2YfoX0xvVuqj/wZ/q2iOVIDr2UApWSn8s8"></script>
-<script src="js/escenas.js?v=20261122-14" integrity="sha384-kYfAqHMSZEIPqUDagYHjrXIJxH8eGbtltGOjdfnaCHCVRcmu5tFZPf3yvKo7Kbwj"></script>
-<script src="js/sala.js?v=20261122-14" integrity="sha384-U3XZN5nHMymo/IiT+uVkcxOo2fQvbSL87IeYy4AWtrvpEJnck/ml5Lcb37DE4Azp"></script>
+<script src="js/luz.js?v=20261122-15" integrity="sha384-DVzTA7cWy5EdTj1fFcsV2P5TUFkdkwSN2j6cuRy7gGBoC38tlX37GHXQeryY4Ocn" defer></script>
+<script src="js/idioma.js?v=20261122-15" integrity="sha384-AFP2WvhzE+06plHfKhXyA0Mpjcgy+hrKT47d/K4WZxnJz9TQETceR3PgxyJdRtOh"></script>
+<script src="js/pq-cnsa.js?v=20261122-15" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261122-15" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261122-15" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261122-15" integrity="sha384-YOdg/IU30cAWyswwbpXi/9spil7qGFUc+PlSG8UgcVKZsyXx0FUaVptzod+Tpt27"></script>
+<script src="js/qr.js?v=20261122-15" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261122-15" integrity="sha384-rW9oJCHkoSy/SH0r5h6if7Tmpe/5rNEzmSyKWvtXUifR5xmDcAJv/GDmbWl+egex"></script>
+<script type="module" src="js/sala3d.js?v=20261122-15" integrity="sha384-MHWdTS9e+1aru58RTkjuITrWTIbQIV0w4A1A9f5Kbp+ZdHP4E9DbEdRFaGQgnXd1"></script>
+<script src="js/holo.js?v=20261122-15" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+<script src="js/puerta.js?v=20261122-15" integrity="sha384-vPgWXhHzgKvbiE0Q+497ksHdObRfTXhlXOvCNMLgYoo9oz2mfRmYBfIprrzjtpIP"></script>
+<script src="js/comprueba.js?v=20261122-15" integrity="sha384-bmN1nJVAyfs/8fiSdeZnbdqN++pVIds3SeG5xxilvGwr+m1ryMSN/3LdDcCohAUl"></script>
+<script src="js/vigia.js?v=20261122-15" integrity="sha384-wTdbV5gMVNsASHIp01BP4sRYluEHgLMVeQEfziWGqr390d/q7j9TL5gxhFUWiYo3"></script>
+<script src="js/escenas.js?v=20261122-15" integrity="sha384-kYfAqHMSZEIPqUDagYHjrXIJxH8eGbtltGOjdfnaCHCVRcmu5tFZPf3yvKo7Kbwj"></script>
+<script src="js/sala.js?v=20261122-15" integrity="sha384-QEpcIx9FzB+9puWqaFegTmPN224FhQNo+BO3brcWysOeymZzlncWg+ZXuzF/1BX1"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">Elixire se usa en vertical.</span></div>
 </body>
 </html>

@@ -526,6 +526,30 @@
     vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta); vm.addEventListener('lostpointercapture', suelta);
   }
   $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
+  // privacidad propia (dueño, 22 nov 21:03): cambiar la voz y ocultar la cara, dos botones; la otra persona ve un aviso
+  const FILTROS = [['#b-cambiavoz', 'cambiaVoz', 'vozCambiada', 'cambiaVoz', 'vozCambiada'], ['#b-ocultacara', 'caraOculta', 'caraOcultaTxt', 'ocultaCara', 'caraOculta']];
+  function pintaFiltro(b, si, kOn, kOff) { b.setAttribute('aria-pressed', si ? 'true' : 'false'); const sp = b.querySelector('span'); if (sp) { sp.dataset.t = si ? kOn : kOff; sp.textContent = tr(si ? kOn : kOff); } }
+  for (const [sel, fn, kOn, kOff] of FILTROS) {
+    const b = $(sel); if (!b || !M[fn]) continue;
+    b.addEventListener('click', async () => {
+      const si = b.getAttribute('aria-pressed') !== 'true'; b.disabled = true;
+      let ok = false; try { ok = await M[fn](si); } catch (_) {} b.disabled = false;
+      if (ok) { pintaFiltro(b, si, kOn, kOff); if (sel === '#b-ocultacara') $('#video-mio').classList.toggle('oculta', si); }
+    });
+  }
+  function filtrosDe(e) {
+    for (const [sel, , kOn, kOff, campo] of FILTROS) { const b = $(sel); if (b) pintaFiltro(b, !!(e && e[campo]), kOn, kOff); }
+    $('#video-mio').classList.toggle('oculta', !!(e && e.caraOculta));
+    avisoOtro(e && e.estado === 'hablando' ? e.otroFiltro : null);
+  }
+  function avisoOtro(f) {
+    let a = $('#filtro-otro'); const txt = [f && f.voz ? tr('otroVoz') : '', f && f.cara ? tr('otroCara') : ''].filter(Boolean).join(' · ');
+    if (!txt) { if (a) a.hidden = true; return; }
+    if (!a) { a = document.createElement('p'); a.id = 'filtro-otro'; a.className = 'filtro-otro'; a.setAttribute('role', 'status'); $('#escena-video').append(a); }
+    a.textContent = txt; a.hidden = false;
+  }
+  M.on('filtro', (f) => avisoOtro(f));
+  M.on('llamada', (e) => filtrosDe(e));
   // Arriba, cómo va la llamada (dueño, 16:44): «Encriptado poscuántico de extremo a extremo» solo cuando la capa ya está descifrando
   // lo que llega (antes, «Comprobando…»); si no hay capa, «Encriptado estándar» y lo que se ha negociado de verdad (DTLS y SRTP, de
   // las estadísticas del navegador); y la calidad de la conexión, junto al tiempo.
@@ -769,11 +793,11 @@
   M.on('fin', (f) => {
     const enSala = abierta; cierraMovil(); cierra();
     const textos = {
-      mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false],
+      mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false], // (con la lista de lo borrado)
       alarma: ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true], 'alarma-suya': ['alarmaEtiqueta', 'alarmaTitulo', 'alarmaTexto', true],
       'no-coinciden': ['alarmaEtiqueta', 'noCoincidenTitulo', 'noCoincidenTexto', true],
     }[f.motivo];
-    if (textos && (enSala || f.motivo.startsWith('alarma'))) aviso(...textos, false, f.motivo === 'suyo' && !!(window.Elixire && window.Elixire.reinvita));
+    if (textos && (enSala || f.motivo.startsWith('alarma'))) aviso(...textos, false, f.motivo === 'suyo' && !!(window.Elixire && window.Elixire.reinvita), f.motivo === 'mio' || f.motivo === 'suyo' ? ['finL1', 'finL2', 'finL3'] : null);
   });
 
   // ---------- mantener pulsado un mensaje, una foto o una nota: «Copiar», «Borrar para todos» (lo tuyo) y «Borrar para mí» (dueño,
@@ -849,9 +873,12 @@
   $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await M.giraCamara(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
 
   // ---------- avisos ----------
-  function aviso(etiqueta, titulo, cuerpo, mal, enlace, invitar) {
+  function aviso(etiqueta, titulo, cuerpo, mal, enlace, invitar, lista) {
     const a = $('#aviso'); a.classList.toggle('mal', !!mal); $('#aviso-enlace').hidden = !enlace; $('#aviso-invitar').hidden = !invitar;
     for (const [id, k] of [['#aviso-etiqueta', etiqueta], ['#aviso-titulo', titulo], ['#aviso-texto', cuerpo]]) { const e = $(id); e.dataset.t = k; e.textContent = tr(k); }
+    // al colgar: un sello y la lista de lo que se ha borrado, en tres líneas fáciles de leer
+    const ul = $('#aviso-lista'); ul.textContent = ''; a.classList.toggle('fin', !!(lista && lista.length)); ul.hidden = !(lista && lista.length);
+    for (const k of lista || []) { const li = document.createElement('li'); li.dataset.t = k; li.textContent = tr(k); ul.append(li); }
     a.hidden = false; setTimeout(() => $('#aviso-ok').focus(), 50);
   }
   $('#aviso-ok').addEventListener('click', () => { $('#aviso').hidden = true; });

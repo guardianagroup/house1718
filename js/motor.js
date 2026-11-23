@@ -505,7 +505,7 @@
   // La prueba: 3 minutos de videollamada por conversación, en una llamada o en varias (dueño, 14:11: «poder volver a llamar si se
   // cuelga la llamada en el móvil… como la tenemos en Guardiana»): lo que cuenta es el tiempo hablado.
   const restante = (s) => Math.max(0, PRUEBA_MS - ((s && s.usado) || 0));
-  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
+  const estadoLlamada = () => (L ? { estado: L.estado, rol: L.rol, video: L.video, t0: L.t0 || 0, limite: L.tope || restante(S), mic: L.mic !== false, cam: L.cam !== false, vozCambiada: !!L.vozCambiada, caraOculta: !!L.caraOculta, otroFiltro: L.otroFiltro || null, capa: !!L.visto, sinCapa: !!L.sinCapa, cruzada: !!L.cruzada, local: (L.caraOculta && ocu && ocu.vista) || L.local || null, remoto: L.remoto || null, mira: L.mira || 'user' } : { estado: 'libre' });
   async function hkdf256(sec, sal, info) { const k = await crypto.subtle.importKey('raw', sec, 'HKDF', false, ['deriveBits']); return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: C.te.encode(sal), info: C.te.encode(info) }, k, 256)); }
   const nuevoK = () => 'k' + C.hex(C.azar(8));
   // las dos llaves de la capa poscuántica de esta llamada (una por sentido), del secreto de la sesión y del identificador de la llamada
@@ -734,6 +734,7 @@
         else {
           for (const sn of x.pc.getSenders()) { const k = sn.track && sn.track.kind, nt = k && st.getTracks().find((t) => t.kind === k); if (nt) await sn.replaceTrack(nt); }
           x.local.getTracks().forEach((t) => t.stop()); x.local = st; micro(x.mic !== false); camara(x.cam !== false);
+          if (x.vozCambiada) cambiaVoz(true); if (x.caraOculta) caraOculta(true);
         }
       } catch (e) { console.warn('medios', e); }
       recuperando = false;
@@ -811,6 +812,7 @@
     clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x);
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
+    paraVoz(); paraOcultar();
     if (x.local) cede(x.local);
   }
   async function llamadaRecibe(s, j) {
@@ -868,6 +870,7 @@
     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
+    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara }; emite('filtro', L.otroFiltro); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
@@ -948,11 +951,60 @@
       const nueva = st.getVideoTracks()[0]; try { nueva.contentHint = 'motion'; } catch (_) {}
       nueva.enabled = L.cam !== false;
       const s = L.pc.getSenders().find((x) => x.track === vieja) || L.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
-      if (s) await s.replaceTrack(nueva);
+      if (ocu) { ocu.v.srcObject = new MediaStream([nueva]); ocu.v.play().catch(() => {}); } else if (s) await s.replaceTrack(nueva);
       L.local.removeTrack(vieja); L.local.addTrack(nueva); L.mira = modo;
       emite('llamada', estadoLlamada()); return modo === otra;
     } catch (_) { emite('llamada', estadoLlamada()); return false; } finally { girando = false; }
   }
+  // ---------- privacidad propia (dueño, 22 nov 21:03: «un botón para cambiar la voz y otro para que no se pueda detectar la cara»).
+  // Todo en este equipo y antes de encriptar: la pista que sale se cambia en el mismo emisor (replaceTrack), así que la capa poscuántica
+  // y el encriptado siguen igual. La otra persona recibe un aviso («voz cambiada», «cara oculta»): no sirve para engañar, se ve. ----------
+  const verJs = (((document.querySelector('script[src*="js/motor.js"]') || {}).src || '').split('?v=')[1] || '').replace(/[^\w.-]/g, '');
+  let actx = null, vozN = null, ocu = null;
+  const emisor = (kind) => L && L.pc && L.pc.getSenders().find((x) => x.track && x.track.kind === kind);
+  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta }); }
+  async function cambiaVoz(si) {
+    if (!L || !L.local || !L.pc) return false;
+    const mic = L.local.getAudioTracks()[0], snd = emisor('audio'); if (!mic || !snd) return false;
+    try {
+      if (si) {
+        if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); await actx.audioWorklet.addModule('js/cambia-voz.js' + (verJs ? '?v=' + verJs : '')); }
+        if (actx.state === 'suspended') await actx.resume();
+        if (vozN) { try { vozN.src.disconnect(); vozN.nodo.disconnect(); } catch (_) {} }
+        const src = actx.createMediaStreamSource(new MediaStream([mic])), nodo = new AudioWorkletNode(actx, 'cambia-voz'), dst = actx.createMediaStreamDestination();
+        src.connect(nodo); nodo.connect(dst);
+        const pista = dst.stream.getAudioTracks()[0]; await snd.replaceTrack(pista);
+        vozN = { src, nodo, pista }; L.vozCambiada = true;
+      } else {
+        await snd.replaceTrack(mic); paraVoz(); L.vozCambiada = false;
+      }
+      avisaFiltros(); emite('llamada', estadoLlamada()); return true;
+    } catch (e) { console.warn('voz', e); return false; }
+  }
+  function paraVoz() { if (vozN) { try { vozN.src.disconnect(); vozN.nodo.disconnect(); vozN.pista.stop(); } catch (_) {} vozN = null; } }
+  // la cara: la imagen que sale se convierte en mosaico (22 bloques de ancho): no se reconoce la cara ni la detecta ningún programa,
+  // pero se ve que hay alguien y cómo se mueve
+  async function caraOculta(si) {
+    if (!L || !L.local || !L.pc) return false;
+    const cam = L.local.getVideoTracks()[0], snd = emisor('video'); if (!snd) return false;
+    try {
+      if (si) {
+        if (!cam) return false; paraOcultar();
+        const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.srcObject = new MediaStream([cam]); v.play().catch(() => {});
+        const st = cam.getSettings ? cam.getSettings() : {}, cv = document.createElement('canvas'); cv.width = st.width || 640; cv.height = st.height || 480;
+        const g = cv.getContext('2d'), pe = document.createElement('canvas'), gp = pe.getContext('2d');
+        const pinta = () => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return; if (cv.width !== vw || cv.height !== vh) { cv.width = vw; cv.height = vh; } const bw = 22, bh = Math.max(1, Math.round(22 * vh / vw)); if (pe.width !== bw || pe.height !== bh) { pe.width = bw; pe.height = bh; } try { gp.drawImage(v, 0, 0, bw, bh); g.imageSmoothingEnabled = false; g.drawImage(pe, 0, 0, vw, vh); } catch (_) {} };
+        g.fillStyle = '#05070A'; g.fillRect(0, 0, cv.width, cv.height);
+        const tick = setInterval(pinta, 50), pista = cv.captureStream(20).getVideoTracks()[0];
+        await snd.replaceTrack(pista);
+        ocu = { v, tick, pista, vista: new MediaStream([pista, ...L.local.getAudioTracks()]) }; L.caraOculta = true;
+      } else {
+        if (cam) await snd.replaceTrack(cam); paraOcultar(); L.caraOculta = false;
+      }
+      avisaFiltros(); emite('llamada', estadoLlamada()); return true;
+    } catch (e) { console.warn('cara', e); return false; }
+  }
+  function paraOcultar() { if (ocu) { clearInterval(ocu.tick); try { ocu.pista.stop(); ocu.v.srcObject = null; } catch (_) {} ocu = null; } }
   function micro(si) { if (!L || !L.local) return; L.mic = !!si; for (const t of L.local.getAudioTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
   function camara(si) { if (!L || !L.local) return; L.cam = !!si; for (const t of L.local.getVideoTracks()) t.enabled = !!si; emite('llamada', estadoLlamada()); }
 
@@ -1081,7 +1133,7 @@
   }
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
