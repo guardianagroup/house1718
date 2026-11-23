@@ -615,7 +615,7 @@
     const k = e.sinCapa ? 'cifradaEstandar' : e.capa || !en ? 'cifradaExtremo' : 'cifradaComprobando';
     if (c && c.dataset.t !== k) { c.dataset.t = k; c.textContent = tr(k); }
     $('#video-cifrado').classList.toggle('estandar', !!e.sinCapa); $('#video-cifrado').classList.toggle('comprobando', k === 'cifradaComprobando');
-    d.hidden = !en || k === 'cifradaComprobando'; d.textContent = e.sinCapa ? textoEstandar() : 'ML-KEM-1024 · ECDH P-384 · AES-256-GCM';
+    d.hidden = !en || k === 'cifradaComprobando' || !e.sinCapa; if (e.sinCapa) d.textContent = textoEstandar(); sala.classList.toggle('con-detalle', !d.hidden);
     const cc = $('#chat-cifrado'), kc = e.sinCapa ? 'chatCifradoEstandar' : 'chatCifrado'; if (cc.dataset.t !== kc) { cc.dataset.t = kc; cc.textContent = tr(kc); }
     { const cb = lista.querySelector('.cartel-cifrado b'), kb = e.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo'; if (cb && cb.dataset.t !== kb) { cb.dataset.t = kb; cb.textContent = tr(kb); } }
   }

@@ -1741,3 +1741,11 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .escudo-aviso b{font:600 14px/1.3 var(--ui)}
 .escudo-aviso small{font:400 12.5px/1.45 var(--ui);color:#C9BFAE}
 .escudo-aviso .ea-cerrar{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:#B9AE9B;cursor:pointer}
+/* (23 nov 07:22) sin la línea de algoritmos, lo de arriba sube a su sitio (si se ve la explicación del encriptado estándar, queda como antes) */
+@media (max-width:760px){
+  .sala:not(.con-detalle) .video-tiempo,.sala.video-grande:not(.con-detalle) .video-tiempo{top:calc(env(safe-area-inset-top) + 58px)}
+  .sala:not(.con-detalle) .vigia-estado{top:calc(env(safe-area-inset-top) + 92px)}
+  .sala:not(.con-detalle) .vigia-panel{top:calc(env(safe-area-inset-top) + 132px)}
+  .sala:not(.con-detalle) .filtro-otro{top:calc(env(safe-area-inset-top) + 134px)}
+  .sala:not(.con-detalle) .vigia-aviso{top:calc(env(safe-area-inset-top) + 86px)}
+}
