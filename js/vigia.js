@@ -548,6 +548,7 @@
     if (activo && S && !rafVision && marcas && !compr) rafVision = requestAnimationFrame(pintaVision);
     // en reposo (no analiza nada): «Toca para comprobar» o lo que dio la última comprobación
     const est = activo && S ? estadoChip() : veredicto || 'pausa'; chip.dataset.e = est;
+    { const bc = document.querySelector('#b-comprobar'); if (bc) bc.dataset.e = est; } // (en el ordenador, el vigía está en «Comprobar», abajo)
     chip.querySelector('b').textContent = tr('vgp_vigia'); chip.querySelector('.ve-txt').textContent = tr('vgp_' + est);
     chip.setAttribute('aria-label', tr('vgp_vigia') + ': ' + tr('vgp_' + est));
     if (!panel.hidden) pintaPanel();

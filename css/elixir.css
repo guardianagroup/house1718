@@ -1844,7 +1844,7 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala.grande>.sala-cuerpo{grid-row:1;grid-template-columns:minmax(0,1fr)}
   .sala.grande>.sala-cab{position:absolute;left:0;right:0;top:0;z-index:8;border-bottom:0;background:linear-gradient(180deg,rgba(6,8,12,.84) 0%,rgba(6,8,12,.5) 58%,rgba(6,8,12,0) 100%);transition:opacity .35s ease}
   .sala.grande .chat{display:none!important}
-  .sala.grande .vigia-estado,.sala.grande .video-tiempo{top:96px}
+  .sala.grande .vigia-estado{top:96px}
   .sala.grande .vigia-panel{top:138px}
   .sala.grande .controles,.sala.grande .vigia-estado,.sala.grande .video-tiempo{transition:opacity .35s ease}
   /* a los 3 s sin mover el ratón, todo se esconde y queda la imagen entera */
@@ -1965,4 +1965,52 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 @media (max-width:760px){
   .sala .controles .seg.b-filtro[hidden]{display:none!important}
   .sala .controles .seg#b-volver-pc{bottom:calc(100% + 132px);border-color:rgba(156,195,228,.6);color:#CFE2F3}
+}
+
+/* ---------- la barra de arriba de la llamada, ordenada como en las demás plataformas (dueño, 23 nov 11:15: «noto como un desorden…
+   mira cómo lo hacen en otras plataformas»): a la izquierda, la marca y, a su lado, el estado del encriptado; en el centro exacto, el
+   tiempo con la calidad de la conexión; a la derecha, las acciones («Ver el chat», «Pasar al móvil» y «Terminar», en rojo suave) ---------- */
+@media (min-width:761px){
+  .sala-cab{justify-content:flex-start;gap:0;min-height:84px;box-sizing:border-box}
+  .sala-cab .marca{flex:none}
+  .sala-cab .sala-estado{flex:none;margin:0 0 0 26px;padding:8px 13px 8px 11px;gap:8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(156,195,228,.22);
+    font:500 12.5px/1 var(--ui);letter-spacing:.01em;text-transform:none;color:#CFE2F3;white-space:nowrap}
+  .sala-cab .sala-estado .punto{width:7px;height:7px}
+  .sala-cab .sala-estado .sala-estado-mas{margin-left:0;color:#9FB3C4}
+  .sala-cab .sala-estado.con-palabras:hover,.sala-cab .sala-estado[aria-expanded="true"]{background:rgba(255,255,255,.09);border-color:rgba(156,195,228,.4)}
+  .sala-cab .sala-botones{margin-left:auto;gap:10px}
+  .sala-cab .sala-botones .cristal{height:40px;padding:0 18px;gap:8px;border-radius:12px;font:500 13px/1 var(--ui);letter-spacing:.01em;text-transform:none}
+  .sala-cab .sala-botones #terminar{border-color:rgba(224,122,108,.5);color:#F6C9C1}
+  .sala-cab .sala-botones #terminar:hover,.sala-cab .sala-botones #terminar:focus-visible{border-color:#E07A6C;color:#fff;background:rgba(224,122,108,.22)}
+  /* el tiempo, en el centro exacto de la barra, con la calidad al lado (como Meet o Zoom) */
+  .sala.grande .video-tiempo{top:24px;left:50%;right:auto;bottom:auto;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:10px;height:36px;box-sizing:border-box;
+    padding:0 14px;border-radius:999px;background:rgba(6,8,12,.55);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    font:500 14.5px/1 var(--ui);letter-spacing:.02em;font-feature-settings:'tnum';color:#F4F6F8}
+  .sala.grande .video-tiempo .calidad{display:inline-flex;align-items:flex-end;font-size:0}
+  .sala.grande .video-tiempo .calidad>i{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+  .sala.grande .video-tiempo .calidad>i>i{display:block;width:3px;border-radius:1px;background:rgba(255,255,255,.28)}
+  .sala.grande .video-tiempo .calidad>i>i:nth-child(1){height:4px}.sala.grande .video-tiempo .calidad>i>i:nth-child(2){height:7px}
+  .sala.grande .video-tiempo .calidad>i>i:nth-child(3){height:10px}.sala.grande .video-tiempo .calidad>i>i:nth-child(4){height:12px}
+  .sala.grande .video-tiempo .calidad.excelente>i>i{background:#5CC98A}
+  .sala.grande .video-tiempo .calidad.buena>i>i:nth-child(-n+3){background:#9CC3E4}
+  .sala.grande .video-tiempo .calidad.debil>i>i:nth-child(-n+1){background:#E07A6C}
+  .sala.grande .video-tiempo small{font:500 11px/1 var(--ui);letter-spacing:.06em;text-transform:uppercase;color:#9FB3C4;margin-right:-4px}
+  /* fuera de la llamada en grande, la calidad no ocupa sitio */
+  .sala:not(.grande) .video-tiempo .calidad{display:none}
+}
+
+/* ---------- la comprobación, abajo y más grande (dueño, 23 nov 11:16: «en vez de estar debajo de ELIXIRE, que esté abajo, al lado de
+   micro, en un botón un poco más grande, para que se vea mejor»): en el ordenador, el vigía es el botón «Comprobar», el primero de la
+   fila, en color hielo; su anillo dice cómo salió la última comprobación (verde, ámbar o rojo) ---------- */
+@media (min-width:761px){
+  .vigia-estado,.vigia-panel{display:none!important}
+  .sala .controles #b-comprobar{order:-1;margin-right:12px}
+  .sala .controles #b-comprobar>svg{width:64px!important;height:64px!important;padding:18px;background:#9CC3E4;border-color:#9CC3E4;color:#06080C;stroke-width:2;
+    box-shadow:0 0 0 0 rgba(156,195,228,0),0 12px 30px -10px rgba(156,195,228,.55)}
+  .sala .controles #b-comprobar:hover>svg,.sala .controles #b-comprobar:focus-visible>svg{background:#B7D5EE;border-color:#B7D5EE;color:#06080C}
+  .sala .controles #b-comprobar>span{font-weight:600;color:#F4F6F8}
+  .sala .controles #b-comprobar[data-e="normal"]>svg{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #5CC98A}
+  .sala .controles #b-comprobar[data-e="atencion"]>svg{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #F0C77F}
+  .sala .controles #b-comprobar[data-e="riesgo"]>svg{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #E07A6C}
+  .sala.mini .controles #b-comprobar{display:none!important}
 }
