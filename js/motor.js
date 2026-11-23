@@ -943,7 +943,7 @@
     const vieja = L.local.getVideoTracks()[0]; if (!vieja) return false;
     girando = true;
     const ahora = L.mira || ((vieja.getSettings && vieja.getSettings().facingMode) || 'user'), otra = ahora === 'environment' ? 'user' : 'environment';
-    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: TEL ? 1920 : 1280 }, height: { ideal: TEL ? 1080 : 720 }, frameRate: { ideal: 30, max: 30 } } });
+    const pide = (modo, exacto) => navigator.mediaDevices.getUserMedia({ video: { facingMode: exacto ? { exact: modo } : modo, width: { ideal: TEL ? 1920 : 3840 }, height: { ideal: TEL ? 1080 : 2160 }, frameRate: { ideal: 30, max: 30 } } });
     try {
       vieja.stop();
       let st = null; try { st = await pide(otra, true); } catch (_) { try { st = await pide(otra, false); } catch (_) { st = null; } }
