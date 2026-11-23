@@ -1761,3 +1761,7 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .vp-marcas i::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#F4F6F8;transition:transform .2s}
 .vp-marcas[aria-pressed="true"] i{background:#5CC98A}
 .vp-marcas[aria-pressed="true"] i::after{transform:translateX(14px)}
+/* (23 nov 08:38) en el ordenador, «Invitar a videollamada» y «Tengo un código», uno encima del otro (el texto largo no cabía al lado) */
+#panel-elige .par.ancho.apila{flex-direction:column}
+#panel-elige .par.ancho.apila .seg{flex:0 0 auto;height:54px}
+#panel-elige .par.ancho.apila .seg+.seg::before{left:14%;right:14%;top:0;bottom:auto;width:auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent)}

@@ -91,7 +91,10 @@
   }
   // «Invitar a una llamada» en el móvil (invitaMovil: el menú «Compartir») y en el ordenador (invitaPC: WhatsApp, correo o copiar el
   // enlace). Dueño, 22 nov: «en la versión del PC… pon también invitar a una llamada… como lo tenemos en la versión móvil»
-  const empieza = () => (enMovil() ? invitaMovil() : invitaPC());
+  // (dueño, 23 nov 08:38: «desde el PC… mejor "Invitar a videollamada" o "Tengo un código", como teníamos antes, y sale el código en
+  // pantalla; que sea fácil») en el ordenador, el botón abre las dos opciones; en el móvil sigue igual (la invitación por WhatsApp)
+  const eligePC = () => { if (!M || ocupado || abierta) return; ponError('elige', ''); muestra('elige'); };
+  const empieza = () => (enMovil() ? invitaMovil() : eligePC());
   $('#empezar').addEventListener('click', empieza);
   for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', empieza);
   for (const b of document.querySelectorAll('[data-cerrar-camara]')) b.addEventListener('click', () => { olvidaInvitacion(); cierra(); });
@@ -116,7 +119,7 @@
     if (!M) return;
     if (enMovil()) return invitaMovil();
     $('#panel-crear').classList.remove('invita');
-    invitoLlamada = false; olvidaInvitacion(); window.Elixire.contestaSola = false; window.Elixire.llamaAlEntrar = false;
+    invitoLlamada = false; olvidaInvitacion(); window.Elixire.contestaSola = true; window.Elixire.llamaAlEntrar = false; // «Invitar a videollamada»: al escribir el código, la llamada empieza sola
     const e = $('#codigo'); e.textContent = '···· ···· ···· ····'; delete e.dataset.codigo;
     $('#copiar').disabled = false; ponWhatsApp(null); $('#panel-crear').classList.remove('enviada');
     $('#estado-crear').dataset.t = 'creando'; $('#estado-crear').textContent = tr('creando');
@@ -403,9 +406,10 @@
     if (!/^[0-9A-HJKMNP-TV-Z]{16}$/.test(c)) { ponError('tengo', 'formato'); campo.focus(); return; }
     pantallaCompleta();
     botonEntrar(true);
+    window.Elixire.llamaAlEntrar = true; window.Elixire.contestaSola = false;
     const r = await M.entra(c);
-    if (abierta !== 'tengo') return;
-    if (!r.ok) { botonEntrar(false); ponError('tengo', r.por); return; }
+    if (abierta !== 'tengo') { window.Elixire.llamaAlEntrar = false; return; }
+    if (!r.ok) { window.Elixire.llamaAlEntrar = false; botonEntrar(false); ponError('tengo', r.por); return; }
     // dentro: en cuanto las claves estén acordadas, la sala (sala.js); si la otra persona ya no está, se dice
     setTimeout(() => { if (abierta === 'tengo' && M.activa && !M.conectada) { botonEntrar(false); ponError('tengo', 'sin-rele'); } }, 30000);
   });
