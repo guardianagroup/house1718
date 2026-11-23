@@ -33,7 +33,7 @@
       enabled: true,
       detector: { modelPath: 'blazeface.json', rotation: false, maxDetected: 1, minConfidence: 0.3, skipFrames: 10, skipTime: 1200, return: false },
       mesh: { enabled: true, modelPath: 'facemesh.json' }, iris: { enabled: true, modelPath: 'iris.json' }, attention: { enabled: false },
-      description: { enabled: false, modelPath: 'faceres.json', skipFrames: 0, skipTime: 0, minConfidence: 0.1 }, emotion: { enabled: false },
+      description: { enabled: false, modelPath: 'faceres.json', skipFrames: 6, skipTime: 700, minConfidence: 0.1 }, emotion: { enabled: false },
       antispoof: { enabled: true, modelPath: 'antispoof.json', skipFrames: 12, skipTime: 1500 },
       liveness: { enabled: true, modelPath: 'liveness.json', skipFrames: 12, skipTime: 1500 },
     },
@@ -154,6 +154,27 @@
   const c48 = document.createElement('canvas'); c48.width = 48; c48.height = 48; const g48 = c48.getContext('2d', { willReadFrequently: true });
   for (const g of [g64, g24, g6, g16, g48]) { g.imageSmoothingEnabled = true; try { g.imageSmoothingQuality = 'high'; } catch (_) {} }
   // un trozo de la imagen, en grises, a n×n (null si se sale casi entero)
+  const cF = document.createElement('canvas'), gF = cF.getContext('2d', { willReadFrequently: true }); let F = null;
+  function leeFrame(t) {
+    const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) { F = null; return null; }
+    const w = 256, h = Math.max(2, Math.round(256 * vh / vw)); if (cF.width !== w || cF.height !== h) { cF.width = w; cF.height = h; }
+    try { gF.drawImage(video, 0, 0, w, h); F = { d: gF.getImageData(0, 0, w, h).data, w, h, sx: w / vw, sy: h / vh, t }; } catch (_) { F = null; }
+    return F;
+  }
+  // la media de color de un rectángulo de la imagen (en píxeles del vídeo), sacada de la copia pequeña
+  function mediaF(x, y, w, h) {
+    const x0 = Math.max(0, Math.floor(x * F.sx)), y0 = Math.max(0, Math.floor(y * F.sy)), x1 = Math.min(F.w, Math.max(x0 + 1, Math.ceil((x + w) * F.sx))), y1 = Math.min(F.h, Math.max(y0 + 1, Math.ceil((y + h) * F.sy)));
+    if (x1 <= x0 || y1 <= y0) return null; let R = 0, G = 0, B = 0, n = 0;
+    for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) { const i = (yy * F.w + xx) * 4; R += F.d[i]; G += F.d[i + 1]; B += F.d[i + 2]; n++; }
+    return [R / n, G / n, B / n];
+  }
+  // un trozo en grises a n×n, con medias por celda, de la copia pequeña
+  function recorteF(n, x, y, w, h) {
+    const vw = video.videoWidth, vh = video.videoHeight, xa = Math.max(0, x), ya = Math.max(0, y), xb = Math.min(vw, x + w), yb = Math.min(vh, y + h);
+    if (!F || xb - xa < 6 || yb - ya < 6) return null; const o = new Uint8Array(n * n), cw = (xb - xa) / n, ch = (yb - ya) / n;
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const c = mediaF(xa + i * cw, ya + j * ch, cw, ch); o[j * n + i] = c ? (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) | 0 : 0; }
+    return o;
+  }
   function recorte(g, n, x, y, w, h) {
     const vw = video.videoWidth, vh = video.videoHeight, x0 = Math.max(0, Math.round(x)), y0 = Math.max(0, Math.round(y)), x1 = Math.min(vw, Math.round(x + w)), y1 = Math.min(vh, Math.round(y + h));
     if (x1 - x0 < 6 || y1 - y0 < 6) return null;
@@ -171,13 +192,15 @@
   function luma(d) { const o = new Uint8Array(d.length / 4); for (let i = 0, j = 0; i < d.length; i += 4, j++) o[j] = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; return o; }
   function firma16(l64) { const o = new Uint8Array(192); for (let y = 0; y < 12; y++) for (let x = 0; x < 16; x++) { let s = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) s += l64[(y * 4 + j) * 64 + x * 4 + i]; o[y * 16 + x] = s >> 4; } return o; }
   function colorZona(cx, cy, r) {
+    if (F) return mediaF(cx - r, cy - r, 2 * r, 2 * r);
     const vw = video.videoWidth, vh = video.videoHeight, x = Math.max(0, cx - r), y = Math.max(0, cy - r), w = Math.min(vw - x, 2 * r), h = Math.min(vh - y, 2 * r);
     if (w < 4 || h < 4) return null; g6.drawImage(video, x, y, w, h, 0, 0, 6, 6); const d = g6.getImageData(0, 0, 6, 6).data;
     let R = 0, G = 0, B = 0; for (let i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; } const n = d.length / 4; return [R / n, G / n, B / n];
   }
   function muestra(t) {
     if (!S || !video.videoWidth || video.readyState < 2) return;
-    let l64; try { g64.drawImage(video, 0, 0, 64, 48); l64 = luma(g64.getImageData(0, 0, 64, 48).data); } catch (_) { return; }
+    if (!leeFrame(t)) return; const l64 = new Uint8Array(64 * 48), bx = F.w / 64, by = F.h / 48;
+    for (let j = 0; j < 48; j++) for (let i = 0; i < 64; i++) { const c = mediaF(i * bx / F.sx, j * by / F.sy, bx / F.sx, by / F.sy); l64[j * 64 + i] = c ? (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) | 0 : 0; }
     const brillo = media(l64); S.brillo = brillo;
     if (brillo < 12) { S.prevFirma = null; S.prevCaraF = null; S.repes.length = 0; return; } // cámara apagada o tapada: no se mira
     const f = firma16(l64), u = S.ultima, cara = u && t - u.t < 8000 ? u : null;
@@ -250,7 +273,7 @@
     S.tFrame = t; procesa(r, performance.now());
     if (compr && r && r.face && r.face[0] && r.face[0].embedding && r.face[0].embedding.length && S.ultima) { S.ident.push({ t, e: Array.from(r.face[0].embedding), g: S.ultima.giro || 0 }); if (S.ident.length > 120) S.ident.shift(); }
     if (compr && compr.manoReto && humano.config.hand.enabled) { S.manos.push({ t, cajas: ((r && r.hand) || []).filter((h) => (h.score || 0) >= 0.45 && h.box).map((h) => h.box) }); corta(S.manos, t, 15000); }
-    tDet = setTimeout(detecta, compr ? Math.max(60, S.dtMedio * 0.6) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
+    tDet = setTimeout(detecta, compr ? Math.max(90, S.dtMedio * 0.9) : Math.max(140, S.dtMedio * 1.6)); // como mucho, el 40 % del tiempo (salvo al comprobar): la llamada va primero
   }
   function procesa(r, t) {
     const f = r && r.face && r.face[0];
@@ -263,7 +286,7 @@
     const ancho = Math.abs(m[454][0] - m[234][0]) || 1, giro = (m[1][0] - (m[234][0] + m[454][0]) / 2) / ancho;
     S.pitches = S.pitches || []; S.pitches.push(pitch); if (S.pitches.length > 40) S.pitches.shift();
     const pm = S.pitches.length >= 5 ? cuantil(S.pitches, 0.5) : 0, frontal = Math.abs(giro) < 0.25 && Math.abs(pitch - pm) < (S.pitches.length >= 5 ? 0.3 : 0.6);
-    const grande = io >= 26, luz = S.brilloCara == null || S.brilloCara > 45;
+    const grande = io >= 26, luz = S.brilloCara == null || S.brilloCara > 30;
     S.ultima = { t, caja, centro, io, yaw, pitch, piel, frontal, giro, malla: m };
     // el temblor en 3D entre dos análisis seguidos: lo que queda tras quitar el giro, el movimiento y la escala (una cara pegada
     // por un programa tiembla y se deforma al ponerse de perfil; una real, no)
@@ -542,13 +565,15 @@
     if (vertical) { for (let y = 0; y < H; y += paso) { g.moveTo(Math.max(0, pos - ancho), y); g.lineTo(pos, y); } for (let x = pos - (pos % paso); x > pos - ancho; x -= paso) { g.moveTo(x, 0); g.lineTo(x, H); } }
     else { for (let x = 0; x < W; x += paso) { g.moveTo(x, Math.max(0, pos - ancho)); g.lineTo(x, pos); } for (let y = pos - (pos % paso); y > pos - ancho; y -= paso) { g.moveTo(0, y); g.lineTo(W, y); } }
     g.stroke();
-    g.shadowColor = 'rgba(156,195,228,.95)'; g.shadowBlur = 22 * d; g.strokeStyle = 'rgba(232,245,255,.95)'; g.lineWidth = 2 * d;
+    g.strokeStyle = 'rgba(156,195,228,.28)'; g.lineWidth = 9 * d; g.beginPath(); if (vertical) { g.moveTo(a, 0); g.lineTo(a, H); } else { g.moveTo(0, a); g.lineTo(W, a); } g.stroke();
+    g.strokeStyle = 'rgba(232,245,255,.95)'; g.lineWidth = 2 * d;
     g.beginPath(); if (vertical) { g.moveTo(a, 0); g.lineTo(a, H); } else { g.moveTo(0, a); g.lineTo(W, a); } g.stroke();
     g.restore();
   }
   function pintaEscaner() {
     if (!compr) return;
-    const rc = caja.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
+    const ahora = performance.now(); if (compr.tPinta && ahora - compr.tPinta < 30) { compr.raf = requestAnimationFrame(pintaEscaner); return; } compr.tPinta = ahora;
+    const rc = caja.getBoundingClientRect(), d = Math.min(1.5, devicePixelRatio || 1), W = Math.round(rc.width * d), H = Math.round(rc.height * d);
     if (lienzo.width !== W || lienzo.height !== H) { lienzo.width = W; lienzo.height = H; }
     const g = lienzo.getContext('2d'); g.clearRect(0, 0, W, H);
     const t = (performance.now() - compr.t0) / 1000, fin = compr.fase === 'fin', tf = fin ? (performance.now() - compr.tFin) / 1000 : 0;
@@ -595,7 +620,7 @@
           if (tri) {
             g.lineWidth = 0.6 * d; g.strokeStyle = 'rgba(207,230,250,' + 0.16 * om + ')'; g.beginPath(); for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } g.stroke();
             // donde pasa la banda, la malla se enciende (como un escáner 3D que va «leyendo» la cara)
-            if (!fin) { g.save(); g.lineWidth = 0.9 * d; g.shadowColor = 'rgba(240,199,127,.7)'; g.shadowBlur = 6 * d; g.strokeStyle = 'rgba(240,199,127,' + (0.5 * om).toFixed(3) + ')'; g.beginPath();
+            if (!fin) { g.save(); g.lineWidth = 0.9 * d; g.strokeStyle = 'rgba(240,199,127,' + (0.55 * om).toFixed(3) + ')'; g.beginPath();
               for (let i = 0; i < tri.length; i += 3) { const a = pts[tri[i]], b = pts[tri[i + 1]], c = pts[tri[i + 2]]; if (Math.abs((a[1] + b[1] + c[1]) / 3 - banda) < ancho) { g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineTo(c[0], c[1]); g.closePath(); } }
               g.stroke(); g.restore(); }
           }
@@ -614,6 +639,10 @@
   async function comprueba() {
     if (compr) return;
     const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando') return;
+    // si la otra persona te está comprobando a ti, la tuya espera a que termine (y empieza sola)
+    if (teComprueban > performance.now()) { enEspera = true; muestraEspera(true); return; }
+    enEspera = false; muestraEspera(false);
+    try { M.gesto('inicio', 0, 0); } catch (_) {}
     compr = { t0: performance.now(), fase: 'prepara' };
     res.hidden = true; res.classList.remove('visible');
     cabecera.querySelector('.vg-a-texto').textContent = tr('vc_analizando'); cabecera.querySelector('.vg-a-texto').dataset.k = 'vc_analizando'; cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible'));
@@ -634,7 +663,7 @@
       // cuánto tiempo se le ha visto la cara de frente (si deja de mirar, no se le juzga: se espera y se le pide que mire)
       const u = S && S.ultima, vista = u && u.frontal && performance.now() - u.t < 2500;
       if (vista) { compr.frontalMs += 250; compr.sinMirar = 0; } else if (!compr.reto && !compr.manoReto) compr.sinMirar += 250;
-      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzTxt' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
+      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzTxt' : S && S.brilloCara != null && S.brilloCara < 32 ? 'vc_luzBaja' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
       const el = performance.now() - compr.tA, listo = !compr.pruebas && compr.frontalMs >= 2000 && S && S.tCara && performance.now() - S.tCara < 2000 && (datosListos() || el >= 15000 || S.vida.length >= 3 || Object.keys(S.indicios).length > 0), acaba = el >= DUR_COMPR && (listo || el >= 38000); // (con los retos, en el peor caso, unos 31 s)
       cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / 24000)).toFixed(3));
       if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
@@ -753,7 +782,7 @@
   function manoMuestra(t) {
     const yo = compr, Z = yo.manoZ; if (!Z) return;
     const u = S.ultima, movida = u && t - u.t < 600 ? d2(u.centro, Z.centro) / Z.ancho : null;
-    yo.manoM.push({ t, c: recorte(g16, 16, ...Z.c), l: recorte(g16, 16, ...Z.l), r: recorte(g16, 16, ...Z.r), movida });
+    yo.manoM.push({ t, c: recorteF(16, ...Z.c), l: recorteF(16, ...Z.l), r: recorteF(16, ...Z.r), movida });
   }
   function manoBase(yo) { const a = yo.manoM.filter((x) => x.t < yo.manoT0); return a.length >= 3 ? { antes: a, base: a[a.length - 1] } : null; }
   // ya pasó: algo cambió de verdad y la cara ha vuelto a estar como antes
@@ -854,7 +883,7 @@
     const pct = poco ? null : porcentaje(), I = S ? S.indicios : {}, k = Object.keys(I).filter((x) => FUERZA[x] >= 2).sort((a, b) => FUERZA[b] - FUERZA[a]);
     const nivel = pct == null ? 'nd' : pct >= 85 ? 'real' : pct >= 60 ? 'bien' : pct >= 30 ? 'raro' : 'falso';
     if (compr.fase === 'fin' && compr.pct === pct) return;
-    compr.fase = 'fin'; compr.poco = poco; if (humano) humano.config.face.description.enabled = false; compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
+    compr.fase = 'fin'; compr.poco = poco; if (humano) humano.config.face.description.enabled = false; avisaFin(); compr.pct = pct; compr.tFin = compr.tFin || performance.now(); compr.r = nivel === 'falso' || nivel === 'raro' ? 'riesgo' : nivel;
     compr.color = { real: '143,224,174', bien: '207,230,250', raro: '240,199,127', falso: '242,160,148', nd: '207,230,250' }[nivel];
     cabecera.classList.remove('visible'); setTimeout(() => { if (compr && compr.fase === 'fin') cabecera.hidden = true; }, 400);
     res.dataset.n = nivel; cuentaPct(pct);
@@ -877,15 +906,35 @@
     const paso = (t) => { if (compr !== yo) return; const u = Math.max(0, Math.min(1, (t - t0) / dur)), e = 1 - Math.pow(1 - u, 3.2), v = Math.round(desde + (pct - desde) * e); el.textContent = v + '%'; yo.pctVisto = v; if (u < 1) yo.rafPct = requestAnimationFrame(paso); };
     el.textContent = desde + '%'; yo.rafPct = requestAnimationFrame(paso);
   }
+  let teComprueban = 0, enEspera = false;
+  function muestraEspera(si) {
+    cabecera.classList.toggle('vg-espera', si);
+    if (si) { const tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr('vc_espera'); tx.dataset.k = 'vc_espera'; cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', '0'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible')); }
+    else if (!compr) { cabecera.classList.remove('visible'); cabecera.hidden = true; }
+  }
+  // el final de una comprobación entera se avisa con «fin» y n = 9 (los «fin» de cada prueba van con n = 0)
+  function avisaFin() { if (compr && !compr.finAvisado) { compr.finAvisado = true; try { M.gesto('fin', 9, 0); } catch (_) {} } }
+  M.on('gesto', (g) => {
+    if (!g) return;
+    if (g.q === 'inicio') {
+      teComprueban = performance.now() + 40000;
+      // las dos a la vez: sigue la de quien llamó; la otra se aparta y espera
+      if (compr && compr.fase !== 'fin') { const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.rol !== 'llama') { cierraComprobacion(); enEspera = true; muestraEspera(true); } }
+    } else if (g.q === 'fin' && (g.n | 0) === 9) {
+      teComprueban = 0;
+      if (enEspera) { enEspera = false; setTimeout(() => { if (!compr) comprueba(); }, 1200); }
+    }
+  });
   function cierraComprobacion() {
     // lo que ya ha visto en pantalla no se repite enseguida como aviso
     if (compr && compr.r === 'riesgo' && S) S.cerradoPor = { nivel: S.mostrado || 'riesgo', motivos: (S.motivos || []).join(), t: performance.now() };
+    avisaFin();
     if (compr) { clearTimeout(compr.tp); cancelAnimationFrame(compr.raf); cancelAnimationFrame(compr.rafPct); if (compr.luz || compr.reto || compr.manoReto) { try { M.gesto('fin', 0, 0); } catch (_) {} } }
     { const sl = video.closest('.sala'); if (sl) sl.classList.remove('comprobando'); }
     if (humano) humano.config.face.description.enabled = false;
     compr = null; lienzo.hidden = true; cabecera.classList.remove('visible'); cabecera.hidden = true; res.classList.remove('visible'); res.hidden = true;
   }
-  const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => (compr ? cierraComprobacion() : comprueba()));
+  const bComprobar = $('#b-comprobar'); if (bComprobar) bComprobar.addEventListener('click', () => { if (enEspera) { enEspera = false; muestraEspera(false); return; } if (compr) cierraComprobacion(); else comprueba(); });
 
   // ---------- en marcha durante toda la llamada ----------
   let tEval = 0, tFuente = 0, tArranca = 0;

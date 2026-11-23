@@ -1596,3 +1596,8 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .vg-r-pruebas li.vg-p-no::before{content:'\2715'}
 .vg-r-pruebas li.vg-p-nd{color:#9FB2C4}
 .vg-r-pruebas li.vg-p-nd::before{content:'\00B7';font-size:18px}
+
+/* (22 nov 20:55) en espera: te está comprobando la otra persona; la cabecera sin barra que avance, con el punto en ámbar latiendo */
+.vg-analiza.vg-espera .vg-a-barra{opacity:.25}
+.vg-analiza.vg-espera .vg-a-punto{background:#F0C77F;box-shadow:0 0 10px rgba(240,199,127,.8)}
+.vg-analiza.vg-espera .vg-a-texto{letter-spacing:.06em;text-transform:none;font-size:13px}
