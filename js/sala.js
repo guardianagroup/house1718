@@ -81,7 +81,31 @@
 
   // ---------- mensajes ----------
   function quitaVacio() { const v = lista.querySelector('.vacio'); if (v) v.remove(); }
-  function abajo() { lista.scrollTop = lista.scrollHeight; }
+  // (como WhatsApp) lo nuevo baja la conversación solo si ya estabas abajo: si estás leyendo más arriba no salta, y aparece un botón
+  // para bajar con cuántos mensajes nuevos hay
+  let pegado = true, nuevos = 0, bajarLi = null;
+  function pintaBajar() {
+    const ver = !pegado && lista.scrollHeight > lista.clientHeight + 40;
+    if (!ver) { if (bajarLi && bajarLi.parentNode) bajarLi.remove(); nuevos = 0; return; }
+    if (!bajarLi) {
+      bajarLi = document.createElement('li'); bajarLi.className = 'bajar';
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.tAria = 'irAbajo'; b.setAttribute('aria-label', tr('irAbajo'));
+      b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg><span class="n"></span>';
+      b.addEventListener('click', () => { lista.scrollTo({ top: lista.scrollHeight, behavior: 'smooth' }); });
+      bajarLi.append(b);
+    }
+    if (lista.lastElementChild !== bajarLi) lista.append(bajarLi);
+    bajarLi.querySelector('.n').textContent = nuevos ? (nuevos > 99 ? '99+' : String(nuevos)) : '';
+  }
+  lista.addEventListener('scroll', () => { const p = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 120; if (p !== pegado) { pegado = p; pintaBajar(); } }, { passive: true });
+  function abajo(fuerza, nuevo) {
+    if (fuerza || pegado) { lista.scrollTop = lista.scrollHeight; pegado = true; nuevos = 0; } else if (nuevo) nuevos++;
+    pintaBajar();
+  }
+  // el nombre de cada persona del grupo, siempre del mismo color (como en WhatsApp)
+  const COLORES = ['#9CC3E4', '#F0C77F', '#5CC98A', '#C3A6F2', '#7ED3D6', '#F2A7C3'];
+  const colorDe = (et) => { const n = parseInt((/(\d+)\s*$/.exec(et || '') || [])[1] || '0', 10); return COLORES[(Math.max(1, n) - 1) % COLORES.length]; };
+  function nombreDe(texto) { const d = document.createElement('b'); d.className = 'de'; d.textContent = texto; d.style.color = colorDe(texto); return d; }
   // una ubicación enviada desde la llamada: «📍 …» y el enlace del mapa (solo este formato exacto se convierte en enlace)
   const UBICACION = /^\u{1F4CD} ([^\n]{0,40})\nhttps:\/\/www\.google\.com\/maps\?q=(-?\d{1,2}\.\d{1,7}),(-?\d{1,3}\.\d{1,7})$/u;
   function contenido(texto) {
@@ -95,10 +119,10 @@
   function pintaMensaje(m) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg ' + m.dir + (m.dir === 'mia' ? ' enviado' : ''); li.dataset.id = m.id;
-    if (m.dir !== 'mia') { li.dataset.de = m.quien || 'p'; if (m.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = m.de; li.append(d); } }
+    if (m.dir !== 'mia') { li.dataset.de = m.quien || 'p'; if (m.de) li.append(nombreDe(m.de)); }
     li.append(contenido(m.texto)); toastMensaje(m);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
-    lista.append(li); abajo();
+    lista.append(li); abajo(m.dir === 'mia', m.dir !== 'mia');
   }
   function cartelCifrado() {
     if (lista.querySelector('.cartel-cifrado')) return; quitaVacio();
@@ -237,24 +261,36 @@
   function abreVisor(url, nombre, info) {
     info = info || {}; const img = $('#visor-img'); img.src = url; img.style.transform = ''; visor.style.removeProperty('--fondo');
     const t = $('#visor-t'); t.dataset.t = info.mia ? 'tu' : info.de ? '' : 'fotoRecibida'; t.textContent = info.mia ? tr('tu') : info.de || tr('fotoRecibida');
-    $('#visor-hora').textContent = info.t ? hora(info.t) : '';
+    // (como WhatsApp) las fotos de la conversación, en orden: se pasa a la anterior o a la siguiente deslizando o con las flechas
+    const gal = info.desde ? galeria() : [], gi = gal.indexOf(info.desde);
+    $('#visor-hora').textContent = (info.t ? hora(info.t) : '') + (gi >= 0 && gal.length > 1 ? '  ·  ' + (gi + 1) + '/' + gal.length : '');
+    pasoAnt.hidden = !(gi > 0); pasoSig.hidden = !(gi >= 0 && gi < gal.length - 1);
     const g = $('#visor-guardar'); g.href = url; g.download = nombre || 'foto.jpg';
-    visorAct = { url, nombre: nombre || 'foto.jpg', file: null };
+    visorAct = { url, nombre: nombre || 'foto.jpg', file: null, desde: info.desde || null };
     const v = visorAct; fetch(url).then((r) => r.blob()).then((bl) => { if (visorAct === v) v.file = new File([bl], v.nombre, { type: bl.type || 'image/jpeg' }); }).catch(() => {});
     $('#visor-compartir').hidden = !(IOS && navigator.share); g.hidden = !$('#visor-compartir').hidden;
     visor.classList.remove('limpio'); visor.hidden = false;
   }
   function cierraVisor() { visor.hidden = true; visorAct = null; $('#visor-img').removeAttribute('src'); }
+  function galeria() { return [...lista.querySelectorAll('li.msg.foto .fw')].filter((c) => { const i = c.querySelector('img'); return i && i.getAttribute('src') && !i.classList.contains('borrosa'); }); }
+  function pasaFoto(d) {
+    const v = visorAct; if (!v || !v.desde) return false;
+    const g = galeria(), i = g.indexOf(v.desde), j = i + d; if (i < 0 || j < 0 || j >= g.length) return false;
+    const c = g[j], im = c.querySelector('img'); abreVisor(im.currentSrc || im.src, (c._info || {}).nombre, Object.assign({}, c._info || {}, { desde: c }));
+    return true;
+  }
+  const botonPaso = (cls, d, k) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'visor-paso ' + cls; b.hidden = true; b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>'; b.addEventListener('click', (e) => { e.stopPropagation(); pasaFoto(k); }); visor.append(b); return b; };
+  const pasoAnt = botonPaso('ant', 'M14.5 6l-6 6 6 6', -1), pasoSig = botonPaso('sig', 'M9.5 6l6 6-6 6', 1);
   $('#visor-cerrar').addEventListener('click', cierraVisor);
   $('#visor-compartir').addEventListener('click', () => {
     const v = visorAct; if (!v) return;
     const f = v.file; if (f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f] }).catch(() => {}); return; }
     $('#visor-guardar').click();
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !visor.hidden) cierraVisor(); });
+  document.addEventListener('keydown', (e) => { if (visor.hidden) return; if (e.key === 'Escape') cierraVisor(); else if (e.key === 'ArrowLeft') pasaFoto(-1); else if (e.key === 'ArrowRight') pasaFoto(1); });
   {
     const cuerpo = visor.querySelector('.visor-cuerpo'), img = $('#visor-img'), pts = new Map();
-    let z = 1, tx = 0, ty = 0, ini = null, dy = 0, ultToque = 0, toqueT = 0;
+    let z = 1, tx = 0, ty = 0, ini = null, dy = 0, dx = 0, ultToque = 0, toqueT = 0;
     const lim = (v, a, b) => Math.max(a, Math.min(b, v));
     const aplica = (anim) => { img.style.transition = anim ? 'transform .2s ease' : 'none'; img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')'; };
     const vuelve = () => { z = 1; tx = 0; ty = 0; aplica(true); };
@@ -272,13 +308,15 @@
       }
       const ddx = e.clientX - ini.x, ddy = e.clientY - ini.y; if (Math.hypot(ddx, ddy) > 6) ini.mov = true;
       if (z > 1.02) { tx = ini.tx + ddx; ty = ini.ty + ddy; aplica(false); }
-      else if (ini.mov && Math.abs(ddy) > Math.abs(ddx)) { dy = ddy; img.style.transition = 'none'; img.style.transform = 'translateY(' + dy + 'px) scale(' + (1 - Math.min(0.18, Math.abs(dy) / 1800)) + ')'; visor.style.setProperty('--fondo', String(Math.max(0.25, 1 - Math.abs(dy) / 420))); }
+      else if (ini.mov && !dx && Math.abs(ddy) > Math.abs(ddx)) { dy = ddy; img.style.transition = 'none'; img.style.transform = 'translateY(' + dy + 'px) scale(' + (1 - Math.min(0.18, Math.abs(dy) / 1800)) + ')'; visor.style.setProperty('--fondo', String(Math.max(0.25, 1 - Math.abs(dy) / 420))); }
+      else if (ini.mov && !dy) { dx = ddx; img.style.transition = 'none'; img.style.transform = 'translateX(' + dx + 'px)'; }
     });
     const suelta = (e) => {
       if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId);
       if (pts.size) { const [q] = [...pts.values()]; ini = { x: q[0], y: q[1], tx, ty, mov: true }; return; }
       const i = ini; ini = null; if (!i) return;
       if (z <= 1.02 && Math.abs(dy) > 110) { dy = 0; cierraVisor(); return; }
+      if (dx) { const d0 = dx; dx = 0; if (Math.abs(d0) > 70 && pasaFoto(d0 < 0 ? 1 : -1)) return; vuelve(); return; }
       if (dy) { dy = 0; visor.style.removeProperty('--fondo'); vuelve(); return; }
       if (!i.mov) {
         const ahora = performance.now();
@@ -291,16 +329,32 @@
     cuerpo.addEventListener('pointerup', suelta); cuerpo.addEventListener('pointercancel', suelta);
     cuerpo.addEventListener('wheel', (e) => { e.preventDefault(); z = lim(z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), 1, 5); if (z <= 1.02) { z = 1; tx = 0; ty = 0; } aplica(true); }, { passive: false });
   }
+  // la forma de la foto y una miniatura de 28 px (menos de 1 KB): viaja en el anuncio y la otra persona la ve al instante, borrosa
+  function miniaturaDe(fuente, w, h) {
+    try {
+      const k = 28 / Math.max(w, h), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      c.getContext('2d').drawImage(fuente, 0, 0, c.width, c.height);
+      const d = c.toDataURL('image/jpeg', 0.5); return d.length <= 4000 ? d : undefined;
+    } catch (_) { return undefined; }
+  }
+  const mapaBits = async (f) => { try { return await createImageBitmap(f, { imageOrientation: 'from-image' }); } catch (_) { return createImageBitmap(f); } };
+  async function vistaFoto(f) {
+    if (f.__vista) return f.__vista;
+    if (typeof createImageBitmap !== 'function') return null;
+    try { const bmp = await mapaBits(f), v = { w: bmp.width, h: bmp.height, d: miniaturaDe(bmp, bmp.width, bmp.height) }; if (bmp.close) bmp.close(); return v; } catch (_) { return null; }
+  }
   async function comprimeFoto(f) {
     if (!/^image\/(jpe?g|png|webp|heic|heif)$/i.test(f.type || '') || f.size < 700 * 1024 || typeof createImageBitmap !== 'function') return f;
     try {
-      let bmp; try { bmp = await createImageBitmap(f, { imageOrientation: 'from-image' }); } catch (_) { bmp = await createImageBitmap(f); }
+      const bmp = await mapaBits(f);
       const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const vista = { w: c.width, h: c.height, d: miniaturaDe(bmp, bmp.width, bmp.height) }; if (bmp.close) bmp.close();
       const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.86));
-      if (!blob || blob.size >= f.size) return f;
-      return new File([blob], String(f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+      if (!blob || blob.size >= f.size) { f.__vista = vista; return f; }
+      const out = new File([blob], String(f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }); out.__vista = vista;
+      return out;
     } catch (_) { return f; }
   }
   const menuEnviar = $('#menu-enviar');
@@ -331,7 +385,7 @@
   function cierraPrevia(enviar) {
     const p = pendientes; pendientes = null; previa.hidden = true; $('#previa-cuerpo').textContent = '';
     if (!p) return;
-    if (enviar) p.files.forEach((f, i) => enviaArchivos([f], p.urls[i] || undefined));
+    if (enviar) enviaArchivos(p.files, p.urls);
     else for (const u of p.urls) if (u) URL.revokeObjectURL(u);
   }
   $('#previa-enviar').addEventListener('click', () => cierraPrevia(true));
@@ -386,23 +440,42 @@
     quitaVacio();
     const li = document.createElement('li'); li.dataset.id = a.id;
     if (a.dir !== 'mia') li.dataset.de = a.quien || 'p';
-    const de = () => { if (a.dir !== 'mia' && a.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = a.de; li.prepend(d); } };
-    if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); de(); lista.append(li); abajo(); return li; }
+    const de = () => { if (a.dir !== 'mia' && a.de) li.prepend(nombreDe(a.de)); };
+    if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); de(); lista.append(li); abajo(a.dir === 'mia', a.dir !== 'mia'); return li; }
     // (dueño, 23 nov 13:42: «cuando recibo una foto está muy difícil… ponlo como WhatsApp exacto»): la foto sola en su burbuja,
     // con la hora y los ✓ encima; mientras sale o llega, un círculo con el avance; un toque la abre a pantalla completa
     if (esFoto(a.mime)) {
-      const t0 = Date.now();
+      const t0 = Date.now(), v = a.vista || {};
       li.className = 'msg archivo foto ' + a.dir + (a.dir === 'mia' ? ' enviado' : '');
       const caja = document.createElement('button'); caja.type = 'button'; caja.className = 'fw'; caja.setAttribute('aria-label', tr(a.dir === 'mia' ? 'fotoEnviada' : 'fotoRecibida'));
+      caja._info = { nombre: a.nombre, mia: a.dir === 'mia', de: a.dir === 'mia' ? '' : a.de || '', t: t0 };
+      // la forma exacta desde el primer momento (sin saltos al llegar) y, mientras llega, la miniatura borrosa
+      if (v.w && v.h) caja.style.aspectRatio = v.w + ' / ' + v.h;
       const im = document.createElement('img'); im.alt = ''; im.decoding = 'async';
-      im.addEventListener('load', () => { if (im.naturalWidth && im.naturalHeight) caja.style.aspectRatio = im.naturalWidth + ' / ' + im.naturalHeight; li.classList.add('con-img'); abajo(); });
-      const url = previas.get(a.id); if (url) im.src = url;
+      im.addEventListener('load', () => { if (!v.w && im.naturalWidth && im.naturalHeight) caja.style.aspectRatio = im.naturalWidth + ' / ' + im.naturalHeight; li.classList.add('con-img'); abajo(); });
+      const url = previas.get(a.id); if (url) im.src = url; else if (v.d) { im.src = v.d; im.classList.add('borrosa'); }
       const an = document.createElement('span'); an.className = 'fw-anillo'; an.innerHTML = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5"/><circle class="fw-avance" cx="18" cy="18" r="15.5"/></svg>';
       const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(t0);
       caja.append(im, an, h);
-      caja.addEventListener('click', () => { const u = im.currentSrc || im.src; if (u) abreVisor(u, a.nombre, { mia: a.dir === 'mia', de: a.dir === 'mia' ? '' : a.de || '', t: t0 }); });
+      caja.addEventListener('click', () => { if (im.classList.contains('borrosa')) return; const u = im.currentSrc || im.src; if (u) abreVisor(u, a.nombre, Object.assign({ desde: caja }, caja._info)); });
       const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i'));
-      li.append(caja, b); de(); lista.append(li); abajo();
+      li.append(caja, b);
+      // (como WhatsApp) varias fotos enviadas a la vez, juntas en un álbum: dos, una al lado de otra; tres, una arriba y dos debajo;
+      // cuatro o más, en cuadro, y en la cuarta «+N»
+      if (v.a && v.n > 1) {
+        let al = lista.querySelector('li.album[data-alb="' + CSS.escape(v.a) + '"]');
+        if (!al) {
+          al = document.createElement('li'); al.className = 'msg album ' + a.dir + (a.dir === 'mia' ? ' enviado' : ''); al.dataset.alb = v.a;
+          if (a.dir !== 'mia' && a.de) al.append(nombreDe(a.de));
+          const ul = document.createElement('ul'); ul.className = 'alb-rejilla'; al.append(ul); lista.append(al);
+        }
+        li.dataset.i = String(v.i | 0);
+        const ul = al.querySelector('.alb-rejilla'), sig = [...ul.children].find((x) => +x.dataset.i > (v.i | 0));
+        ul.insertBefore(li, sig || null);
+        pintaAlbum(al); marcaLeidos(); abajo(a.dir === 'mia', a.dir !== 'mia');
+        return li;
+      }
+      de(); lista.append(li); abajo(a.dir === 'mia', a.dir !== 'mia');
       return li;
     }
     li.className = 'msg archivo ' + a.dir + (esFoto(a.mime) ? ' foto' : '');
@@ -410,18 +483,29 @@
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
     const t = document.createElement('span'); t.className = 'tam'; t.textContent = tam(a.tam);
     const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i'));
-    li.append(n, t, b); de(); lista.append(li); abajo();
+    li.append(n, t, b); de(); lista.append(li); abajo(a.dir === 'mia', a.dir !== 'mia');
     return li;
   }
+  function pintaAlbum(al) {
+    const fs = [...al.querySelectorAll('.alb-rejilla>li')], n = fs.length;
+    al.dataset.n = String(Math.min(n, 4));
+    fs.forEach((x, i) => { x.classList.toggle('extra', i > 3); x.classList.toggle('ultima', i === Math.min(n, 4) - 1); if (i === 3 && n > 4) x.dataset.mas = '+' + (n - 4); else delete x.dataset.mas; });
+  }
   const fila = (id) => lista.querySelector('li.archivo[data-id="' + CSS.escape(id) + '"],li.nota[data-id="' + CSS.escape(id) + '"]');
-  function enviaArchivos(files, previa, dur) {
-    for (const f of files) {
-      const idA = idAzar(8), g = G(); let r = M.enviaArchivo(f, idA); const porM = !!(r && r.ok), n = g ? g.enviaArchivo(f, idA) : 0;
+  // (previas: una URL por archivo, o una sola para un archivo suelto, como las notas de voz)
+  async function enviaArchivos(files, previas0, dur) {
+    const urls = Array.isArray(previas0) ? previas0 : [previas0];
+    const fotos = files.filter((f) => esFoto(f.type)).length, alb = files.length > 1 && fotos === files.length ? idAzar(6) : null;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i], previa = urls[i] || undefined;
+      let vista = esFoto(f.type) ? await vistaFoto(f) : null;
+      if (alb) vista = Object.assign({}, vista || {}, { a: alb, i, n: files.length });
+      const idA = idAzar(8), g = G(); let r = M.enviaArchivo(f, idA, undefined, vista); const porM = !!(r && r.ok), n = g ? g.enviaArchivo(f, idA, vista) : 0;
       if (!porM && n) r = { ok: true, id: idA, nombre: String(f.name || 'archivo').slice(0, 200), tam: f.size };
       if (r.ok) apunta(r.id, porM, n);
       if (!r.ok) { sistema(r.por === 'grande' ? 'archivoGrande' : 'archivoNo', '(' + f.name + ')'); if (previa) URL.revokeObjectURL(previa); continue; }
       if (previa && esAudio(f.type, f.name)) notas.set(r.id, { url: previa, dur: dur || 0, mia: true }); else if (previa) previas.set(r.id, previa);
-      filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam, mime: f.type, dur });
+      filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam, mime: f.type, dur, vista });
     }
   }
   // la miniatura de una foto en la conversación: se toca y se abre a pantalla completa
@@ -435,16 +519,22 @@
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
   M.on('archivo', (a) => { if (a.dir !== 'mia') autor(a, 'p', enGrupoVisto() ? () => window.ElixireGrupo.nombrePrincipal() : null); filaArchivo(a); });
-  const alProgreso = (p) => { const li = fila(p.id); if (li) { li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; if (li.classList.contains('foto')) li.style.setProperty('--p', String(Math.max(0.04, Math.min(1, p.hecho)))); } const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
+  const alProgreso = (p) => { const li = fila(p.id); if (li && p.dir === 'mia' && !li.classList.contains('mia')) return; if (li) { li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; if (li.classList.contains('foto')) li.style.setProperty('--p', String(Math.max(0.04, Math.min(1, p.hecho)))); } const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
   M.on('archivo-progreso', alProgreso);
-  const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } if (li.classList.contains('foto')) { li.classList.add('subida', 'llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
+  const alEnviado = (p) => { { const li0 = fila(p.id); if (li0 && !li0.classList.contains('mia')) return; } const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } if (li.classList.contains('foto')) { li.classList.add('subida', 'llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
   M.on('archivo-enviado', alEnviado);
   const alListo = (a) => {
     { const v = archivosVivos.get(a.id) || {}; toastArchivo(Object.assign({ dir: 'suya' }, v, a), 'listo'); archivosVivos.delete(a.id); }
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
     if (li.classList.contains('nota')) { notaLista(li, a); abajo(); return; }
-    if (li.classList.contains('foto')) { const im = li.querySelector('.fw img'); if (im) im.src = a.url; li.classList.add('lista'); return; }
+    if (li.classList.contains('foto')) {
+      const im = li.querySelector('.fw img');
+      // la foto entera: se carga detrás y sustituye a la miniatura borrosa con un fundido
+      if (im) { const n = new Image(); n.decoding = 'async'; n.onload = () => { im.src = a.url; im.classList.remove('borrosa'); li.classList.add('lista'); }; n.onerror = () => { im.src = a.url; im.classList.remove('borrosa'); li.classList.add('lista'); }; n.src = a.url; }
+      else li.classList.add('lista');
+      return;
+    }
     if (esFoto(a.mime)) li.prepend(miniatura(a.url, a.nombre));
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;
     const s = document.createElement('span'); s.dataset.t = 'descargar'; s.textContent = tr('descargar'); d.append(s); li.append(d); abajo();
@@ -1250,7 +1340,7 @@
   // 18:20: «una vez que la foto está enviada… dejar pulsada y te dé la opción de borrar para los dos o borrar solo para uno»). En el
   // ordenador, con el botón derecho. «Para todos» viaja por la sesión encriptada; solo se borra lo que envió quien lo pide. ----------
   const hoja = $('#hoja-msg'); let objetivo = null, pulsaT = 0, pulsaXY = null;
-  const borrable = (li) => li && li.classList.contains('msg') && !li.classList.contains('sistema') && !li.classList.contains('borrado') && !li.classList.contains('vacio');
+  const borrable = (li) => li && li.classList.contains('msg') && !li.classList.contains('sistema') && !li.classList.contains('borrado') && !li.classList.contains('vacio') && !li.classList.contains('album');
   lista.addEventListener('pointerdown', (e) => {
     const li = e.target.closest('li.msg'); if (!borrable(li) || (e.pointerType === 'mouse' && e.button !== 0)) return;
     pulsaXY = [e.clientX, e.clientY]; clearTimeout(pulsaT); pulsaT = setTimeout(() => { pulsaT = 0; abreHoja(li); }, 480);
@@ -1284,6 +1374,13 @@
     const n = notas.get(id); if (n) { if (n.li && n.li.classList.contains('sonando')) paraReproductor(); if (n.url) URL.revokeObjectURL(n.url); notas.delete(id); }
     const u = previas.get(id); if (u) { URL.revokeObjectURL(u); previas.delete(id); }
     if (archivosVivos.has(id)) { archivosVivos.delete(id); if (M.cancelaArchivo) { try { M.cancelaArchivo(id); } catch (_) {} } { const g = G(); if (g) g.cancelaArchivo(id); } quitaToast('a-' + id); }
+    const al = li.parentElement && li.parentElement.classList.contains('alb-rejilla') ? li.closest('li.album') : null;
+    if (al) {
+      li.remove();
+      if (al.querySelector('.alb-rejilla>li')) { pintaAlbum(al); return; }
+      if (!paraTodos) { al.remove(); return; }
+      li = al; delete al.dataset.alb;
+    }
     if (!paraTodos) { li.remove(); return; }
     li.className = 'msg borrado ' + (suyo ? 'suya' : 'mia'); li.textContent = '';
     const b = document.createElement('span'); b.textContent = tr(suyo ? 'mensajeBorradoSuyo' : 'mensajeBorrado'); li.append(b);

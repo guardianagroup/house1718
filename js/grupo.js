@@ -229,7 +229,7 @@
       const de = a.origen || K.id; if (!esId(de)) return;
       const ds = destinos(K); if (!ds.length) return;
       let f; try { f = new File([a.blob], a.nombre || 'archivo', { type: a.mime || '' }); } catch (_) { f = a.blob; try { f.name = a.nombre; } catch (_) {} }
-      for (const L of ds) { try { L.m.enviaArchivo(f, a.id, de); } catch (_) {} }
+      for (const L of ds) { try { L.m.enviaArchivo(f, a.id, de, a.vista); } catch (_) {} }
     });
     m.on('borrado', (id) => { if (!id || borrados.has(id)) return; borrados.add(id); for (const L of destinos(K)) { try { L.m.borra(id); } catch (_) {} } });
     m.on('escribe', () => { for (const L of destinos(K)) { try { L.m.escribe(); } catch (_) {} } });
@@ -582,7 +582,7 @@
     nombrePrincipal: () => etiqueta(principal),
     // el chat: el mismo mensaje (con el mismo identificador) a cada tramo; devuelve a cuántos ha salido
     envia(texto, id) { let n = 0; for (const p of pares().filter((x) => x.m.conectada && !x.m.terminada)) if (p.m.envia(texto, id)) n++; return n; },
-    enviaArchivo(f, id) { let n = 0; for (const p of pares().filter((x) => x.m.conectada && !x.m.terminada)) { const r = p.m.enviaArchivo(f, id); if (r && r.ok) n++; } return n; },
+    enviaArchivo(f, id, vista) { let n = 0; for (const p of pares().filter((x) => x.m.conectada && !x.m.terminada)) { const r = p.m.enviaArchivo(f, id, undefined, vista); if (r && r.ok) n++; } return n; },
     borra(id) { borrados.add(id); for (const p of pares().filter((x) => x.m.conectada)) p.m.borra(id); },
     escribe() { for (const p of pares().filter((x) => x.m.conectada)) p.m.escribe(); },
     // «leído»: a quien lo mandó; si llegó reenviado («g:»), por el tramo por el que llegó

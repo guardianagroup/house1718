@@ -2171,3 +2171,42 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .tesela-sin.conecta .ts-circulo{animation:tsLate 1.3s ease-in-out infinite}
 @keyframes tsLate{0%,100%{opacity:.45;transform:scale(.94)}50%{opacity:1;transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.tesela-sin.conecta .ts-circulo{animation:none}}
+
+/* ---------- las fotos, como WhatsApp, Telegram y Signal (dueño, 23 nov 15:34: «cuando se envían fotos en grupo no me convence, mira
+   cómo hace la competencia») ---------- */
+/* mientras llega: la miniatura borrosa, con la forma exacta de la foto; al llegar, la foto entera con un fundido */
+.msg.foto .fw img{transition:filter .35s ease,transform .35s ease}
+.msg.foto .fw img.borrosa{filter:blur(9px) saturate(1.15);transform:scale(1.12)}
+/* el álbum: varias fotos enviadas a la vez, juntas */
+.mensajes li.msg.album{display:block;min-width:0;width:auto;max-width:none;padding:3px!important;white-space:normal}
+.mensajes li.msg.album>b.de{display:block;margin:4px 8px 5px}
+.alb-rejilla{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:2px;width:min(270px,68vw);border-radius:12px;overflow:hidden}
+.mensajes .alb-rejilla>li.msg{display:block;position:relative;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;width:auto!important;min-width:0;align-self:stretch;animation:none}
+.mensajes .alb-rejilla>li.msg.foto .fw{width:100%!important;aspect-ratio:1/1!important;max-height:none;border-radius:0}
+.mensajes .alb-rejilla>li.msg>b.de,.mensajes .alb-rejilla>li.msg .barra{display:none}
+.mensajes .alb-rejilla>li.msg .fw .hora{display:none!important}
+.mensajes .alb-rejilla>li.msg.ultima .fw .hora{display:block!important}
+.mensajes .alb-rejilla>li.msg:not(.ultima) .fw::after{display:none}
+.mensajes .alb-rejilla>li.extra{display:none!important}
+.album[data-n="2"] .alb-rejilla>li.msg.foto .fw{aspect-ratio:3/4!important}
+.album[data-n="3"] .alb-rejilla>li:first-child{grid-column:1/-1}
+.album[data-n="3"] .alb-rejilla>li:first-child.msg.foto .fw{aspect-ratio:2/1!important}
+.alb-rejilla>li[data-mas]::before{content:attr(data-mas);position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(6,8,12,.5);color:#F4F6F8;font:600 26px/1 var(--ui);letter-spacing:.01em;pointer-events:none}
+.alb-rejilla .fw-anillo{width:40px!important;height:40px!important;margin:-20px 0 0 -20px!important}
+.alb-rejilla .fw-anillo svg{width:34px!important;height:34px!important}
+.mensajes li.msg.album.elegido{outline:2px solid rgba(156,195,228,.5)}
+/* bajar a lo nuevo: solo cuando estás leyendo más arriba */
+.mensajes>li.bajar{position:sticky;bottom:4px;align-self:flex-end;margin-top:-46px;z-index:3;list-style:none;padding:0;background:none;border:0;pointer-events:none}
+.mensajes>li.bajar button{pointer-events:auto;position:relative;width:40px;height:40px;border-radius:50%;border:1px solid rgba(156,195,228,.3);background:rgba(11,15,21,.94);color:#F4F6F8;display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.7);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mensajes>li.bajar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mensajes>li.bajar .n{position:absolute;top:-6px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#5CC98A;color:#06080C;font:700 11px/18px var(--ui);text-align:center}
+.mensajes>li.bajar .n:empty{display:none}
+/* el visor: pasar a la foto anterior o siguiente */
+.visor-paso{position:absolute;top:50%;z-index:3;width:46px;height:46px;margin-top:-23px;border-radius:50%;border:1px solid rgba(244,246,248,.18);background:rgba(6,8,12,.55);color:#F4F6F8;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .2s}
+.visor-paso svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.visor-paso.ant{left:18px}
+.visor-paso.sig{right:18px}
+.visor-paso[hidden]{display:none}
+.visor-foto.limpio .visor-paso{opacity:0;pointer-events:none}
+@media (pointer:coarse){ .visor-paso{display:none} }
+.visor-cuenta{margin-left:8px;opacity:.7}

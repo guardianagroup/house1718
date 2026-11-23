@@ -454,13 +454,24 @@ const creaMotor = (OPC) => {
   // tamaño (los últimos bytes, rellenos), y cada uno autentica su número y el total: nadie puede cambiarlos, quitarlos ni reordenarlos.
   const TROZO = 48 * 1024, VENTANA = 32, LIMITE = 1024 * 1024 * 1024, ATRASO = 6 * 1024 * 1024;
   const adTrozo = (cab, partes) => C.cat(cab, C.te.encode('ELIXIRE archivo v1\n' + partes));
-  function enviaArchivo(file, idFijo, de) {
+  // (como WhatsApp, Telegram o Signal) la foto lleva en su anuncio su forma y una miniatura diminuta: quien la recibe la ve al
+  // instante, borrosa y con su forma exacta, mientras llega; y si va con otras, el álbum al que pertenece
+  function limpiaVista(x) {
+    if (!x || typeof x !== 'object') return null;
+    const v = {}, w = x.w | 0, h = x.h | 0;
+    if (w > 0 && h > 0 && w <= 20000 && h <= 20000) { v.w = w; v.h = h; }
+    if (typeof x.d === 'string' && x.d.length <= 4000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(x.d)) v.d = x.d;
+    if (typeof x.a === 'string' && /^[0-9a-f]{8,16}$/.test(x.a)) { v.a = x.a; v.i = Math.max(0, Math.min(49, x.i | 0)); v.n = Math.max(1, Math.min(50, x.n | 0)); }
+    return Object.keys(v).length ? v : null;
+  }
+  function enviaArchivo(file, idFijo, de, vista) {
     const s = S; if (!s || !s.conectado || s.fin || !file) return { ok: false, por: 'sin-sesion' };
     if (file.size > LIMITE) return { ok: false, por: 'grande' };
     const id = /^[0-9a-f]{16}$/.test(idFijo || '') && !s.envios.has(idFijo) ? idFijo : C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
     const env = { id, file, llave, partes, enviadas: 0, confirmadas: 0, nombre: String(file.name || 'archivo').slice(0, 200), tam: file.size, mime: String(file.type || '').slice(0, 100), activo: false, fin: false };
     s.envios.set(id, env);
-    aTic(s, Object.assign({ tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) }, typeof de === 'string' && /^[0-9a-f]{12}$/.test(de) ? { de } : {}));
+    const v = limpiaVista(vista);
+    aTic(s, Object.assign({ tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) }, typeof de === 'string' && /^[0-9a-f]{12}$/.test(de) ? { de } : {}, v ? { v } : {}));
     return { ok: true, id, nombre: env.nombre, tam: env.tam };
   }
   async function avanzaEnvio(s, j) {
@@ -499,7 +510,8 @@ const creaMotor = (OPC) => {
     llave.fill(0);
     s.recibos.set(id, r);
     if (typeof j.de === 'string' && /^[0-9a-f]{12}$/.test(j.de)) r.origen = j.de;
-    emite('archivo', Object.assign({ id, dir: 'suya', nombre: r.nombre, tam, mime: r.mime }, r.origen ? { origen: r.origen } : {}));
+    r.vista = limpiaVista(j.v);
+    emite('archivo', Object.assign({ id, dir: 'suya', nombre: r.nombre, tam, mime: r.mime }, r.origen ? { origen: r.origen } : {}, r.vista ? { vista: r.vista } : {}));
     enviaControl(s, { tipo: 'archivo-ack', id, hasta: 0 });
   }
   async function recibeTrozo(s, de, b) {
@@ -517,7 +529,7 @@ const creaMotor = (OPC) => {
     if (r.llegadas === r.partes) {
       r.fin = true;
       const blob = new Blob(r.trozos, { type: r.mime || 'application/octet-stream' }); r.trozos = null;
-      emite('archivo-listo', Object.assign({ id, nombre: r.nombre, tam: r.tam, url: URL.createObjectURL(blob), mime: r.mime, blob }, r.origen ? { origen: r.origen } : {}));
+      emite('archivo-listo', Object.assign({ id, nombre: r.nombre, tam: r.tam, url: URL.createObjectURL(blob), mime: r.mime, blob }, r.origen ? { origen: r.origen } : {}, r.vista ? { vista: r.vista } : {}));
     }
   }
   function cancelaArchivo(id, suyo) {
