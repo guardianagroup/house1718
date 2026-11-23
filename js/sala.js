@@ -347,8 +347,8 @@
   function ponAmplia(si) {
     si = !!si && abierta && !movil.matches;
     if (si === amplia) return;
-    amplia = si; sala.classList.toggle('amplia', si); ponDividida(si);
-    const b = $('#b-ampliar'); if (b) { b.setAttribute('aria-pressed', String(si)); const sp = b.querySelector('span'); sp.dataset.t = si ? 'verChat' : 'ampliar'; sp.textContent = tr(sp.dataset.t); }
+    amplia = si; sala.classList.toggle('amplia', si);
+    const b = $('#b-ampliar'); if (b) b.setAttribute('aria-pressed', String(si));
     if (!si) { avisos.textContent = ''; sinLeer = 0; marcaLeidos(); }
     pintaCuenta();
     try {
@@ -653,39 +653,82 @@
     bPantalla.disabled = false; pintaPantalla(M.estadoLlamada ? M.estadoLlamada() : null);
   });
   M.on('llamada', (e) => pintaPantalla(e));
-  // ---------- tu imagen, como en GUARDIANA (dueño, 23 nov 09:31: «cuando amplío la pantalla y yo me veo aquí, ponlo como en
-  // GUARDIANA… había una línea en el medio y se podía mover hacia los lados»): en el ordenador, la pantalla partida — la otra persona
-  // a un lado y tú al otro — con la raya del medio que se arrastra (de un quinto a cuatro quintos); llevada al borde, tu imagen vuelve
-  // a ser pequeña. Al ampliar sale partida; el botón de tu imagen (o doble clic en ella) la parte o la hace pequeña. El sitio de la
-  // raya se recuerda en este navegador. Mientras se comprueba, la imagen de la otra persona vuelve a ocupar todo.
-  const raya = $('#raya-division'), miVista = $('#mi-vista');
-  let dividida = false, corte = 0.5;
-  try { const c = parseFloat(localStorage.getItem('elixire-corte')); if (c >= 0.2 && c <= 0.8) corte = c; } catch (_) {}
-  const puedeDividir = (e = ultimo) => !movil.matches && abierta && e.estado === 'hablando' && e.video !== false && e.cam !== false;
-  function ponCorte(c) { corte = Math.max(0.2, Math.min(0.8, c)); sala.style.setProperty('--corte', (corte * 100).toFixed(2) + '%'); }
-  function pintaMiVista(e = ultimo) {
-    miVista.hidden = movil.matches || e.estado !== 'hablando' || e.video === false || e.cam === false;
-    const k = dividida ? 'hacerPequena' : 'pantallaDividida'; miVista.classList.toggle('partida', dividida); miVista.setAttribute('aria-label', tr(k)); miVista.title = tr(k);
+  // ---------- tu imagen y la pantalla partida, como en GUARDIANA (dueño, 23 nov 09:31 y 10:06: «que yo pueda mover por la pantalla
+  // mi cámara… revísalo todo y hazlo como en GUARDIANA, ahí estaba perfecto») ----------
+  // En el ordenador, la llamada empieza con la pantalla partida, mitad y mitad: la otra persona a la izquierda y tú a la derecha. La
+  // raya del medio se arrastra para repartirla (te toca entre el 30 y el 70 %); tocarla no cambia nada. «Cambiar vista» (abajo) o
+  // doble clic en tu imagen: partida ↔ tu imagen pequeña, que se mueve con el ratón a donde quieras. Todo se recuerda en este
+  // navegador, en proporción a la pantalla.
+  const raya = $('#raya-division'), vm = $('#video-mio'), bVista = $('#b-vista'), MARGEN = 10;
+  const leeVista = () => { try { const x = JSON.parse(localStorage.getItem('elixire-vista') || '{}'); return x && typeof x === 'object' ? x : {}; } catch (_) { return {}; } };
+  const guardaVista = (o) => { try { localStorage.setItem('elixire-vista', JSON.stringify(Object.assign(leeVista(), o))); } catch (_) {} };
+  let dividida = false, parte = 0.5, vistaPuesta = false, arr = null;
+  { const v = leeVista(); if (Number.isFinite(v.p)) parte = Math.max(0.3, Math.min(0.7, v.p)); }
+  const enPC = () => !movil.matches;
+  const conImagen = (e = ultimo) => e.estado === 'hablando' && e.video !== false && e.cam !== false;
+  function ponParte(p) { parte = Math.max(0.3, Math.min(0.7, p)); sala.style.setProperty('--mi-p', parte.toFixed(4)); }
+  function pintaVista(e = ultimo) { if (bVista) { bVista.hidden = !(enPC() && conImagen(e)); bVista.classList.toggle('partida', dividida); } }
+  function colocaMi() {
+    const v = leeVista();
+    if (dividida || !enPC() || !Number.isFinite(v.x) || !Number.isFinite(v.y)) { sala.classList.remove('movida'); return; }
+    const CW = escena.clientWidth, CH = escena.clientHeight, W = vm.offsetWidth, H = vm.offsetHeight; if (!CW || !W) return;
+    sala.style.setProperty('--mi-x', Math.round(MARGEN + Math.max(0, Math.min(1, v.x)) * Math.max(0, CW - W - 2 * MARGEN)) + 'px');
+    sala.style.setProperty('--mi-y', Math.round(MARGEN + Math.max(0, Math.min(1, v.y)) * Math.max(0, CH - H - 2 * MARGEN)) + 'px');
+    sala.classList.add('movida');
   }
-  function ponDividida(si) { si = !!si && puedeDividir(); dividida = si; sala.classList.toggle('dividida', si); raya.hidden = !si; ponCorte(corte); pintaMiVista(); }
-  miVista.addEventListener('click', () => ponDividida(!dividida));
-  $('#video-mio').addEventListener('dblclick', (e) => { if (movil.matches) return; e.stopPropagation(); ponDividida(!dividida); });
-  raya.addEventListener('dblclick', (e) => { e.stopPropagation(); ponCorte(0.5); try { localStorage.setItem('elixire-corte', '0.5'); } catch (_) {} });
-  raya.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); ponCorte(corte + (e.key === 'ArrowLeft' ? -0.02 : 0.02)); try { localStorage.setItem('elixire-corte', String(corte)); } catch (_) {} });
+  function ponDividida(si, guardar) {
+    si = !!si && enPC() && abierta && conImagen();
+    dividida = si; sala.classList.toggle('dividida', si); raya.hidden = !si; ponParte(parte);
+    if (guardar) guardaVista({ div: si });
+    colocaMi(); pintaVista();
+  }
+  if (bVista) bVista.addEventListener('click', () => ponDividida(!dividida, true));
+  // tu imagen pequeña: se mueve con el ratón (como en GUARDIANA); doble clic: pantalla partida ↔ pequeña
+  vm.addEventListener('dblclick', (e) => { if (!enPC()) return; e.stopPropagation(); arr = null; ponDividida(!dividida, true); });
+  vm.addEventListener('pointerdown', (e) => {
+    if (!enPC() || dividida || e.button > 0 || !sala.classList.contains('en-llamada')) return;
+    const r = vm.getBoundingClientRect(), c = escena.getBoundingClientRect();
+    arr = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, movido: false, W: r.width, H: r.height, cl: c.left, ct: c.top, CW: c.width, CH: c.height };
+    try { vm.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  vm.addEventListener('pointermove', (e) => {
+    if (!arr || e.pointerId !== arr.id) return;
+    if (!arr.movido && Math.hypot(e.clientX - arr.x0, e.clientY - arr.y0) < 4) return;
+    arr.movido = true; sala.classList.add('moviendo-mi', 'movida');
+    const x = Math.max(MARGEN, Math.min(arr.CW - arr.W - MARGEN, e.clientX - arr.cl - arr.dx)), y = Math.max(MARGEN, Math.min(arr.CH - arr.H - MARGEN, e.clientY - arr.ct - arr.dy));
+    arr.x = x; arr.y = y; sala.style.setProperty('--mi-x', Math.round(x) + 'px'); sala.style.setProperty('--mi-y', Math.round(y) + 'px');
+  });
+  const sueltaMi = (e) => {
+    if (!arr || e.pointerId !== arr.id) return; const a = arr; arr = null; sala.classList.remove('moviendo-mi');
+    try { vm.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (!a.movido) return;
+    const r5 = (v) => Math.round(v * 1e5) / 1e5;
+    guardaVista({ x: r5((a.x - MARGEN) / Math.max(1, a.CW - a.W - 2 * MARGEN)), y: r5((a.y - MARGEN) / Math.max(1, a.CH - a.H - 2 * MARGEN)) });
+  };
+  vm.addEventListener('pointerup', sueltaMi); vm.addEventListener('pointercancel', sueltaMi);
+  // la raya del medio: reparte la pantalla (entre el 30 y el 70 % para ti)
+  raya.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); ponParte(parte + (e.key === 'ArrowLeft' ? 0.02 : -0.02)); guardaVista({ p: parte }); });
   raya.addEventListener('pointerdown', (e) => {
     if (!dividida || e.button > 0) return; e.preventDefault();
-    const r = escena.getBoundingClientRect(); let bruto = corte;
+    const r = escena.getBoundingClientRect();
     try { raya.setPointerCapture(e.pointerId); } catch (_) {} raya.classList.add('moviendo'); sala.classList.add('moviendo-raya');
-    const mueve = (ev) => { bruto = (ev.clientX - r.left) / r.width; ponCorte(bruto); };
+    const mueve = (ev) => ponParte(1 - (ev.clientX - r.left) / r.width);
     const suelta = () => {
       raya.removeEventListener('pointermove', mueve); raya.removeEventListener('pointerup', suelta); raya.removeEventListener('pointercancel', suelta);
-      raya.classList.remove('moviendo'); sala.classList.remove('moviendo-raya');
-      if (bruto > 0.9) { ponCorte(0.5); ponDividida(false); } // llevada al borde: tu imagen, pequeña otra vez
-      try { localStorage.setItem('elixire-corte', String(corte)); } catch (_) {}
+      raya.classList.remove('moviendo'); sala.classList.remove('moviendo-raya'); guardaVista({ p: parte });
     };
     raya.addEventListener('pointermove', mueve); raya.addEventListener('pointerup', suelta); raya.addEventListener('pointercancel', suelta);
   });
-  M.on('llamada', (e) => { if (dividida && !puedeDividir(e)) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; } pintaMiVista(e); });
+  addEventListener('resize', () => { if (abierta) colocaMi(); }, { passive: true });
+  vm.addEventListener('loadedmetadata', () => colocaMi());
+  // al empezar la llamada, partida (o como la dejaste la última vez); sin imagen propia, nada que partir
+  M.on('llamada', (e) => {
+    if (conImagen(e) && enPC() && !vistaPuesta && abierta) { vistaPuesta = true; ultimo = e; ponDividida(leeVista().div !== false); }
+    else if (!conImagen(e) && dividida) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; }
+    if (e.estado !== 'hablando' && e.estado !== 'reconectando') vistaPuesta = false;
+    pintaVista(e);
+  });
   // en el ordenador, la botonera siempre en una fila: si no cabe en el vídeo, se reduce un poco entera
   if (window.ResizeObserver) {
     const ctlB = $('#controles'), escB = $('#escena-video');
