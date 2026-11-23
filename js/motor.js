@@ -391,7 +391,7 @@ const creaMotor = (OPC) => {
         if (Array.isArray(j.g)) {
           g.gente = j.g.slice(0, 8).filter((x) => x && typeof x.id === 'string' && /^[0-9a-f]{12}$/.test(x.id)).map((x) => {
             const f = x.f && typeof x.f === 'object' ? x.f : {};
-            return { id: x.id, mid: x.mid === 'p' ? 'p' : typeof x.mid === 'string' && /^[\w-]{1,16}$/.test(x.mid) ? x.mid : null, f: { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat, vid: f.vid !== false } };
+            return { id: x.id, mid: x.mid === 'p' ? 'p' : typeof x.mid === 'string' && /^[\w-]{1,16}$/.test(x.mid) ? x.mid : null, a: typeof x.a === 'string' && /^[\w-]{1,16}$/.test(x.a) ? x.a : null, f: { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat, vid: f.vid !== false } };
           });
         }
         if (typeof j.habla === 'string' && (j.habla === '' || /^[0-9a-f]{12}$/.test(j.habla))) g.habla = j.habla;
@@ -1206,7 +1206,9 @@ const creaMotor = (OPC) => {
   async function ponVoz() {
     const x = L, snd = emisorDe(x, 'audio'); if (!x || !snd) return;
     const base = x.sinMia ? null : vozBase(), otras = (x.voces || []).filter((t) => t && t.readyState === 'live');
-    if (!otras.length && base) { if (snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } if (mz) mezclaFin(); return; }
+    // (sin voces que mezclar: la mía tal cual o, mientras otra persona dice sus palabras en «Comprobar», ninguna; en el grupo de hoy
+    // cada voz va aparte, por su hueco: la mezcla queda para quien aún tiene una versión anterior)
+    if (!otras.length) { if (snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } if (mz) mezclaFin(); return; }
     if (!mz) {
       const c = audioCompartido(); if (!c) return;
       // un limitador suave a la salida: si hablan varios a la vez, la voz no se satura (por debajo, no toca nada)
@@ -1235,7 +1237,8 @@ const creaMotor = (OPC) => {
     for (const [clave, pista] of quiero) {
       const t = x.salen.get(clave);
       if (t) { if (t.sender.track !== pista) { cambio = true; try { await t.sender.replaceTrack(pista); } catch (_) {} } continue; }
-      const libre = [...x.salen.entries()].find(([k]) => !quiero.has(k));
+      const clase = (t) => (t.sender.track && t.sender.track.kind) || (t.receiver && t.receiver.track && t.receiver.track.kind) || '';
+      const libre = [...x.salen.entries()].find(([k, t]) => !quiero.has(k) && clase(t) === pista.kind);
       if (libre) { x.salen.delete(libre[0]); cambio = true; try { await libre[1].sender.replaceTrack(pista); } catch (_) {} x.salen.set(clave, libre[1]); continue; }
       try { const tr = x.pc.addTransceiver(pista, { direction: 'sendonly', streams: [new MediaStream([pista])] }); x.salen.set(clave, tr); nuevo = true; cambio = true; } catch (e) { console.warn('reenvía', e); }
     }
@@ -1542,9 +1545,18 @@ const creaMotor = (OPC) => {
   // el sonido ni abrir otro contexto de audio. Sin paquetes en el último segundo (micro apagado, silencio): 0.
   function nivelVoz() {
     try {
-      const r = L && L.pc && L.pc.getReceivers().find((x) => x.track && x.track.kind === 'audio');
+      const b = L && L.base && [...L.base].find((t) => t.receiver && t.receiver.track && t.receiver.track.kind === 'audio');
+      const r = (b && b.receiver) || (L && L.pc && L.pc.getReceivers().find((x) => x.track && x.track.kind === 'audio'));
       const f = r && r.getSynchronizationSources ? r.getSynchronizationSources() : [];
       if (!f.length) return null;
+      const u = f[0]; return performance.now() - (u.timestamp || 0) > 1000 && u.timestamp < 1e12 ? 0 : (u.audioLevel || 0);
+    } catch (_) { return null; }
+  }
+  // (grupo) el nivel de una voz que llega reenviada, por su hueco
+  function nivelHueco(mid) {
+    try {
+      const t = L && L.pc && L.pc.getTransceivers().find((x) => x.mid != null && String(x.mid) === String(mid)), r = t && t.receiver;
+      const f = r && r.getSynchronizationSources ? r.getSynchronizationSources() : []; if (!f.length) return null;
       const u = f[0]; return performance.now() - (u.timestamp || 0) > 1000 && u.timestamp < 1e12 ? 0 : (u.audioLevel || 0);
     } catch (_) { return null; }
   }
@@ -1552,7 +1564,7 @@ const creaMotor = (OPC) => {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); }, miFuente: () => fuenteMia(),
     activaVideo, realza, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, nivelDe: nivelHueco, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

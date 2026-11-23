@@ -68,6 +68,12 @@
     if (P.mid == null) return null;
     const t = K.m.llegan && K.m.llegan.get(String(P.mid)); return t && t.readyState === 'live' ? t : null;
   }
+  // y su voz: la del tramo, si es la persona de esa llamada; si está detrás, la reenviada en su hueco («a»)
+  function vozPersona(K, P) {
+    if (P.mid === 'p') { const r = K.m.estadoLlamada().remoto, a = r && r.getAudioTracks()[0]; return a && a.readyState === 'live' ? a : null; }
+    if (P.a == null) return null;
+    const t = K.m.llegan && K.m.llegan.get(String(P.a)); return t && t.readyState === 'live' ? t : null;
+  }
   const sinVideoMio = () => { const st = M.propias || (enCurso()[0] && enCurso()[0].m.propias); return !(st && st.getVideoTracks().some((t) => t.readyState === 'live')); };
   const misFiltros = () => ({ mic: propio.mic !== false, cam: propio.cam !== false, voz: !!propio.voz, cara: !!propio.cara, pantalla: !!(pantallaG || M.estadoLlamada().pantalla), chat: !!propio.chat, vid: !sinVideoMio() });
   const personas = () => 1 + tramos().reduce((s, K) => s + genteDe(K).length, 0) + pares().filter((p) => !enLlamada(p) && !p.m.terminada).length;
@@ -180,17 +186,17 @@
   function muestraReto(g) { if (!g) return; const S = SALA(); if (S.gesto) S.gesto(g); const V = window.ElixireVigia; if (V && V.gesto) V.gesto(g); }
   // mientras se comprueba a alguien: su imagen a más calidad hacia quien comprueba y, mientras dice sus palabras, solo su voz
   const palabrasEn = (g) => (g.q === 'luz' && g.w) || g.q === 'voz' || g.q === 'clave';
-  function aplicaFoco(L, g, solo, sinMia) {
+  function aplicaFoco(L, g, solo, sinMia, id) {
     const t = Date.now();
     if (g.q === 'inicio') { L.realceHasta = t + 40000; }
     else if (g.q === 'fin' && (g.n | 0) === 9) { L.realceHasta = 0; L.focoVoz = null; }
     else if (g.q === 'fin') { L.focoVoz = null; }
-    else if (palabrasEn(g)) { L.focoVoz = { solo, sinMia, hasta: t + 7000 }; setTimeout(sincroniza, 7100); }
+    else if (palabrasEn(g)) { L.focoVoz = { solo, id: id || null, sinMia, hasta: t + 7000 }; setTimeout(sincroniza, 7100); }
   }
   // quien une a otros (de paso): hacia quien comprueba (Lx), la imagen reenviada de esa persona realzada y, en las palabras, solo la
   // voz del tramo por el que llega (Kp), sin la propia
   function focoPaso(Lx, Kp, id, g) {
-    aplicaFoco(Lx, g, Kp, true);
+    aplicaFoco(Lx, g, Kp, true, id);
     Lx.realce = Lx.realceHasta > Date.now() ? { clave: id, hasta: Lx.realceHasta } : null;
     sincroniza();
   }
@@ -268,12 +274,18 @@
     // la voz: la mía y la de los demás tramos (nunca la de este). Mientras alguien de este lado dice sus palabras en «Comprobar»,
     // hacia quien comprueba va solo su voz (Gemini, ronda del 23 nov: «silenciar a los demás durante las dos palabras»)
     const ahora = Date.now(), fv = L.focoVoz && L.focoVoz.hasta > ahora ? L.focoVoz : null;
-    if (otros.length || L.mezclada || fv) {
-      const vozDe = (K) => { const r = K.m.estadoLlamada().remoto; return r && r.getAudioTracks()[0]; };
-      const voces = fv ? (fv.solo && ts.includes(fv.solo) ? [vozDe(fv.solo)] : []).filter(Boolean) : otros.map(vozDe).filter(Boolean);
-      try { L.m.mezcla(voces, !!(fv && fv.sinMia)); } catch (_) {}
-      L.mezclada = voces.length > 0 || !!(fv && fv.sinMia);
-    }
+    // (dueño, 23 nov 16:42–16:43: en una llamada de voz en grupo desde el iPhone, «yo a ellos sí… entre ellos no se oían»: la mezcla
+    // con WebAudio del iPhone salía muda). Ahora, como las imágenes: cada voz de los demás tramos va aparte, por su hueco, y cada
+    // equipo la oye en el recuadro de esa persona; por la llamada, solo la mía. Con quien aún tiene una versión anterior (sin
+    // «arbol»), la mezcla de antes.
+    if (!L.arbol) {
+      if (otros.length || L.mezclada || fv) {
+        const vozDe = (K) => { const r = K.m.estadoLlamada().remoto; return r && r.getAudioTracks()[0]; };
+        const voces = fv ? (fv.solo && ts.includes(fv.solo) ? [vozDe(fv.solo)] : []).filter(Boolean) : otros.map(vozDe).filter(Boolean);
+        try { L.m.mezcla(voces, !!(fv && fv.sinMia)); } catch (_) {}
+        L.mezclada = voces.length > 0 || !!(fv && fv.sinMia);
+      }
+    } else if (L.mezclada || fv) { try { L.m.mezcla([], !!(fv && fv.sinMia)); } catch (_) {} L.mezclada = !!(fv && fv.sinMia); }
     // y la imagen de quien se comprueba, a más calidad mientras dura (ídem)
     try { L.m.realza(L.realce && L.realce.hasta > ahora ? L.realce.clave : null); } catch (_) {}
     if (!L.arbol) { if (otros.length && L.viejo) avisaViejo(L); return; }
@@ -284,10 +296,13 @@
       if (!esId(P.id) || vistos.has(P.id)) continue; vistos.add(P.id);
       const pista = pistaDe(K, P);
       if (pista) { try { const h = P.f && P.f.pantalla ? 'detail' : 'motion'; if (pista.contentHint !== h) pista.contentHint = h; } catch (_) {} lista.push({ clave: P.id, pista }); }
+      // su voz, aparte (en «Comprobar», mientras alguien dice sus palabras, hacia quien comprueba solo va la suya)
+      const oye = !fv || (fv.id ? fv.id === P.id : fv.solo === K), voz = oye ? vozPersona(K, P) : null;
+      if (voz) lista.push({ clave: P.id + '~a', pista: voz });
       gente.push({ id: P.id, mid: null, f: P.f });
     }
     let mids = {}; try { mids = (await L.m.reenvia(lista)) || {}; } catch (e) { console.warn('grupo', e); }
-    for (const g of gente) if (g.id !== yo && mids[g.id] != null) g.mid = String(mids[g.id]);
+    for (const g of gente) if (g.id !== yo) { if (mids[g.id] != null) g.mid = String(mids[g.id]); if (mids[g.id + '~a'] != null) g.a = String(mids[g.id + '~a']); }
     const txt = JSON.stringify(gente);
     if (txt !== L.enviado && L.m.estadoLlamada().estado !== 'libre') { L.enviado = txt; L.m.grupo({ que: 'gente', g: gente }); }
   }
@@ -435,14 +450,15 @@
         const t = teselaDe(P.id);
         if (P.mid === 'p') {
           // una persona de mi tramo: su imagen y su voz (la de todos los que están detrás de ella)
-          const r = K.m.estadoLlamada().remoto; t.pista = null;
+          const r = K.m.estadoLlamada().remoto; t.pista = null; t.clave = null;
           if (t.video.srcObject !== (r || null)) { t.video.srcObject = r || null; if (r) reproduce(t.video); }
           t.video.muted = false;
         } else {
-          // alguien detrás de un tramo: su imagen reenviada, sin sonido (su voz llega mezclada en la de su tramo)
-          const pista = pistaDe(K, P);
-          if (t.pista !== pista || (!pista && t.video.srcObject)) { t.pista = pista; t.video.srcObject = pista ? new MediaStream([pista]) : null; if (pista) reproduce(t.video); }
-          t.video.muted = true;
+          // alguien detrás de un tramo: su imagen y su voz, reenviadas por sus huecos (con una versión anterior, su voz llega mezclada
+          // en la de su tramo y aquí no suena)
+          const pista = pistaDe(K, P), voz = vozPersona(K, P), clave = (pista ? pista.id : '') + '|' + (voz ? voz.id : '');
+          if (t.clave !== clave) { t.clave = clave; t.pista = pista; t.video.srcObject = pista || voz ? new MediaStream([pista, voz].filter(Boolean)) : null; if (pista || voz) reproduce(t.video); }
+          t.video.muted = !voz;
         }
         lista.push({ el: t.video, id: P.id, f: P.f, etq, r: t.rotulo, K, sinImagen: P.mid !== 'p' && !t.pista });
       }
@@ -450,7 +466,7 @@
     // la persona invitada que ya está entrando: su recuadro, con «Conectando…»
     for (const p of pares()) {
       if (!p.invitado || !p.m.conectada || p.m.terminada || enLlamada(p) || !ts.length) continue;
-      const id = 'c:' + p.clave; usados.add(id); const t = teselaDe(id); if (t.video.srcObject) t.video.srcObject = null;
+      const id = 'c:' + p.clave; usados.add(id); const t = teselaDe(id); t.clave = null; if (t.video.srcObject) t.video.srcObject = null;
       lista.push({ el: t.video, id, f: null, etq: etiqueta(p), r: t.rotulo, conectando: true });
     }
     for (const id of [...teselas.keys()]) if (!usados.has(id)) quitaTesela(id);
@@ -485,8 +501,10 @@
     for (const r of esc.querySelectorAll('.tesela-nombre')) if (!lista.some((x) => x.r === r)) r.hidden = true;
     for (const pl of esc.querySelectorAll('.tesela-sin')) if (!lista.some((x) => x.el._placa === pl) || sala.classList.contains('en-chat')) pl.hidden = true;
     if (!lista.length || sala.classList.contains('en-chat')) { if (lista.length) for (const x of lista) { x.el.classList.remove('en-tesela', 'habla'); for (const k of PROPS) x.el.style.removeProperty(k); } return; }
-    const W = esc.clientWidth, H = esc.clientHeight; if (!W || !H) return;
-    const m = movil.matches, mini = sala.classList.contains('mini');
+    const W = esc.clientWidth, m = movil.matches, mini = sala.classList.contains('mini');
+    // (llamada de voz en el móvil: los botones no se esconden; los recuadros acaban encima de ellos)
+    let H = esc.clientHeight; if (!W || !H) return;
+    { const ctl = $('#controles'); if (m && sala.classList.contains('solo-voz') && ctl && !ctl.hidden) { const top = ctl.getBoundingClientRect().top - esc.getBoundingClientRect().top; if (top > 120 && top < H) H = Math.round(top - 14); } }
     // si alguien comparte su pantalla, su recuadro pasa a ser el grande (como en Meet): las demás personas, al lado (o debajo, en
     // el móvil)
     const foco = mini ? -1 : lista.findIndex((x) => !x.yo && x.f && x.f.pantalla && !x.f.chat);
@@ -580,9 +598,14 @@
     hablaT = setInterval(() => {
       if (!sala.classList.contains('en-grupo') || document.hidden) return;
       const ts = tramos(), niveles = new Map();
-      for (const K of ts) { const g = genteDe(K), x = K.m.nivelVoz(); niveles.set(K, { x: x || 0, id: g.length === 1 ? g[0].id : K.hablaId || null }); }
+      for (const K of ts) {
+        const g = genteDe(K), x = K.m.nivelVoz() || 0, aparte = g.some((P) => P.mid !== 'p' && P.a != null);
+        // (cada voz aparte: la de cada uno, por su hueco; con la mezcla de antes, el tramo dice quién habla)
+        if (!aparte) { niveles.set(K, [{ x, id: g.length === 1 ? g[0].id : K.hablaId || null }]); continue; }
+        niveles.set(K, g.map((P) => ({ id: P.id, x: P.mid === 'p' ? x : (P.a != null && K.m.nivelDe ? K.m.nivelDe(P.a) || 0 : 0) })));
+      }
       // quién habla de los que veo
-      let mejor = null, max = UMBRAL; for (const v of niveles.values()) if (v.id && v.x > max) { max = v.x; mejor = v.id; }
+      let mejor = null, max = UMBRAL; for (const vs of niveles.values()) for (const v of vs) if (v.id && v.x > max) { max = v.x; mejor = v.id; }
       const t = performance.now();
       if (mejor) { ultimoId = mejor; ultimoT = t; } else if (t - ultimoT < 900) mejor = ultimoId;
       for (const el of esc.querySelectorAll('.en-tesela')) el.classList.toggle('habla', !!mejor && el.dataset.quien === mejor);
@@ -592,7 +615,7 @@
       for (const L of ts) {
         if (!L.arbol) continue;
         let id = mio > UMBRAL ? yo : '', m2 = mio > UMBRAL ? mio : UMBRAL;
-        for (const [K, v] of niveles) if (K !== L && v.id && v.x > m2) { m2 = v.x; id = v.id; }
+        for (const [K, vs] of niveles) if (K !== L) for (const v of vs) if (v.id && v.x > m2) { m2 = v.x; id = v.id; }
         if (!id && L.hablaEnviado && t - (L.hablaHace || 0) < 900) continue;
         if (id) L.hablaHace = t;
         if (id !== (L.hablaEnviado || '')) { L.hablaEnviado = id; L.m.grupo({ que: 'habla', habla: id }); }

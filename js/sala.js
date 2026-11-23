@@ -613,7 +613,8 @@
     enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
     { const g = G(); if (g) g.modoChat(true); else if (M.modoChat) M.modoChat(true); }
     $('#chat-tiempo').textContent = ultimo.t0 ? mmss(Date.now() - ultimo.t0) : '';
-    { const vid = ultimo.video !== false, t = $('#chat-volver-txt'), k = vid ? 'volverVideo' : 'volverLlamada'; t.dataset.t = k; t.textContent = tr(k); $('#chat-pausa').hidden = !vid; }
+    { const vid = ultimo.video !== false, t = $('#chat-volver-txt'), k = vid ? 'volverVideo' : 'volverLlamada'; t.dataset.t = k; t.textContent = tr(k); $('#chat-pausa').hidden = !vid;
+      const ic = $('#chat-volver .chat-volver-pill svg'); if (ic && ic.dataset.v !== String(vid)) { ic.dataset.v = String(vid); ic.innerHTML = vid ? '<rect x="3" y="6.5" width="12.5" height="11" rx="2.6"/><path d="m15.5 10.6 5-3v8.8l-5-3z"/>' : '<path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02z"/>'; } }
     sala.classList.add('en-chat'); ajustaVista(); quitaVacio(); if (!lista.children.length) { const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v); }
     requestAnimationFrame(abajo);
   }
@@ -1104,13 +1105,28 @@
   // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
+  // (dueño, 23 nov 16:25: «En llamada de voz parece en altavoz, podemos cambiarla a normal?») en el iPhone, la llamada de voz suena
+  // por el auricular, como una llamada de teléfono, y «Altavoz» la pasa al altavoz (y vuelta). Solo donde el navegador deja elegirlo
+  // (los del iPhone: navigator.audioSession); la videollamada, por el altavoz, como siempre.
+  const SESION_AUDIO = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
+  const bAltavoz = $('#b-altavoz');
+  let altavoz = false, tipoAudio = '';
+  function ponAudio(voz) {
+    if (!voz) altavoz = false;
+    if (bAltavoz) { bAltavoz.hidden = !(SESION_AUDIO && voz); bAltavoz.setAttribute('aria-pressed', String(altavoz)); }
+    if (!SESION_AUDIO) return;
+    const t = voz && !altavoz ? 'play-and-record' : 'auto'; if (t === tipoAudio) return; tipoAudio = t;
+    try { navigator.audioSession.type = t; } catch (_) {}
+  }
+  if (bAltavoz) bAltavoz.addEventListener('click', () => { altavoz = !altavoz; ponAudio(sala.classList.contains('solo-voz')); });
   function pintaLlamadaVoz(si, e) {
+    ponAudio(si);
     const bc = $('#b-camara'), s0 = bc && bc.querySelector('span');
     if (bc) { const sinCam = !!(e && (e.estado === 'hablando' || e.estado === 'reconectando') && e.videoMio === false); bc.classList.toggle('a-video', sinCam); if (s0) { const k = sinCam ? 'pasarVideo' : 'camara'; if (s0.dataset.t !== k) { s0.dataset.t = k; s0.textContent = tr(k); } } if (sinCam) bc.setAttribute('aria-pressed', 'false'); }
     if (!si) { if (tarjetaVoz) tarjetaVoz.hidden = true; clearInterval(vozT); vozT = null; return; }
     if (!tarjetaVoz) {
       tarjetaVoz = document.createElement('div'); tarjetaVoz.className = 'tarjeta-voz'; tarjetaVoz.setAttribute('aria-hidden', 'true');
-      tarjetaVoz.innerHTML = '<span class="tv-aro"><span class="tv-circulo"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.9"/><path d="M4.4 20.2c.7-4 3.9-6.7 7.6-6.7s6.9 2.7 7.6 6.7"/></svg></span></span><span class="tv-t"></span>';
+      tarjetaVoz.innerHTML = '<span class="tv-luz"></span><span class="tv-t"></span>';
       $('#escena-video').append(tarjetaVoz);
     }
     tarjetaVoz.hidden = false;
@@ -1144,7 +1160,7 @@
     $('#video-reconecta').hidden = e.estado !== 'reconectando' || pas;
     if (hablando && !llamadaVista) { llamadaVista = true; ponGrande(movil.matches); } else if (!hablando && !pas) { llamadaVista = false; cierraChat(); }
     sala.classList.toggle('video-grande', grande && hablando);
-    botonesSolos(e.estado === 'hablando' && !pas);
+    botonesSolos(e.estado === 'hablando' && !pas && e.video !== false); // (en la de voz no se esconden: no hay imagen que tapar)
     const contestaYa = !!(window.Elixire && window.Elixire.contestaSola); // (se contesta sola: sin «Aceptar / Rechazar» entre medias)
     ent.hidden = e.estado !== 'entrante' || contestaYa || pas;
     const fuera = m && otroFuera && (e.estado === 'libre' || e.estado === 'fin');
@@ -1266,7 +1282,7 @@
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
-    continuada = false; otroFuera = false; abre(); cartelCifrado();
+    continuada = false; otroFuera = false; abre(); // (dueño, 23 nov 16:39: sin el cartel de encriptado dentro del chat: «arriba ya lo dice»)
     // invitación a una llamada: quien entra con el enlace llama sin más; quien invitó contesta sola (ver puerta.js)
     const E = window.Elixire || {};
     esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
