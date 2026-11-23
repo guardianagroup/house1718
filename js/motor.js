@@ -976,18 +976,45 @@
       if (si) {
         if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); await actx.audioWorklet.addModule('js/cambia-voz.js' + (verJs ? '?v=' + verJs : '')); }
         if (actx.state === 'suspended') await actx.resume();
-        if (vozN) { try { vozN.src.disconnect(); vozN.nodo.disconnect(); } catch (_) {} }
-        const src = actx.createMediaStreamSource(new MediaStream([mic])), nodo = new AudioWorkletNode(actx, 'cambia-voz'), dst = actx.createMediaStreamDestination();
-        src.connect(nodo); nodo.connect(dst);
+        if (vozN) { for (const n of vozN.nodos) { try { n.disconnect(); } catch (_) {} } }
+        const src = actx.createMediaStreamSource(new MediaStream([mic])), dst = actx.createMediaStreamDestination();
+        const nodos = vozDePelicula(src, dst);
         const pista = dst.stream.getAudioTracks()[0]; await snd.replaceTrack(pista);
-        vozN = { src, nodo, pista }; L.vozCambiada = true;
+        vozN = { nodos: [src, ...nodos], pista }; L.vozCambiada = true;
       } else {
         await snd.replaceTrack(mic); paraVoz(); L.vozCambiada = false;
       }
       avisaFiltros(); emite('llamada', estadoLlamada()); return true;
     } catch (e) { console.warn('voz', e); return false; }
   }
-  function paraVoz() { if (vozN) { try { vozN.src.disconnect(); vozN.nodo.disconnect(); vozN.pista.stop(); } catch (_) {} vozN = null; } }
+  function paraVoz() { if (vozN) { for (const n of vozN.nodos) { try { n.disconnect(); } catch (_) {} } try { vozN.pista.stop(); } catch (_) {} vozN = null; } }
+  // (dueño, 23 nov 06:51: «la típica de las películas, voz seria y que da impresión de miedo») la voz del anónimo de película: grave
+  // (unos 6 semitonos más baja), con cuerpo (una segunda voz una octava por debajo, suave), algo de aspereza, graves realzados y agudos
+  // recortados sin perder claridad, nivel parejo (compresor) y una sala oscura muy corta. Todo en el propio equipo, antes de encriptar.
+  function vozDePelicula(src, dst) {
+    const c = actx, n = [], f = (tipo, fr, q, g) => { const b = c.createBiquadFilter(); b.type = tipo; b.frequency.value = fr; if (q != null) b.Q.value = q; if (g != null) b.gain.value = g; n.push(b); return b; };
+    const gan = (v) => { const g = c.createGain(); g.gain.value = v; n.push(g); return g; };
+    const tono = (t) => { const w = new AudioWorkletNode(c, 'cambia-voz', { parameterData: { tono: t } }); n.push(w); return w; };
+    const limpia = f('highpass', 85, 0.7);
+    const principal = tono(0.71), grave = tono(0.5), graveFiltro = f('lowpass', 700, 0.7), graveNivel = gan(0.38), mezcla = gan(1);
+    src.connect(limpia); limpia.connect(principal); limpia.connect(grave); grave.connect(graveFiltro); graveFiltro.connect(graveNivel);
+    principal.connect(mezcla); graveNivel.connect(mezcla);
+    const empuje = gan(1.8), aspero = c.createWaveShaper(); n.push(aspero);
+    const curva = new Float32Array(1024); for (let i = 0; i < curva.length; i++) { const x = i / (curva.length - 1) * 2 - 1; curva[i] = Math.tanh(2.2 * x) / Math.tanh(2.2); }
+    aspero.curve = curva; aspero.oversample = '2x';
+    const tras = gan(0.62), cuerpo = f('lowshelf', 150, null, 5), barro = f('peaking', 420, 1, -3), claridad = f('peaking', 2100, 0.9, 3), techo = f('lowpass', 5600, 0.7);
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -26; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.18; n.push(comp);
+    mezcla.connect(empuje); empuje.connect(aspero); aspero.connect(tras); tras.connect(cuerpo); cuerpo.connect(barro); barro.connect(claridad); claridad.connect(techo); techo.connect(comp);
+    // sala oscura y corta (0,45 s), muy baja: da el aire de película sin que suene a eco
+    const largo = Math.round(c.sampleRate * 0.45), ir = c.createBuffer(2, largo, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < largo; i++) { lp += 0.25 * ((Math.random() * 2 - 1) - lp); d[i] = lp * Math.pow(1 - i / largo, 3.2); } }
+    const sala = c.createConvolver(); sala.buffer = ir; n.push(sala);
+    const seco = gan(0.92), humedo = gan(0.13), salida = gan(0.62), tope = c.createWaveShaper(); n.push(tope);
+    // el compresor ya sube el nivel por su cuenta: la salida se baja y un tope suave evita que sature al encriptarse y enviarse
+    const ct = new Float32Array(1024); for (let i = 0; i < ct.length; i++) { const x = i / (ct.length - 1) * 2 - 1; ct[i] = Math.tanh(1.2 * x) / Math.tanh(1.2); } tope.curve = ct;
+    comp.connect(seco); comp.connect(sala); sala.connect(humedo); seco.connect(salida); humedo.connect(salida); salida.connect(tope); tope.connect(dst);
+    return n;
+  }
   // la cara: la imagen que sale se convierte en mosaico (22 bloques de ancho): no se reconoce la cara ni la detecta ningún programa,
   // pero se ve que hay alguien y cómo se mueve
   async function caraOculta(si) {

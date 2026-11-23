@@ -8,7 +8,7 @@ class CambiaVoz extends AudioWorkletProcessor {
   static get parameterDescriptors() { return [{ name: 'tono', defaultValue: 0.78, minValue: 0.5, maxValue: 2, automationRate: 'k-rate' }]; }
   constructor() {
     super();
-    this.ventana = Math.round(sampleRate * 0.05); // 50 ms
+    this.ventana = Math.round(sampleRate * 0.06); // 60 ms: más suave en los tonos graves
     this.buf = new Float32Array(this.ventana * 4); this.pos = 0; this.fase = 0;
   }
   lee(retardo) {
