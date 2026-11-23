@@ -24,5 +24,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+      # (23 nov 2026: GitHub tardaba en listar el paquete recién subido y el despliegue fallaba con «Found 0 artifact(s)»)
+      - run: sleep 25
       - id: deployment
         uses: actions/deploy-pages@v4
