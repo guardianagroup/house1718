@@ -347,7 +347,7 @@
   function ponAmplia(si) {
     si = !!si && abierta && !movil.matches;
     if (si === amplia) return;
-    amplia = si; sala.classList.toggle('amplia', si);
+    amplia = si; sala.classList.toggle('amplia', si); ponDividida(si);
     const b = $('#b-ampliar'); if (b) { b.setAttribute('aria-pressed', String(si)); const sp = b.querySelector('span'); sp.dataset.t = si ? 'verChat' : 'ampliar'; sp.textContent = tr(sp.dataset.t); }
     if (!si) { avisos.textContent = ''; sinLeer = 0; marcaLeidos(); }
     pintaCuenta();
@@ -653,6 +653,39 @@
     bPantalla.disabled = false; pintaPantalla(M.estadoLlamada ? M.estadoLlamada() : null);
   });
   M.on('llamada', (e) => pintaPantalla(e));
+  // ---------- tu imagen, como en GUARDIANA (dueño, 23 nov 09:31: «cuando amplío la pantalla y yo me veo aquí, ponlo como en
+  // GUARDIANA… había una línea en el medio y se podía mover hacia los lados»): en el ordenador, la pantalla partida — la otra persona
+  // a un lado y tú al otro — con la raya del medio que se arrastra (de un quinto a cuatro quintos); llevada al borde, tu imagen vuelve
+  // a ser pequeña. Al ampliar sale partida; el botón de tu imagen (o doble clic en ella) la parte o la hace pequeña. El sitio de la
+  // raya se recuerda en este navegador. Mientras se comprueba, la imagen de la otra persona vuelve a ocupar todo.
+  const raya = $('#raya-division'), miVista = $('#mi-vista');
+  let dividida = false, corte = 0.5;
+  try { const c = parseFloat(localStorage.getItem('elixire-corte')); if (c >= 0.2 && c <= 0.8) corte = c; } catch (_) {}
+  const puedeDividir = (e = ultimo) => !movil.matches && abierta && e.estado === 'hablando' && e.video !== false && e.cam !== false;
+  function ponCorte(c) { corte = Math.max(0.2, Math.min(0.8, c)); sala.style.setProperty('--corte', (corte * 100).toFixed(2) + '%'); }
+  function pintaMiVista(e = ultimo) {
+    miVista.hidden = movil.matches || e.estado !== 'hablando' || e.video === false || e.cam === false;
+    const k = dividida ? 'hacerPequena' : 'pantallaDividida'; miVista.classList.toggle('partida', dividida); miVista.setAttribute('aria-label', tr(k)); miVista.title = tr(k);
+  }
+  function ponDividida(si) { si = !!si && puedeDividir(); dividida = si; sala.classList.toggle('dividida', si); raya.hidden = !si; ponCorte(corte); pintaMiVista(); }
+  miVista.addEventListener('click', () => ponDividida(!dividida));
+  $('#video-mio').addEventListener('dblclick', (e) => { if (movil.matches) return; e.stopPropagation(); ponDividida(!dividida); });
+  raya.addEventListener('dblclick', (e) => { e.stopPropagation(); ponCorte(0.5); try { localStorage.setItem('elixire-corte', '0.5'); } catch (_) {} });
+  raya.addEventListener('keydown', (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); ponCorte(corte + (e.key === 'ArrowLeft' ? -0.02 : 0.02)); try { localStorage.setItem('elixire-corte', String(corte)); } catch (_) {} });
+  raya.addEventListener('pointerdown', (e) => {
+    if (!dividida || e.button > 0) return; e.preventDefault();
+    const r = escena.getBoundingClientRect(); let bruto = corte;
+    try { raya.setPointerCapture(e.pointerId); } catch (_) {} raya.classList.add('moviendo'); sala.classList.add('moviendo-raya');
+    const mueve = (ev) => { bruto = (ev.clientX - r.left) / r.width; ponCorte(bruto); };
+    const suelta = () => {
+      raya.removeEventListener('pointermove', mueve); raya.removeEventListener('pointerup', suelta); raya.removeEventListener('pointercancel', suelta);
+      raya.classList.remove('moviendo'); sala.classList.remove('moviendo-raya');
+      if (bruto > 0.9) { ponCorte(0.5); ponDividida(false); } // llevada al borde: tu imagen, pequeña otra vez
+      try { localStorage.setItem('elixire-corte', String(corte)); } catch (_) {}
+    };
+    raya.addEventListener('pointermove', mueve); raya.addEventListener('pointerup', suelta); raya.addEventListener('pointercancel', suelta);
+  });
+  M.on('llamada', (e) => { if (dividida && !puedeDividir(e)) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; } pintaMiVista(e); });
   // en el ordenador, la botonera siempre en una fila: si no cabe en el vídeo, se reduce un poco entera
   if (window.ResizeObserver) {
     const ctlB = $('#controles'), escB = $('#escena-video');

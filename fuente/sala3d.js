@@ -799,7 +799,9 @@ function arranca() {
   }
   requestAnimationFrame(cuadro);
   // la sala de la conversación tapa el 3D: mientras tanto, quieto (sin gastar la tarjeta gráfica durante la videollamada)
-  const pausa = (si) => { pausado = !!si; if (!pausado) delta(); };
+  // (dueño, 23 nov 09:34: «que la página gaste el mínimo de memoria, sin reducir la calidad»): en pausa (con la llamada delante) los
+  // lienzos de la sala se quedan en 1×1 y la tarjeta gráfica suelta su memoria; al volver, recuperan su tamaño
+  const pausa = (si) => { pausado = !!si; if (pausado) { renderer.setSize(1, 1, false); comp.setSize(1, 1); } else { ajusta(); delta(); } };
   return { abre, cierra, pausa, abierta: () => abierta,
     // para las pruebas y la imagen de la invitación: la calidad elegida, girar la roca y fijar la luz del holograma (null: el ciclo)
     calidad: () => ({ nivel: NIVEL, pr: +PR.toFixed(2), ms: +(med * 1000).toFixed(1), resplandor: resplandor.enabled, gpu }),

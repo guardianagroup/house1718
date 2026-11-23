@@ -1805,25 +1805,39 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .vigia-estado{left:22px;right:auto;top:20px}
   .vigia-panel{left:22px;right:auto;top:62px}
 }
-/* la botonera de abajo, como «Pasar al móvil» y «Terminar»: cada botón, su cristal */
+/* la botonera de abajo, como en GUARDIANA y en las demás videollamadas (dueño, 23 nov 09:30): botones redondos con su icono y el
+   nombre debajo; lo que está activo, en blanco; colgar, en rojo y a la derecha */
 @media (min-width:761px){
-  .sala .controles{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;bottom:20px;padding:0;background:none;border:0;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;transform:translateX(-50%) scale(var(--k,1));transform-origin:50% 100%}
-  .sala .controles::before,.sala .controles::after,.sala .controles .seg+.seg::before{display:none}
-  .sala .controles .seg{flex:0 0 auto;min-width:0;height:44px;padding:0 16px;border-radius:14px;color:rgba(240,244,248,.9);font:400 11px/1 var(--ui);letter-spacing:.16em;
-    background:linear-gradient(180deg,rgba(255,255,255,.085) 0%,rgba(255,255,255,.028) 48%,rgba(255,255,255,.012) 52%,rgba(255,255,255,.04) 100%),rgba(6,8,12,.5);
-    border:1px solid rgba(255,255,255,.17);-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.25),0 18px 44px -22px rgba(0,0,0,.7);transition:border-color .35s,color .3s,background .35s}
-  .sala .controles .seg:hover,.sala .controles .seg:focus-visible{border-color:rgba(255,255,255,.4);color:#fff}
-  .sala .controles .seg .ico-ctl,.sala .controles .seg>svg{display:none}
-  .sala .controles .seg[aria-pressed="true"]:not(.b-filtro):not(#b-micro):not(#b-camara){border-color:rgba(156,195,228,.6);color:#CFE2F3}
-  .sala .controles #b-micro[aria-pressed="false"],.sala .controles #b-camara[aria-pressed="false"]{border-color:rgba(224,122,108,.55);color:#F2B8AE}
-  .sala .controles .seg.b-filtro[aria-pressed="true"]{border-color:rgba(240,199,127,.6);color:#F0C77F;background:linear-gradient(180deg,rgba(240,199,127,.14),rgba(240,199,127,.05)),rgba(6,8,12,.5)}
-  .sala .controles #b-colgar{border-color:rgba(224,122,108,.5);color:#F6C9C1}
-  .sala .controles #b-colgar:hover,.sala .controles #b-colgar:focus-visible{border-color:#E07A6C;color:#fff;background:rgba(224,122,108,.28)}
-  .sala .controles #b-ampliar{overflow:visible}
-  .sala .controles #b-ampliar::after{display:none}
-  .sala .controles #b-ampliar .cuenta{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#E07A6C;color:#05070A;font:700 11px/20px var(--ui);letter-spacing:0;text-align:center}
-  .sala .controles #b-ampliar .cuenta[hidden]{display:none}
+  .sala .controles{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:4px;width:max-content;bottom:16px;padding:0;background:none;border:0;border-radius:0;box-shadow:none;
+    -webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;transform:translateX(-50%) scale(var(--k,1));transform-origin:50% 100%}
+  .sala .controles::before,.sala .controles::after,.sala .controles .seg::before,.sala .controles .seg::after,.sala .controles .seg+.seg::before{display:none!important}
+  .sala .controles .seg{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:7px;width:86px;height:auto;min-width:0;padding:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none;
+    -webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;color:#F4F6F8;font:500 12.5px/1.2 var(--ui);letter-spacing:0;text-transform:none;white-space:normal;text-align:center;cursor:pointer}
+  .sala .controles .seg>svg{display:block!important;box-sizing:border-box;width:56px!important;height:56px!important;padding:16px;border-radius:50%;flex:none;
+    background:rgba(16,22,30,.82);border:1px solid rgba(156,195,228,.3);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 10px 26px -10px rgba(0,0,0,.8);
+    fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .1s ease}
+  .sala .controles .seg>span{color:#DCE5ED;text-shadow:0 1px 6px rgba(0,0,0,.9);max-width:100%;overflow-wrap:break-word}
+  .sala .controles .seg:hover>svg,.sala .controles .seg:focus-visible>svg{background:rgba(30,40,54,.9);border-color:rgba(207,226,243,.6)}
+  .sala .controles .seg:active>svg{transform:scale(.93)}
+  .sala .controles .seg:focus-visible{outline:none}
+  /* activo: en blanco, el icono oscuro (micro o cámara apagados, voz cambiada, cara oculta, compartiendo, ampliado) */
+  .sala .controles .seg[aria-pressed="true"]>svg,.sala .controles #b-micro[aria-pressed="false"]>svg,.sala .controles #b-camara[aria-pressed="false"]>svg{background:#F4F6F8;border-color:#F4F6F8;color:#0A0E14}
+  .sala .controles #b-micro[aria-pressed="true"]>svg,.sala .controles #b-camara[aria-pressed="true"]>svg{background:rgba(16,22,30,.82);border-color:rgba(156,195,228,.3);color:#F4F6F8}
+  .sala .controles .seg[aria-pressed="true"]>span,.sala .controles #b-micro[aria-pressed="false"]>span,.sala .controles #b-camara[aria-pressed="false"]>span{color:#F4F6F8;font-weight:600}
+  .sala .controles #b-micro[aria-pressed="true"]>span,.sala .controles #b-camara[aria-pressed="true"]>span{font-weight:500;color:#DCE5ED}
+  .sala .controles .tachado{display:none}
+  .sala .controles #b-micro[aria-pressed="false"] .tachado,.sala .controles #b-camara[aria-pressed="false"] .tachado{display:inline}
+  .sala .controles #b-ampliar .ico-verchat,.sala .controles #b-ampliar[aria-pressed="true"] .ico-ampliar{display:none!important}
+  .sala .controles #b-ampliar[aria-pressed="true"] .ico-verchat{display:block!important}
+  .sala .controles #b-colgar{margin-left:10px}
+  .sala .controles #b-colgar>svg{background:#E07A6C;border-color:#E07A6C;color:#05070A;fill:currentColor;stroke:none;padding:15px;transform:rotate(135deg)}
+  .sala .controles #b-colgar:hover>svg,.sala .controles #b-colgar:focus-visible>svg{background:#EA8B7E;border-color:#EA8B7E}
+  .sala .controles #b-colgar:active>svg{transform:rotate(135deg) scale(.93)}
+  .sala .controles .seg:disabled{opacity:.5;cursor:default}
+  .sala .controles .cuenta{position:absolute;top:-4px;left:calc(50% + 16px);min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#E07A6C;color:#05070A;
+    font:700 11px/20px var(--ui);text-align:center;box-shadow:0 0 0 2px #05070A}
+  .sala .controles .cuenta[hidden]{display:none}
+  .sala .controles .seg{position:relative}
 }
 /* el vídeo a toda la pantalla: sin la conversación ni la cabecera; lo que llega, en avisos arriba */
 @media (min-width:761px){
@@ -1883,3 +1897,39 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 }
 .cristal.grande.codigo{padding:0 24px}
 @media (max-width:760px){ .consola .cristal.grande.codigo{height:64px;padding:0 18px} }
+/* ---------- la pantalla partida en el ordenador, como en GUARDIANA (dueño, 23 nov 09:31): la otra persona a la izquierda y tú a la
+   derecha, con la raya del medio que se arrastra; el botón de tu imagen parte la pantalla o la hace pequeña ---------- */
+.raya-division,.mi-vista{display:none}
+@media (min-width:761px){
+  .sala.dividida:not(.comprobando) .video-suyo{position:absolute;left:0;top:0;bottom:0;width:var(--corte,50%)!important;height:100%}
+  .sala.dividida:not(.comprobando) .video-mio{position:absolute;left:var(--corte,50%)!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;
+    aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;z-index:auto!important}
+  .sala.dividida .video-mio,.sala.dividida .video-suyo{transition:none}
+  .raya-division:not([hidden]){display:flex;position:absolute;z-index:4;top:0;bottom:0;left:var(--corte,50%);width:28px;margin-left:-14px;align-items:center;justify-content:center;cursor:col-resize;touch-action:none;outline:none}
+  .raya-division::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:rgba(244,246,248,.5);box-shadow:0 0 12px rgba(0,0,0,.55);transition:background .2s}
+  .raya-division i{position:relative;display:grid;place-items:center;width:26px;height:58px;border-radius:13px;background:rgba(16,22,30,.9);border:1px solid rgba(207,226,243,.55);
+    box-shadow:0 8px 22px rgba(0,0,0,.6);transition:border-color .2s,background .2s}
+  .raya-division svg{width:16px;height:16px;fill:none;stroke:#F4F6F8;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .raya-division:hover::before,.raya-division.moviendo::before,.raya-division:focus-visible::before{background:#F4F6F8}
+  .raya-division:hover i,.raya-division.moviendo i,.raya-division:focus-visible i{border-color:#F4F6F8;background:rgba(30,40,54,.95)}
+  .sala.moviendo-raya,.sala.moviendo-raya *{cursor:col-resize!important;user-select:none}
+  .sala.comprobando .raya-division{display:none!important}
+  /* el botón de tu imagen: en la pequeña, en su esquina de arriba a la izquierda; con la pantalla partida, arriba a la derecha, bajo el tiempo */
+  .mi-vista:not([hidden]){display:grid;place-items:center;position:absolute;z-index:5;width:36px;height:36px;padding:0;border-radius:50%;cursor:pointer;
+    right:calc(22px + min(220px,24%) - 44px);bottom:calc(122px + min(220px,24%) * .625 - 44px);
+    background:rgba(16,22,30,.86);border:1px solid rgba(207,226,243,.45);color:#F4F6F8;box-shadow:0 6px 16px rgba(0,0,0,.5);opacity:.9;transition:opacity .2s,background .2s}
+  .mi-vista:hover,.mi-vista:focus-visible{opacity:1;background:rgba(30,40,54,.95);outline:none}
+  .mi-vista svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .mi-vista .mv-reducir,.mi-vista.partida .mv-partir{display:none}
+  .mi-vista.partida .mv-reducir{display:block}
+  .sala.dividida .mi-vista{right:22px;bottom:auto;top:66px}
+  .sala.comprobando .mi-vista{display:none!important}
+  /* con la pantalla partida, los avisos de la otra persona, en su mitad */
+  .sala.dividida:not(.comprobando) .filtro-otro,.sala.dividida:not(.comprobando) .otro-chat{left:calc(var(--corte,50%) / 2)}
+}
+
+/* (23 nov) con los botones redondos, tu imagen pequeña un poco más arriba, y la botonera siempre por encima */
+@media (min-width:761px){ .sala .video-mio{bottom:122px} .sala .controles{z-index:6} }
+/* (23 nov) lo que es solo del ordenador nunca sale en el móvil, tampoco dentro de la botonera (allí «.par .seg» pesaba más) */
+@media (max-width:760px),(pointer:coarse){ .sala .controles .seg.solo-pc,.sala .solo-pc{display:none!important} }
+.raya-division::before{bottom:112px}

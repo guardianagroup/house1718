@@ -4,6 +4,7 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    pantallaDividida: 'Pantalla dividida', hacerPequena: 'Hacer pequeña tu imagen', moverDivision: 'Mover la división',
     escribiendo: 'Escribiendo…',
     estadoMas: '· Imagen, sonido y chat', compartirPantalla: 'Compartir pantalla', dejarPantalla: 'Dejar de compartir', ampliar: 'Ampliar', verChat: 'Ver chat', otroPantalla: 'Está compartiendo su pantalla',
     mensajeWa: '*Te han invitado a una conversación poscuántica en Elixire*\n{enlace}\nCódigo: {codigo}',
@@ -189,7 +190,7 @@
     pruebaTitulo: 'FREE TRIAL', pruebaTexto: 'A video call of up to 3 minutes, with the same encryption as the full service.',
     pruebasTexto: 'During the testing phase, chat and file transfers are unlimited.',
     verificar: 'Verify this page',
-    salaEstado: 'Post-quantum encrypted', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
+    salaEstado: 'Post-quantum encrypted', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
     coinciden: 'They match', noCoinciden: 'No match', palabrasHechas: 'Verified by you. The other person must verify them too.', suComprobacion: 'The other person verified the words',
     videoEtiqueta: 'VIDEO CALL', pruebaLimite: 'Trial: up to 3 minutes', videollamada: 'Start video call', aceptar: 'Accept', rechazar: 'Decline',
     capaActiva: 'Picture and sound with post-quantum layer', micro: 'Mic', camara: 'Camera', colgar: 'Hang up',
