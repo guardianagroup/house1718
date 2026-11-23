@@ -755,9 +755,9 @@
   }
   if (bVista) bVista.addEventListener('click', () => ponDividida(!dividida, true));
   // tu imagen pequeña: se mueve con el ratón (como en GUARDIANA); doble clic: pantalla partida ↔ pequeña
-  vm.addEventListener('dblclick', (e) => { if (!enPC() || enGrupo()) return; e.stopPropagation(); arr = null; ponDividida(!dividida, true); });
+  vm.addEventListener('dblclick', (e) => { if (!enPC() || enGrupo() || sala.classList.contains('mini')) return; e.stopPropagation(); arr = null; ponDividida(!dividida, true); });
   vm.addEventListener('pointerdown', (e) => {
-    if (!enPC() || dividida || enGrupo() || e.button > 0 || !sala.classList.contains('en-llamada')) return;
+    if (!enPC() || dividida || enGrupo() || sala.classList.contains('mini') || e.button > 0 || !sala.classList.contains('en-llamada')) return;
     const r = vm.getBoundingClientRect(), c = escena.getBoundingClientRect();
     arr = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, movido: false, W: r.width, H: r.height, cl: c.left, ct: c.top, CW: c.width, CH: c.height };
     try { vm.setPointerCapture(e.pointerId); } catch (_) {}

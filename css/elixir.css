@@ -2114,3 +2114,8 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 @media (max-width:760px){ .sala.en-grupo:not(.en-chat) .tesela-sin:not([hidden]){border-radius:0} }
 /* cuántas personas, junto al tiempo */
 .sala.en-grupo .video-tiempo[data-gente]::after{content:'· ' attr(data-gente);margin-left:8px;font-weight:500;color:#B9C6D3}
+/* (dueño, 23 nov 13:20: «cuando pasamos al chat… el recuadro pequeño donde yo me veo no quiero que se cambie, que se quede fijo»):
+   en la tarjeta pequeña de la llamada, tu imagen siempre en el mismo sitio, arriba a la derecha, venga de la pantalla partida o de
+   donde la hubieras movido; ahí no se arrastra (lo que se mueve es la tarjeta entera) */
+.sala.mini.mini .escena-video .video-mio{left:auto!important;top:10px!important;right:10px!important;bottom:auto!important;width:30%!important;height:auto!important;
+  aspect-ratio:16/10!important;border-radius:8px!important;cursor:inherit!important;transition:none!important}
