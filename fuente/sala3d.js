@@ -489,6 +489,20 @@ function arranca() {
   const chG = new THREE.BufferGeometry(); chG.setAttribute('position', new THREE.BufferAttribute(chPos, 3));
   const matChispa = new THREE.PointsMaterial({ map: texPunto, color: new THREE.Color(0xe3f0fb).multiplyScalar(1.6), size: 0.022, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
   const chispas = new THREE.Points(chG, matChispa); chispas.frustumCulled = false; mono.add(chispas);
+  // (dueño, 23 nov 07:47: «la piedra respecto a la base está un poco descentrada, ponla perfecta en el centro») la roca, hecha aquí, no
+  // es simétrica: su caja queda un poco a un lado del eje. Todo lo de la roca (cuartos, fisura, luz de dentro, campo y chispas) pasa a un
+  // grupo desplazado justo lo necesario para que el centro de su caja, de lado y de fondo, caiga sobre el eje de la peana; así también
+  // gira sobre su centro. (En js/sala3d.js se aplicó a mano lo mismo, porque aquí no estaba three r187 para volver a empaquetar.)
+  {
+    // el centro que mejor deja la roca a la misma distancia por los dos lados mire hacia donde mire al girar: para 72 direcciones,
+    // el punto medio de su anchura en esa dirección; el centro es el que mejor cuadra con todos (mínimos cuadrados)
+    const px = [], pz = []; for (const c of cuartos) { const a = c.children[0].geometry.attributes.position.array; for (let i = 0; i < a.length; i += 3) { px.push(a[i]); pz.push(a[i + 2]); } }
+    let cx = 0, cz = 0; const N = 72;
+    for (let k = 0; k < N; k++) { const t = Math.PI * k / N, ux = Math.cos(t), uz = Math.sin(t); let mn = Infinity, mx = -Infinity; for (let i = 0; i < px.length; i++) { const d = px[i] * ux + pz[i] * uz; if (d < mn) mn = d; if (d > mx) mx = d; } const m = (mn + mx) / 2; cx += ux * m; cz += uz * m; }
+    cx *= 2 / N; cz *= 2 / N;
+    const cuerpo = new THREE.Group(); for (const h of [...mono.children]) cuerpo.add(h);
+    cuerpo.position.set(-cx, 0, -cz); mono.add(cuerpo);
+  }
 
   // ---------------- el campo gravitatorio: el disco de luz y las ondas ----------------
   const NG = quieto ? 0 : [260, 480, 760][NIVEL], R0 = 0.4, R1 = 1.8;
