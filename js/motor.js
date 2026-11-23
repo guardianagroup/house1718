@@ -831,8 +831,9 @@ const creaMotor = (OPC) => {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-        const tg = propios && !propios.has(snd) ? topeReenvio() : topeGrupo;
-        if (tg !== topeGrupo && snd.track.kind === 'video' && snd.track.contentHint !== 'detail') { p.encodings[0].maxBitrate = tg.bps; p.encodings[0].maxFramerate = tg.fps; p.encodings[0].scaleResolutionDownBy = tg.escala; p.degradationPreference = 'balanced'; }
+        const realzada = !!(propios && !propios.has(snd) && L.realce && L.salen && L.salen.get(L.realce) && L.salen.get(L.realce).sender === snd);
+        const tg = realzada ? (TEL ? { bps: 1500000, escala: 1.5, fps: 30 } : { bps: 2500000, escala: 1, fps: 30 }) : propios && !propios.has(snd) ? topeReenvio() : topeGrupo;
+        if (tg && tg !== topeGrupo && snd.track.kind === 'video' && snd.track.contentHint !== 'detail') { p.encodings[0].maxBitrate = tg.bps; p.encodings[0].maxFramerate = tg.fps; p.encodings[0].scaleResolutionDownBy = tg.escala; p.degradationPreference = 'balanced'; }
         else if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
         else if (topeGrupo && snd.track.contentHint === 'detail') { p.encodings[0].maxBitrate = Math.max(topeGrupo.bps, 1500000); p.encodings[0].maxFramerate = 15; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-resolution'; }
         else if (topeGrupo) { p.encodings[0].maxBitrate = topeGrupo.bps; p.encodings[0].maxFramerate = topeGrupo.fps; p.encodings[0].scaleResolutionDownBy = topeGrupo.escala; p.degradationPreference = 'balanced'; }
@@ -1204,8 +1205,8 @@ const creaMotor = (OPC) => {
   const vozBase = () => (vozN ? vozN.pista : (L && L.local && L.local.getAudioTracks()[0]) || null);
   async function ponVoz() {
     const x = L, snd = emisorDe(x, 'audio'); if (!x || !snd) return;
-    const base = vozBase(), otras = (x.voces || []).filter((t) => t && t.readyState === 'live');
-    if (!otras.length) { if (base && snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } if (mz) mezclaFin(); return; }
+    const base = x.sinMia ? null : vozBase(), otras = (x.voces || []).filter((t) => t && t.readyState === 'live');
+    if (!otras.length && base) { if (snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } if (mz) mezclaFin(); return; }
     if (!mz) {
       const c = audioCompartido(); if (!c) return;
       // un limitador suave a la salida: si hablan varios a la vez, la voz no se satura (por debajo, no toca nada)
@@ -1221,7 +1222,9 @@ const creaMotor = (OPC) => {
     if (pista && L === x && snd.track !== pista) { try { await snd.replaceTrack(pista); } catch (_) {} }
   }
   // las voces de los demás tramos que van con la mía por esta llamada
-  function mezcla(pistas) { if (!L || !L.pc) return false; L.voces = (pistas || []).filter(Boolean); ponVoz(); return true; }
+  function mezcla(pistas, sinMia) { if (!L || !L.pc) return false; L.voces = (pistas || []).filter(Boolean); L.sinMia = !!sinMia; ponVoz(); return true; }
+  // («Comprobar» en grupo) la imagen reenviada de la persona que se comprueba, a más calidad mientras dura
+  function realza(clave) { const x = L; if (!x || !x.pc) return; const c = clave || null; if (x.realce === c) return; x.realce = c; topes(x.pc); }
   // las imágenes que esta llamada reenvía: [{ clave, pista }] (clave: quién es). Usa los huecos que ya hay (una imagen que ya no se
   // manda deja el suyo) y, si faltan, añade otros y renegocia. Devuelve en qué hueco («mid») va cada una.
   async function reenvia(lista) {
@@ -1548,7 +1551,7 @@ const creaMotor = (OPC) => {
   const API = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); }, miFuente: () => fuenteMia(),
-    activaVideo, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
+    activaVideo, realza, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
@@ -1558,6 +1561,7 @@ const creaMotor = (OPC) => {
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)
   if (LOCAL) API._reoferta = () => { if (L && L.rol === 'llama') reoferta(L); else if (L && S) enviaControl(S, { tipo: 'llamada', que: 'reinicia', id: L.id }); };
   if (LOCAL) API._usa = (ms) => { if (S) S.usado = ms; };
+  if (LOCAL) API._mezcla = () => ({ mz: !!mz, nodos: mz ? mz.nodos.size : 0, sinMia: !!(L && L.sinMia), voces: (L && L.voces && L.voces.length) || 0, base: !!vozBase(), enMezcla: !!(mz && vozBase() && mz.nodos.has(vozBase())) });
   if (LOCAL) API._suelta = () => colgar('caida', true); // una llamada que se corta solo de este lado
   if (LOCAL) API._estado = () => (S ? { inicio: soyInicio(S), huella: !!S.huella, sesiones: S.sesiones.size, confirmada: !!(S.sesion && S.sesion.confirmada), conectado: S.conectado, cwMio: !!S.cwMio, nIMio: !!S.nIMio, cwSuyo: !!S.cwSuyo, nRMio: !!S.nRMio, nRSuyo: !!S.nRSuyo, revela: !!S.revela, palabrasN: !!S.palabrasN, palabras: !!S.palabras, miembros: S.miembros.size, suId: !!S.suId } : null);
   return API;
