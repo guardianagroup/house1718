@@ -30,6 +30,13 @@
     }
   }
   const apunta = (id, porM, n) => { if (n) grupoEnv.set(id, { total: (porM ? 1 : 0) + n, porM, llego: new Set(), leido: new Set() }); };
+  // quién lo escribió: en grupo, la persona de esta conversación o, si llegó reenviado por otro tramo, quien lo escribió de verdad
+  function autor(m, quien, etiqueta) {
+    const g = window.ElixireGrupo;
+    if (m.origen && g && g.etiquetaId) { m.quien = 'g:' + m.origen; m.de = g.etiquetaId(m.origen); return; }
+    m.quien = quien; if (etiqueta) m.de = etiqueta();
+  }
+  const enGrupoVisto = () => { const g = window.ElixireGrupo; return !!(g && (g.activo || g.enGrupo)); };
   function leidosDe(quien, ids) { if (!quien || quien === 'p') { if (M.leidos) M.leidos(ids); } else { const g = window.ElixireGrupo; if (g && g.leidos) g.leidos(quien, ids); } }
   // un texto mío, a la conversación y (en grupo) a cada persona, con el mismo identificador
   function enviaTexto(t) {
@@ -118,7 +125,7 @@
   let escribeT = null;
   const alEscribe = () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); };
   M.on('escribe', alEscribe);
-  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; if (m.dir !== 'mia') { m.quien = 'p'; const g = G(); if (g) m.de = g.nombrePrincipal(); } pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; if (m.dir !== 'mia') autor(m, 'p', enGrupoVisto() ? () => window.ElixireGrupo.nombrePrincipal() : null); pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
   // ✓ enviado · ✓✓ entregado · ✓✓ azul leído (dueño, 23:20: «como otras apps»). Como en WhatsApp (dueño, 23 nov 08:59: «le envío un
   // audio y en cuanto se lo envío ya salen los dos checks como visto… una cosa es que llegue y otra cuando le da»): se da por leído
   // solo lo que llega con la conversación de verdad delante (página visible, ventana activa y, en el móvil, el chat abierto; en el
@@ -427,7 +434,7 @@
   sala.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); sala.classList.add('arrastra'); } });
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
-  M.on('archivo', (a) => { if (a.dir !== 'mia') { a.quien = 'p'; const g = G(); if (g) a.de = g.nombrePrincipal(); } filaArchivo(a); });
+  M.on('archivo', (a) => { if (a.dir !== 'mia') autor(a, 'p', enGrupoVisto() ? () => window.ElixireGrupo.nombrePrincipal() : null); filaArchivo(a); });
   const alProgreso = (p) => { const li = fila(p.id); if (li) { li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; if (li.classList.contains('foto')) li.style.setProperty('--p', String(Math.max(0.04, Math.min(1, p.hecho)))); } const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
   M.on('archivo-progreso', alProgreso);
   const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } if (li.classList.contains('foto')) { li.classList.add('subida', 'llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
@@ -1014,7 +1021,9 @@
     if (pasando && ((e.estado === 'hablando' && (e.t0 || 0) >= pasandoDesde) || (e.estado === 'fin' && e.motivo && e.motivo !== 'fin'))) marcaPasando(false);
     const pas = pasando && !(e.estado === 'hablando' && (e.t0 || 0) >= pasandoDesde);
     pintaCifrado(e);
-    if (e.estado === 'llamando' && !pas) tono('saliente'); else if (e.estado === 'entrante' && !pas && !e.cruzada && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
+    // (dueño, 23 nov 14:31: «sin tono de llamada») volver a la llamada en grupo no suena en ningún lado: se entra directo
+    const vuelve = !!(window.ElixireGrupo && window.ElixireGrupo.reentra);
+    if (e.estado === 'llamando' && !pas && !vuelve) tono('saliente'); else if (e.estado === 'entrante' && !pas && !e.cruzada && !G() && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
     if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
@@ -1068,6 +1077,14 @@
       if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
     }
     if (fuera && !pas) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
+    // fuera de la llamada en grupo: «Volver a la llamada» (un toque, sin tono); al volver, «Volviendo a la llamada…»
+    if (vuelve && !pas && !fuera && !e.prueba) {
+      // (si se cortó sin que nadie colgara, vuelve sola: solo «Volviendo a la llamada…»)
+      const sola = (e.estado === 'fin' && ['caida', 'fallo', 'sin-respuesta'].includes(e.motivo) && window.ElixireGrupo.vuelveSola) || (e.estado === 'libre' && window.ElixireGrupo.volviendo);
+      if (sola) { pon('grupoVuelve'); boton.hidden = true; }
+      else if (e.estado === 'libre' || e.estado === 'fin') { pon('grupoFuera'); rotuloLlamar('volverLlamada'); boton.disabled = false; boton.hidden = false; }
+      else if (['preparando', 'llamando', 'conectando'].includes(e.estado)) pon('grupoVuelve');
+    }
   }
   M.on('llamada', (e) => {
     if (abierta) pintaLlamada(ef(e));
@@ -1325,10 +1342,10 @@
   }
   function engancha(x, etiqueta, quien) {
     x.on('escribe', alEscribe);
-    x.on('mensaje', (m) => { if (m.dir !== 'mia') { m.de = etiqueta(); m.quien = quien; } $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+    x.on('mensaje', (m) => { if (m.dir !== 'mia') autor(m, quien, etiqueta); $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
     x.on('acuse', (ids) => recibo(ids, quien, false));
     x.on('leido', (ids) => recibo(ids, quien, true));
-    x.on('archivo', (a) => { if (a.dir !== 'mia') { a.de = etiqueta(); a.quien = quien; } filaArchivo(a); });
+    x.on('archivo', (a) => { if (a.dir !== 'mia') autor(a, quien, etiqueta); filaArchivo(a); });
     x.on('archivo-progreso', (p) => { const r = grupoEnv.get(p.id); if (p.dir !== 'mia' || !r || !r.porM) alProgreso(p); });
     x.on('archivo-enviado', alEnviado); x.on('archivo-listo', alListo); x.on('archivo-cancelado', alCancelado);
     x.on('borrado', alBorrado);

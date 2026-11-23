@@ -347,6 +347,7 @@ const creaMotor = (OPC) => {
       case 'latido': case 'ok': return;
       case 'texto': {
         const m = { id: String(j.id || '').slice(0, 40), texto: String(j.texto || '').slice(0, 20000), t: Math.min(Date.now(), +j.t || Date.now()), dir: 'suya' };
+        if (typeof j.de === 'string' && /^[0-9a-f]{12}$/.test(j.de)) m.origen = j.de;
         if (!m.id || s.vistos && s.vistos.has(m.id)) { enviaControl(s, { tipo: 'ack', ids: [m.id] }); return; }
         (s.vistos = s.vistos || new Set()).add(m.id);
         emite('mensaje', m);
@@ -372,6 +373,16 @@ const creaMotor = (OPC) => {
         if (j.rol === 'crea' || j.rol === 'entra') g.rol = j.rol;
         if (typeof j.v === 'string' && /^\d{8}-\d{2}$/.test(j.v)) g.v = j.v; // la versión de la web de la otra persona
         g.n = Math.max(0, Math.min(8, j.n | 0));
+        if (j.arbol === 1) g.arbol = 1; // entiende el grupo «como en GUARDIANA» (imágenes reenviadas por cada tramo)
+        // quién hay detrás de este tramo: cada persona, con su imagen (en qué hueco de esta llamada llega; «p», la principal) y lo que
+        // tiene puesto
+        if (Array.isArray(j.g)) {
+          g.gente = j.g.slice(0, 8).filter((x) => x && typeof x.id === 'string' && /^[0-9a-f]{12}$/.test(x.id)).map((x) => {
+            const f = x.f && typeof x.f === 'object' ? x.f : {};
+            return { id: x.id, mid: x.mid === 'p' ? 'p' : typeof x.mid === 'string' && /^[\w-]{1,16}$/.test(x.mid) ? x.mid : null, f: { mic: f.mic !== false, cam: f.cam !== false, voz: !!f.voz, cara: !!f.cara, pantalla: !!f.pantalla, chat: !!f.chat } };
+          });
+        }
+        if (typeof j.habla === 'string' && (j.habla === '' || /^[0-9a-f]{12}$/.test(j.habla))) g.habla = j.habla;
         emite('grupo', g); return;
       }
       case 'alarma': return finaliza(s, 'alarma-suya');
@@ -411,10 +422,11 @@ const creaMotor = (OPC) => {
 
   // ---------- texto ----------
   // (en grupo, el mismo mensaje sale por cada pareja con el mismo identificador: así «Borrar para todos» lo borra en todos)
-  function envia(texto, idFijo) {
+  function envia(texto, idFijo, de, t0) {
     const s = S; texto = String(texto || '').trim();
     if (!s || !s.conectado || s.fin || !texto) return null;
-    const m = { tipo: 'texto', id: /^[0-9a-f]{16,24}$/.test(idFijo || '') ? idFijo : C.hex(C.azar(12)), t: Date.now(), texto: texto.slice(0, 20000) };
+    const m = { tipo: 'texto', id: /^[0-9a-f]{16,24}$/.test(idFijo || '') ? idFijo : C.hex(C.azar(12)), t: t0 && t0 < Date.now() ? +t0 : Date.now(), texto: texto.slice(0, 20000) };
+    if (typeof de === 'string' && /^[0-9a-f]{12}$/.test(de)) m.de = de;
     aTic(s, m);
     return { id: m.id, texto: m.texto, t: m.t, dir: 'mia' };
   }
@@ -431,13 +443,13 @@ const creaMotor = (OPC) => {
   // tamaño (los últimos bytes, rellenos), y cada uno autentica su número y el total: nadie puede cambiarlos, quitarlos ni reordenarlos.
   const TROZO = 48 * 1024, VENTANA = 32, LIMITE = 1024 * 1024 * 1024, ATRASO = 6 * 1024 * 1024;
   const adTrozo = (cab, partes) => C.cat(cab, C.te.encode('ELIXIRE archivo v1\n' + partes));
-  function enviaArchivo(file, idFijo) {
+  function enviaArchivo(file, idFijo, de) {
     const s = S; if (!s || !s.conectado || s.fin || !file) return { ok: false, por: 'sin-sesion' };
     if (file.size > LIMITE) return { ok: false, por: 'grande' };
     const id = /^[0-9a-f]{16}$/.test(idFijo || '') && !s.envios.has(idFijo) ? idFijo : C.hex(C.azar(8)), llave = C.azar(32), partes = Math.max(1, Math.ceil(file.size / TROZO));
     const env = { id, file, llave, partes, enviadas: 0, confirmadas: 0, nombre: String(file.name || 'archivo').slice(0, 200), tam: file.size, mime: String(file.type || '').slice(0, 100), activo: false, fin: false };
     s.envios.set(id, env);
-    aTic(s, { tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) });
+    aTic(s, Object.assign({ tipo: 'archivo', id, nombre: env.nombre, mime: env.mime, tam: env.tam, partes, llave: C.b64u(llave) }, typeof de === 'string' && /^[0-9a-f]{12}$/.test(de) ? { de } : {}));
     return { ok: true, id, nombre: env.nombre, tam: env.tam };
   }
   async function avanzaEnvio(s, j) {
@@ -475,7 +487,8 @@ const creaMotor = (OPC) => {
     const r = { id, nombre: String(j.nombre || 'archivo').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'archivo', mime: String(j.mime || '').slice(0, 100), tam, partes, clave: await C.aes(llave), trozos: new Array(partes), llegadas: 0, seguidas: 0, avisoT: 0 };
     llave.fill(0);
     s.recibos.set(id, r);
-    emite('archivo', { id, dir: 'suya', nombre: r.nombre, tam, mime: r.mime });
+    if (typeof j.de === 'string' && /^[0-9a-f]{12}$/.test(j.de)) r.origen = j.de;
+    emite('archivo', Object.assign({ id, dir: 'suya', nombre: r.nombre, tam, mime: r.mime }, r.origen ? { origen: r.origen } : {}));
     enviaControl(s, { tipo: 'archivo-ack', id, hasta: 0 });
   }
   async function recibeTrozo(s, de, b) {
@@ -493,7 +506,7 @@ const creaMotor = (OPC) => {
     if (r.llegadas === r.partes) {
       r.fin = true;
       const blob = new Blob(r.trozos, { type: r.mime || 'application/octet-stream' }); r.trozos = null;
-      emite('archivo-listo', { id, nombre: r.nombre, tam: r.tam, url: URL.createObjectURL(blob), mime: r.mime });
+      emite('archivo-listo', Object.assign({ id, nombre: r.nombre, tam: r.tam, url: URL.createObjectURL(blob), mime: r.mime, blob }, r.origen ? { origen: r.origen } : {}));
     }
   }
   function cancelaArchivo(id, suyo) {
@@ -574,9 +587,15 @@ const creaMotor = (OPC) => {
   // (dueño, 23 nov 09:19: «nos va muy lento a los dos») el techo de la imagen, según el escalón en que esté: lo justo para que se vea
   // nítida sin llenar la red (con 20 Mb/s para todo, en una red justa o lejos del relé, se ahogaba y la llamada se cortaba)
   const BPS = { 2160: 16000000, 1440: 9000000, 1080: 5000000, 720: 2500000, 540: 1200000 };
+  // los emisores propios de una llamada (mi imagen y mi voz): los que tenía al empezar; las imágenes reenviadas del grupo van aparte
+  function emisorDe(x, kind) {
+    if (!x || !x.pc) return null;
+    if (x.base) { for (const t of x.base) { const k = (t.sender && t.sender.track && t.sender.track.kind) || (t.receiver && t.receiver.track && t.receiver.track.kind); if (k === kind && t.sender) return t.sender; } }
+    return x.pc.getSenders().find((q) => q.track && q.track.kind === kind) || null;
+  }
   function techoVideo(x, h) {
     try {
-      const snd = x && x.pc && x.pc.getSenders().find((q) => q.track && q.track.kind === 'video'); if (!snd) return;
+      const snd = emisorDe(x, 'video'); if (!snd || !snd.track) return;
       const p = snd.getParameters(); if (!p.encodings || !p.encodings[0]) return;
       const b = Math.min(MAX_BPS_VIDEO, BPS[h] || BPS[1080]); if (p.encodings[0].maxBitrate === b) return;
       p.encodings[0].maxBitrate = b; snd.setParameters(p).catch(() => {});
@@ -759,11 +778,15 @@ const creaMotor = (OPC) => {
     if (L && L.pc) topes(L.pc);
   }
   async function topes(pc) {
+    // (las imágenes reenviadas del grupo, siempre con tope: cada una se vuelve a codificar en este equipo)
+    const propios = L && L.pc === pc && L.base ? new Set([...L.base].map((t) => t.sender)) : null;
     for (const snd of pc.getSenders()) {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-        if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
+        const tg = propios && !propios.has(snd) ? topeGrupo || { bps: 1500000, escala: 1.5, fps: 30 } : topeGrupo;
+        if (tg !== topeGrupo && snd.track.kind === 'video' && snd.track.contentHint !== 'detail') { p.encodings[0].maxBitrate = tg.bps; p.encodings[0].maxFramerate = tg.fps; p.encodings[0].scaleResolutionDownBy = tg.escala; p.degradationPreference = 'balanced'; }
+        else if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
         else if (topeGrupo && snd.track.contentHint === 'detail') { p.encodings[0].maxBitrate = Math.max(topeGrupo.bps, 1500000); p.encodings[0].maxFramerate = 15; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-resolution'; }
         else if (topeGrupo) { p.encodings[0].maxBitrate = topeGrupo.bps; p.encodings[0].maxFramerate = topeGrupo.fps; p.encodings[0].scaleResolutionDownBy = topeGrupo.escala; p.degradationPreference = 'balanced'; }
         else { p.encodings[0].maxBitrate = BPS[1080]; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-framerate'; }
@@ -775,7 +798,19 @@ const creaMotor = (OPC) => {
     const ice = R && R.ice && R.ice.length ? R.ice : [];
     if (!LOCAL && !ice.length) throw new Error('sin-turn');
     const pc = new RTCPeerConnection(Object.assign({ iceServers: ice, iceTransportPolicy: LOCAL && !ice.length ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }, PQ_FLUJOS && L && !L.sinCapa ? { encodedInsertableStreams: true } : {}));
-    pc.addEventListener('track', (e) => { ponCapa(pc); if (!L) return; L.remoto = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]); emite('llamada', estadoLlamada()); });
+    pc.addEventListener('track', (e) => {
+      ponCapa(pc); if (!L || L.pc !== pc) return;
+      const t = e.transceiver;
+      if (L.base && t && !L.base.has(t)) {
+        // (grupo, como en GUARDIANA) una imagen reenviada: va aparte, por su hueco («mid»); quién es lo dice la otra persona
+        const x = L; x.llegan = x.llegan || new Map();
+        const avisa = () => { if (L === x) emite('llegan', x.llegan); };
+        if (t.mid != null) x.llegan.set(String(t.mid), e.track);
+        e.track.addEventListener('unmute', avisa); e.track.addEventListener('ended', avisa);
+        avisa(); return;
+      }
+      L.remoto = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]); emite('llamada', estadoLlamada());
+    });
     pc.addEventListener('connectionstatechange', () => {
       if (!L || L.pc !== pc) return;
       const st = pc.connectionState;
@@ -837,9 +872,9 @@ const creaMotor = (OPC) => {
         const st = await medios();
         if (L !== x) st.getTracks().forEach((t) => t.stop());
         else {
-          for (const sn of x.pc.getSenders()) { const k = sn.track && sn.track.kind, nt = k && st.getTracks().find((t) => t.kind === k); if (nt) await sn.replaceTrack(nt); }
+          { const sv = emisorDe(x, 'video'), nt = st.getVideoTracks()[0]; if (sv && nt) await sv.replaceTrack(nt); }
           x.local.getTracks().forEach((t) => t.stop()); x.local = st; micro(x.mic !== false); camara(x.cam !== false);
-          if (x.vozCambiada) cambiaVoz(true); if (x.caraOculta) caraOculta(true);
+          if (x.vozCambiada) await cambiaVoz(true); else await ponVoz(); if (x.caraOculta) caraOculta(true);
         }
       } catch (e) { console.warn('medios', e); }
       recuperando = false;
@@ -878,6 +913,7 @@ const creaMotor = (OPC) => {
       if (L !== x) return false;
       const pc = L.pc = conexion();
       for (const t of st.getTracks()) pc.addTrack(t, st);
+      L.base = new Set(pc.getTransceivers()); L.compat = TEL;
       ponCapa(pc); prefiereCodecs(pc, TEL);
       await describe(pc, true); if (L !== x) return false; codecs(pc);
       await reunido(pc); if (L !== x || L.pc !== pc) return false;
@@ -899,6 +935,7 @@ const creaMotor = (OPC) => {
       const pc = L.pc = conexion();
       await pc.setRemoteDescription({ type: 'offer', sdp: L.oferta }); ponCapa(pc);
       for (const t of st.getTracks()) pc.addTrack(t, st);
+      L.base = new Set(pc.getTransceivers()); L.compat = TEL || L.telSuyo;
       ponCapa(pc); prefiereCodecs(pc, TEL || L.telSuyo);
       await describe(pc, false); codecs(pc);
       await reunido(pc); if (!L || L.pc !== pc) return false;
@@ -914,7 +951,7 @@ const creaMotor = (OPC) => {
   // salen dos llamadas ni un «ocupado» entre los dos.
   function cede(st) { if (st && !mediosPrevios) mediosPrevios = Promise.resolve(st); else if (st && !(L && L.local === st)) st.getTracks().forEach((t) => t.stop()); }
   function retira(x) {
-    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x);
+    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x); mezclaFin();
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
     paraVoz(); paraOcultar(); paraPantalla();
@@ -962,17 +999,29 @@ const creaMotor = (OPC) => {
     // la ruta de una llamada cortada: quien contestó la pide, quien llamó la ofrece
     if (que === 'reinicia') { if (L.rol === 'llama' && L.t0) reoferta(L); return; }
     if (que === 'reoferta') {
-      if (L.rol !== 'contesta' || !L.pc || !L.t0 || typeof j.sdp !== 'string' || j.sdp.length > 200000) return;
+      if (!L.pc || !L.t0 || typeof j.sdp !== 'string' || j.sdp.length > 200000) return;
       const x = L, pc = x.pc;
+      if (x.contestando) return; // (ya se está contestando una; si hace falta, la otra parte la repite)
+      const choque = !!(x.negociando || x.reofertando || pc.signalingState !== 'stable');
+      if (choque && x.rol !== 'contesta') return; // sigue la mía: la otra parte retrocede y contesta esta
+      x.contestando = true;
       try {
-        await pc.setRemoteDescription({ type: 'offer', sdp: j.sdp });
-        await describe(pc, false);
+        if (pc.signalingState === 'have-local-offer') { await pc.setLocalDescription({ type: 'rollback' }); x.pendiente = true; }
+        await pc.setRemoteDescription({ type: 'offer', sdp: j.sdp }); ponCapa(pc);
+        await describe(pc, false); codecs(pc);
         await reunido(pc); topes(pc);
         if (L === x) enviaControl(s, { tipo: 'llamada', que: 'rerespuesta', id: x.id, sdp: pc.localDescription.sdp });
-      } catch (e) { console.warn('reoferta', e); }
+        if (L === x) emite('reneg');
+      } catch (e) { console.warn('reoferta', e); } finally { x.contestando = false; }
+      if (x.trasRe && choque) { const r = x.trasRe; x.trasRe = null; r(); }
+      else if (x.pendiente && L === x && !x.negociando) setTimeout(() => renegocia(x), 60);
       return;
     }
-    if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
+    if (que === 'rerespuesta') {
+      if (L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); codecs(L.pc); ponCapa(L.pc); topes(L.pc); emite('reneg'); } catch (e) { console.warn('rerespuesta', e); } }
+      if (L.trasRe) { const r = L.trasRe; L.trasRe = null; r(); }
+      return;
+    }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
     if (que === 'calidad' && L.estado === 'hablando') { L.ac = L.ac || { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null }; L.ac.remoto = Math.max(0, +j.alto || 0); }
@@ -1014,7 +1063,7 @@ const creaMotor = (OPC) => {
     if (!L) return;
     const x = L; L = null;
     if (!suyo && S) enviaControl(S, { tipo: 'llamada', que: 'colgar', id: x.id });
-    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x); velaPantalla(false);
+    clearTimeout(x.limite); clearTimeout(x.espera); clearInterval(x.calT); finRecupera(x); velaPantalla(false); mezclaFin();
     try { if (x.pc) x.pc.close(); } catch (_) {}
     try { if (x.local) x.local.getTracks().forEach((t) => t.stop()); } catch (_) {}
     try { if (obrero && x.tx) { obrero.postMessage({ tipo: 'olvida', id: x.tx }); obrero.postMessage({ tipo: 'olvida', id: x.rx }); } } catch (_) {}
@@ -1067,7 +1116,7 @@ const creaMotor = (OPC) => {
   // y el encriptado siguen igual. La otra persona recibe un aviso («voz cambiada», «cara oculta»): no sirve para engañar, se ve. ----------
   const verJs = (((document.querySelector('script[src*="js/motor.js"]') || {}).src || '').split('?v=')[1] || '').replace(/[^\w.-]/g, '');
   let actx = null, vozN = null, ocu = null;
-  const emisor = (kind) => L && L.pc && L.pc.getSenders().find((x) => x.track && x.track.kind === kind);
+  const emisor = (kind) => emisorDe(L, kind);
   function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat, pantalla: !!L.pantalla, mic: L.mic !== false, cam: L.cam !== false }); }
   // en el chat del móvil, la cámara propia se apaga (la voz sigue) y vuelve como estaba al volver al vídeo; la otra persona lo ve
   function modoChat(si) {
@@ -1085,13 +1134,90 @@ const creaMotor = (OPC) => {
         if (vozN) { for (const n of vozN.nodos) { try { n.disconnect(); } catch (_) {} } }
         const src = actx.createMediaStreamSource(new MediaStream([mic])), dst = actx.createMediaStreamDestination();
         const nodos = vozDePelicula(src, dst);
-        const pista = dst.stream.getAudioTracks()[0]; await snd.replaceTrack(pista);
-        vozN = { nodos: [src, ...nodos], pista }; L.vozCambiada = true;
+        const pista = dst.stream.getAudioTracks()[0];
+        const vieja = vozN; vozN = { nodos: [src, ...nodos], pista }; L.vozCambiada = true;
+        await ponVoz(); if (vieja && vieja.pista !== pista) { try { vieja.pista.stop(); } catch (_) {} }
       } else {
-        await snd.replaceTrack(mic); paraVoz(); L.vozCambiada = false;
+        // primero sale otra vez la voz de siempre; después se para la cambiada
+        const v = vozN; vozN = null; L.vozCambiada = false; await ponVoz();
+        if (v) { for (const n of v.nodos) { try { n.disconnect(); } catch (_) {} } try { v.pista.stop(); } catch (_) {} }
       }
       avisaFiltros(); emite('llamada', estadoLlamada()); return true;
     } catch (e) { console.warn('voz', e); return false; }
+  }
+  // ---- la llamada en grupo, como en GUARDIANA (llamada.js, «Llamada en grupo»): quien añade a alguien lo une con una llamada nueva
+  // (un «tramo»), así que la llamada es un árbol de tramos. Por cada tramo, cada equipo manda su voz mezclada con la que le llega por
+  // los demás tramos (nunca la del propio tramo) y, además de su imagen, las imágenes que le llegan por los demás. Cada tramo es una
+  // llamada normal, con su capa poscuántica: las imágenes reenviadas salen con la llave de este tramo. ----
+  let mz = null;
+  function mezclaFin() { const m = mz; mz = null; if (!m) return; for (const n of m.nodos.values()) { try { n.disconnect(); } catch (_) {} } try { m.ctx.close(); } catch (_) {} }
+  const vozBase = () => (vozN ? vozN.pista : (L && L.local && L.local.getAudioTracks()[0]) || null);
+  async function ponVoz() {
+    const x = L, snd = emisorDe(x, 'audio'); if (!x || !snd) return;
+    const base = vozBase(), otras = (x.voces || []).filter((t) => t && t.readyState === 'live');
+    if (!otras.length) { if (mz) mezclaFin(); if (base && snd.track !== base) { try { await snd.replaceTrack(base); } catch (_) {} } return; }
+    if (!mz) {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      let c = null; try { c = new AC({ latencyHint: 'interactive', sampleRate: 48000 }); } catch (_) { try { c = new AC({ latencyHint: 'interactive' }); } catch (_) { return; } }
+      mz = { ctx: c, dst: c.createMediaStreamDestination(), nodos: new Map() };
+      c.onstatechange = () => { if (mz && mz.ctx === c && c.state === 'suspended') c.resume().catch(() => {}); };
+    }
+    if (mz.ctx.state !== 'running') mz.ctx.resume().catch(() => {});
+    const quiero = [base, ...otras].filter(Boolean);
+    for (const t of quiero) if (!mz.nodos.has(t)) { try { const n = mz.ctx.createMediaStreamSource(new MediaStream([t])); n.connect(mz.dst); mz.nodos.set(t, n); } catch (_) {} }
+    for (const [t, n] of mz.nodos) if (!quiero.includes(t)) { try { n.disconnect(); } catch (_) {} mz.nodos.delete(t); }
+    const pista = mz.dst.stream.getAudioTracks()[0];
+    if (pista && L === x && snd.track !== pista) { try { await snd.replaceTrack(pista); } catch (_) {} }
+  }
+  // las voces de los demás tramos que van con la mía por esta llamada
+  function mezcla(pistas) { if (!L || !L.pc) return false; L.voces = (pistas || []).filter(Boolean); ponVoz(); return true; }
+  // las imágenes que esta llamada reenvía: [{ clave, pista }] (clave: quién es). Usa los huecos que ya hay (una imagen que ya no se
+  // manda deja el suyo) y, si faltan, añade otros y renegocia. Devuelve en qué hueco («mid») va cada una.
+  async function reenvia(lista) {
+    const x = L; if (!x || !x.pc || !x.t0 || x.pc.signalingState === 'closed') return null;
+    x.salen = x.salen || new Map();
+    const quiero = new Map(); for (const f of lista || []) if (f && f.clave && f.pista && f.pista.readyState === 'live' && !quiero.has(f.clave)) quiero.set(String(f.clave), f.pista);
+    let nuevo = false;
+    for (const [clave, pista] of quiero) {
+      const t = x.salen.get(clave);
+      if (t) { if (t.sender.track !== pista) { try { await t.sender.replaceTrack(pista); } catch (_) {} } continue; }
+      const libre = [...x.salen.entries()].find(([k]) => !quiero.has(k));
+      if (libre) { x.salen.delete(libre[0]); try { await libre[1].sender.replaceTrack(pista); } catch (_) {} x.salen.set(clave, libre[1]); continue; }
+      try { const tr = x.pc.addTransceiver(pista, { direction: 'sendonly', streams: [new MediaStream([pista])] }); x.salen.set(clave, tr); nuevo = true; } catch (e) { console.warn('reenvía', e); }
+    }
+    for (const [clave, t] of x.salen) if (!quiero.has(clave) && t.sender.track) { try { await t.sender.replaceTrack(null); } catch (_) {} }
+    if (nuevo && L === x) {
+      prefiereCodecs(x.pc, !!x.compat); ponCapa(x.pc);
+      // en cuanto la oferta está hecha, cada imagen ya tiene su hueco: no hace falta esperar la respuesta para decir quién va en él
+      const ofrecida = new Promise((res) => { x.alOfrecer = res; setTimeout(res, 4000); });
+      renegocia(x); await ofrecida; x.alOfrecer = null;
+    }
+    if (L === x && x.pc.signalingState !== 'closed') topes(x.pc);
+    return salen(x);
+  }
+  function salen(x) { const out = {}; if (x && x.salen) for (const [clave, t] of x.salen) if (t.sender.track && t.mid != null) out[clave] = String(t.mid); return out; }
+  async function renegocia(x) {
+    const pc = x && x.pc; if (!pc || L !== x || pc.signalingState === 'closed') return;
+    if (x.negociando || x.reofertando || pc.signalingState !== 'stable') { x.pendiente = true; return; }
+    x.negociando = true; x.pendiente = false;
+    try {
+      await describe(pc, true); codecs(pc);
+      if (x.alOfrecer) { const f = x.alOfrecer; x.alOfrecer = null; f(); }
+      await reunido(pc); if (L !== x) return;
+      // (si mientras tanto llegó una oferta de la otra parte y se contestó, esta se rehace después)
+      if (pc.signalingState !== 'have-local-offer' || !pc.localDescription || pc.localDescription.type !== 'offer') { x.pendiente = true; return; }
+      // la misma oferta se repite si tarda la respuesta (la otra parte puede haberla aplicado ya: volver atrás desordenaría los
+      // huecos); solo tras medio minuto sin respuesta se vuelve a como estaba
+      const listo = new Promise((res) => { x.trasRe = res; });
+      const manda = () => { if (S && L === x && pc.signalingState === 'have-local-offer') enviaControl(S, { tipo: 'llamada', que: 'reoferta', id: x.id, sdp: pc.localDescription.sdp }); };
+      let veces = 0; manda();
+      const reloj = setInterval(() => { if (++veces > 4 || L !== x || pc.signalingState !== 'have-local-offer') { clearInterval(reloj); if (x.trasRe) { const r = x.trasRe; x.trasRe = null; r(); } return; } manda(); }, 6000);
+      await listo; clearInterval(reloj); x.trasRe = null;
+      if (L === x && pc.signalingState === 'have-local-offer') { try { await pc.setLocalDescription({ type: 'rollback' }); } catch (_) {} x.pendiente = true; }
+    } catch (e) { console.warn('renegocia', e); x.pendiente = true; }
+    finally { x.negociando = false; }
+    if (x.pendiente && L === x) { x.reintentosNeg = (x.reintentosNeg || 0) + 1; if (x.reintentosNeg <= 6) setTimeout(() => renegocia(x), 300 * x.reintentosNeg); }
+    else x.reintentosNeg = 0;
   }
   function paraVoz() { if (vozN) { for (const n of vozN.nodos) { try { n.disconnect(); } catch (_) {} } try { vozN.pista.stop(); } catch (_) {} vozN = null; } }
   // (dueño, 23 nov 06:51: «la típica de las películas, voz seria y que da impresión de miedo») la voz del anónimo de película: grave
@@ -1182,7 +1308,7 @@ const creaMotor = (OPC) => {
     try {
       const sv = emisor('video'), sa = emisor('audio');
       if (cam) { if (ocu) { ocu.v.srcObject = new MediaStream([cam]); ocu.v.play().catch(() => {}); } else if (sv && !pantallaP) await sv.replaceTrack(cam); }
-      if (mic) { if (vozN) await cambiaVoz(true); else if (sa) await sa.replaceTrack(mic); }
+      if (mic) { if (vozN) await cambiaVoz(true); else if (sa) await ponVoz(); }
     } catch (e) { console.warn('pistas', e); }
     if (viejo && viejo !== st) for (const t of viejo.getTracks()) if (!st.getTracks().includes(t)) { try { t.stop(); } catch (_) {} }
     emite('llamada', estadoLlamada()); return true;
@@ -1350,6 +1476,7 @@ const creaMotor = (OPC) => {
   }
   const API = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
+    reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); },
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
