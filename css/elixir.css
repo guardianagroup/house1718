@@ -2059,7 +2059,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .sala.en-grupo .escena-video>.en-tesela.habla{outline:3px solid rgba(92,201,138,.95);outline-offset:-3px}
 .sala.en-grupo:not(.en-chat) .tesela-nombre:not([hidden]){display:block;position:absolute;z-index:3;height:26px;padding:0 10px;border-radius:999px;background:rgba(5,7,10,.62);
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:500 12.5px/26px var(--ui);color:#F4F6F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.sala.en-grupo #raya-division,.sala.en-grupo #filtro-otro,.sala.en-grupo #otro-chat,.sala.en-grupo .controles .seg#b-vista,.sala.en-grupo .controles .seg#b-comprobar,
+.sala.en-grupo #raya-division,.sala.en-grupo #filtro-otro,.sala.en-grupo #otro-chat,.sala.en-grupo .controles .seg#b-vista,
 .sala.en-grupo .sala-botones #b-movil,.sala.en-grupo .controles .seg#b-volver-pc,.sala.en-grupo .controles .seg#b-reto{display:none!important}
 .sala.en-grupo .escena-video{background:#06080C}
 @media (max-width:760px){
@@ -2210,3 +2210,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .visor-foto.limpio .visor-paso{opacity:0;pointer-events:none}
 @media (pointer:coarse){ .visor-paso{display:none} }
 .visor-cuenta{margin-left:8px;opacity:.7}
+
+/* «Comprobar» en grupo: mientras se elige a quién, los recuadros de las demás personas se marcan y se tocan */
+.sala.eligiendo .escena-video>.en-tesela:not(#video-mio){cursor:pointer;outline:2px solid #9CC3E4;outline-offset:-2px;animation:elige 1.4s ease-in-out infinite}
+@keyframes elige{50%{outline-color:rgba(156,195,228,.35)}}

@@ -394,6 +394,12 @@ const creaMotor = (OPC) => {
           });
         }
         if (typeof j.habla === 'string' && (j.habla === '' || /^[0-9a-f]{12}$/.test(j.habla))) g.habla = j.habla;
+        // «Comprobar» a alguien de otro tramo: el reto (lo que se le pide en pantalla) y la pregunta por su tipo de cámara, de paso
+        if (typeof j.para === 'string' && /^[0-9a-f]{12}$/.test(j.para)) g.para = j.para;
+        if (typeof j.de === 'string' && /^[0-9a-f]{12}$/.test(j.de)) g.de = j.de;
+        if (typeof j.q === 'string' && /^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(j.q)) { g.q = j.q; g.pn = Math.max(0, Math.min(9, j.pn | 0)); g.pde = Math.max(0, Math.min(9, j.pde | 0)); g.pw = String(j.pw || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60); }
+        if (j.k != null) g.k = Math.max(0, Math.min(1e9, j.k | 0));
+        if (j.f && typeof j.f === 'object') g.f = limpiaFuente(j.f);
         emite('grupo', g); return;
       }
       case 'alarma': return finaliza(s, 'alarma-suya');
@@ -1507,7 +1513,7 @@ const creaMotor = (OPC) => {
   }
   const API = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
-    reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); },
+    reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); }, miFuente: () => fuenteMia(),
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },

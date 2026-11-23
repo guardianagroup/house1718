@@ -1210,8 +1210,8 @@
   $('#b-reto').addEventListener('click', () => M.reto());
   // la prueba del gesto: la orden llega de quien comprueba y se ve grande en el centro (sin mensajes en el chat)
   let gestoT = null;
-  M.on('gesto', (g) => {
-    if (!abierta || g.q === 'inicio') return;
+  function alGestoSala(g) {
+    if (!abierta || !g || g.q === 'inicio') return;
     const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
     clearTimeout(gestoT);
     if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }
@@ -1223,7 +1223,8 @@
     tx.textContent = (g.q === 'luz' && g.w ? tr('gesto_luzVoz') + ' «' + g.w + '»' : tr('gesto_' + g.q) + (g.q === 'voz' && g.w ? ' «' + g.w + '»' : '')) + ((g.q === 'voz' || (g.q === 'luz' && g.w)) && sinMic ? ' · ' + tr('gesto_activaMic') : ''); caja.hidden = false;
     try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
     gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, g.q === 'voz' || g.q === 'clave' ? 20000 : 6000);
-  });
+  }
+  M.on('gesto', alGestoSala);
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
   $('#llamar').addEventListener('click', () => {
     if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return;
@@ -1461,7 +1462,7 @@
     else if (enPC() && abierta && conImagen() && leeVista().div !== false) ponDividida(true, false);
     colocaMi(); pintaVista();
   }
-  window.ElixireSala = { engancha, aviso: avisoBreve, finGrupo, repinta, grupoCambia };
+  window.ElixireSala = { engancha, aviso: avisoBreve, finGrupo, repinta, grupoCambia, gesto: alGestoSala };
   // «Verificar esta página»: el código es público y cada script lleva su huella SHA-384 (herramientas/huellas.py)
   for (const v of document.querySelectorAll('.verificar')) v.addEventListener('click', (e) => { e.preventDefault(); aviso('verificarEtiqueta', 'verificarTitulo', 'verificarTexto', false, true); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#aviso').hidden) $('#aviso').hidden = true; });

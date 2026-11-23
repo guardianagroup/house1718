@@ -118,6 +118,7 @@
     m.on('fin', (f) => { if (!p.motivo && f && f.motivo) p.motivo = f.motivo; quita(p); });
     m.on('filtro', () => pinta());
     m.on('llegan', programa); m.on('reneg', programa);
+    m.on('gesto', (g) => muestraReto(g));
     chatDe(p);
     if (SALA().engancha) SALA().engancha(m, () => etiqueta(p), p.clave);
     if (o.semilla) {
@@ -159,7 +160,60 @@
       p.arbol = true; pinta(); return;
     }
     if (g.que === 'habla') { p.hablaId = g.habla || null; return; }
+    if (g.que === 'reto' || g.que === 'fuente?' || g.que === 'fuente') {
+      if (!g.para) return;
+      if (g.para !== yo) { const L = rutaA(g.para, p); if (L) L.m.grupo(deNuevo(g)); return; } // (de paso, hacia quien va)
+      if (g.que === 'reto' && g.q) muestraReto({ q: g.q, n: g.pn, de: g.pde, w: g.pw });
+      else if (g.que === 'fuente?' && g.de) { let f = null; try { f = M.miFuente ? M.miFuente() : null; } catch (_) {} p.m.grupo({ que: 'fuente', para: g.de, k: g.k, f }); }
+      else if (g.que === 'fuente') { const r = pideFuente.get(g.k); if (r) { pideFuente.delete(g.k); r(g.f || null); } }
+    }
   }
+  // ---- «Comprobar» en grupo (dueño, 23 nov 15:40: «añádelo»): se toca el recuadro de la persona y se la comprueba a ella. Si está
+  // en un tramo mío, con su propia llamada; si está detrás de otro tramo, sus retos y la pregunta por su cámara van de paso por
+  // quien la une (su imagen ya llega aquí) ----
+  const pideFuente = new Map(); let pideN = 0, eligiendo = false;
+  const deNuevo = (g) => { const o = { que: g.que, para: g.para }; for (const k of ['de', 'k', 'q', 'pn', 'pde', 'pw', 'f']) if (g[k] != null) o[k] = g[k]; return o; };
+  function rutaA(id, excepto) { for (const L of tramos()) if (L !== excepto && L.arbol && genteDe(L).some((P) => P.id === id)) return L; return null; }
+  function muestraReto(g) { if (!g) return; const S = SALA(); if (S.gesto) S.gesto(g); const V = window.ElixireVigia; if (V && V.gesto) V.gesto(g); }
+  function objetivoDe(id) {
+    for (const K of tramos()) for (const P of genteDe(K)) {
+      if (P.id !== id) continue;
+      const directo = P.mid === 'p', el = directo && (K === principal || K === promovido) ? $('#video-suyo') : (teselas.get(id) || {}).video;
+      if (!el) return null;
+      if (directo) return { video: el, obj: { gesto: (...a) => K.m.gesto(...a), fuente: () => K.m.fuente(), nivelVoz: () => K.m.nivelVoz(), estado: () => K.m.estadoLlamada() } };
+      return { video: el, obj: {
+        gesto: (q, n, de, w) => (K.m.estadoLlamada().estado === 'hablando' ? K.m.grupo({ que: 'reto', para: id, de: yo, q, pn: n | 0, pde: de | 0, pw: String(w || '').slice(0, 60) }) : false),
+        fuente: () => new Promise((res) => { const k = ++pideN; pideFuente.set(k, res); K.m.grupo({ que: 'fuente?', para: id, de: yo, k }); setTimeout(() => { if (pideFuente.delete(k)) res(null); }, 4000); }),
+        nivelVoz: () => K.m.nivelVoz(),
+        estado: () => ({ estado: enLlamada(K) ? 'hablando' : 'fin', otroFiltro: P.f || null, rol: '' }),
+      } };
+    }
+    return null;
+  }
+  function comprobarA(id) {
+    salEleccion();
+    const o = objetivoDe(id), V = window.ElixireVigia; if (!o || !V || !V.compruebaA) return false;
+    V.compruebaA(o); return true;
+  }
+  function salEleccion() { if (!eligiendo) return; eligiendo = false; sala.classList.remove('eligiendo'); }
+  function eligeComprobar() {
+    if (eligiendo) { salEleccion(); return true; }
+    const ids = [...presentes].filter((id) => objetivoDe(id));
+    if (!ids.length) return false;
+    if (ids.length === 1) return comprobarA(ids[0]);
+    eligiendo = true; sala.classList.add('eligiendo'); aviso(tr('eligeComprobar'));
+    return true;
+  }
+  // el toque en un recuadro, mientras se elige a quién comprobar
+  if (esc) esc.addEventListener('click', (e) => {
+    if (!eligiendo) return;
+    let el = e.target.closest('.en-tesela');
+    if (!el) { const pl = e.target.closest('.tesela-sin'); if (pl) el = [...esc.querySelectorAll('.en-tesela')].find((x) => x._placa === pl) || null; }
+    const id = el && el.dataset.quien;
+    e.stopPropagation(); e.preventDefault();
+    if (id && esId(id) && id !== yo) comprobarA(id); else salEleccion();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') salEleccion(); });
   // lo que tengo puesto (micro, cámara, voz, cara, pantalla, chat), también en cada tramo nuevo
   async function ponPropio(m) {
     try {
@@ -572,7 +626,7 @@
   }
 
   window.ElixireGrupo = {
-    anade, pinta, efectivo, etiquetaId,
+    anade, pinta, efectivo, etiquetaId, eligeComprobar,
     get activo() { return extras.size > 0; },
     get enGrupo() { return enGrupoAhora; },
     get reentra() { return reentra(); },
