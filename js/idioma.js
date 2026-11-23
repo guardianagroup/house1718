@@ -6,6 +6,11 @@
   const ES_MAS = {
     enPcTexto: 'Ya puedes cerrar esta pestaña. En este móvil no queda nada de la llamada.', pcVuelveEtiqueta: 'DE VUELTA', pcVuelveTitulo: 'La llamada vuelve a este ordenador.', pcVuelveTexto: 'Conectando… En unos segundos la tienes aquí, en grande.', llamadaAqui: 'Llamada en curso · Elixire',
     verElChat: 'Ver el chat', ampliarLl: 'Ampliar',
+    // la llamada en grupo
+    anadirEntra: 'Entrando en la llamada…', anadirError: 'No se ha podido crear la invitación. Inténtalo de nuevo.', anadirCaduca: 'La invitación ha caducado. Toca «Añadir» para crear otra.',
+    mensajeGrupo: '*Te han invitado a una videollamada poscuántica en Elixire*\n{enlace}\nCódigo: {codigo}', grupoEntra: '{p} ha entrado en la llamada', grupoSale: '{p} ha salido de la llamada', grupoLleno: 'La llamada ya tiene 4 personas, el máximo.',
+    grupoInvitado: 'Invitación enviada. Entrará en la llamada en cuanto la abra.', persona: 'Persona', tu: 'Tú', cerrar: 'Cerrar',
+    etVoz: 'voz cambiada', etCara: 'cara oculta', etPantalla: 'compartiendo pantalla', etChat: 'en el chat',
     cambiarVista: 'Cambiar vista',
     movilConectadoPasando: 'Tu móvil se ha conectado. Pasando la llamada…', vueltaNoEspera: 'El otro aparato ya no está esperando. Si quieres, vuelve a pasarla con el código QR.', volviendoPc: 'Volviendo al ordenador…',
     pcHechoEtiqueta: 'EN TU ORDENADOR', pcHechoTitulo: 'La llamada ha vuelto a tu ordenador.', pcHechoTexto: 'Para pasarla otra vez a este móvil, pulsa «Pasar al móvil» en el ordenador. Deja esta página abierta.',
@@ -197,6 +202,11 @@
     pruebaTitulo: 'FREE TRIAL', pruebaTexto: 'A video call of up to 3 minutes, with the same encryption as the full service.',
     pruebasTexto: 'During the testing phase, chat and file transfers are unlimited.',
     verificar: 'Verify this page',
+    anadirPersona: 'Add', anadirTitulo: 'ADD TO THE CALL', anadirTexto: 'Send them this code or the link. As soon as they open it, they will join the call, from a computer, phone or tablet. It expires in 10 minutes and works only once.',
+    copiarCodigo: 'Copy code', anadirEsperando: 'Waiting for them to join…', anadirEntra: 'Joining the call…', anadirError: 'The invitation could not be created. Please try again.',
+    anadirCaduca: 'The invitation has expired. Tap “Add” to create another one.', mensajeGrupo: '*You are invited to a post-quantum video call on Elixire*\n{enlace}\nCode: {codigo}', grupoEntra: '{p} joined the call', grupoSale: '{p} left the call', grupoLleno: 'The call already has 4 people, the maximum.',
+    grupoInvitado: 'Invitation sent. They will join the call as soon as they open it.', persona: 'Person', tu: 'You', cerrar: 'Close',
+    etVoz: 'voice changed', etCara: 'face hidden', etPantalla: 'sharing screen', etChat: 'in the chat',
     salaEstado: 'Post-quantum encrypted', enPcTexto: 'You can close this tab now. Nothing of the call remains on this phone.', pcVuelveEtiqueta: 'COMING BACK', pcVuelveTitulo: 'The call is coming back to this computer.', pcVuelveTexto: 'Connecting… In a few seconds you will have it here, full size.', llamadaAqui: 'Call in progress · Elixire', verElChat: 'Show chat', ampliarLl: 'Enlarge', cambiarVista: 'Change view', movilConectadoPasando: 'Your phone has connected. Moving the call…', vueltaNoEspera: 'The other device is no longer waiting. If you want, move it again with the QR code.', volviendoPc: 'Going back to the computer…', pcHechoEtiqueta: 'ON YOUR COMPUTER', pcHechoTitulo: 'The call is back on your computer.', pcHechoTexto: 'To move it to this phone again, press “Move to phone” on the computer. Keep this page open.', movilHechoVuelta: 'To bring it back, press “Back to computer” on your phone. Keep this page open.', traspasoEsperaPc: 'The other person is moving the conversation to their computer…', continuaAquiPc: 'The conversation continues on this computer · new keys', continuaSuPc: 'The conversation continues on their computer · new keys', volverPc: 'Back to computer', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
     coinciden: 'They match', noCoinciden: 'No match', palabrasHechas: 'Verified by you. The other person must verify them too.', suComprobacion: 'The other person verified the words',
     videoEtiqueta: 'VIDEO CALL', pruebaLimite: 'Trial: up to 3 minutes', videollamada: 'Start video call', aceptar: 'Accept', rechazar: 'Decline',

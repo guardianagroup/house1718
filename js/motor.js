@@ -1351,7 +1351,7 @@ const creaMotor = (OPC) => {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
-    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; },
+    puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
     PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };

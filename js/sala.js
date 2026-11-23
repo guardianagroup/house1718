@@ -13,6 +13,31 @@
   let abierta = false, continuada = false;
   const hora = (t) => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const tam = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB');
+  // ---------- la llamada en grupo (js/grupo.js): con más personas, lo que se hace en la llamada y en el chat va a todas ----------
+  const G = () => { const g = window.ElixireGrupo; return g && g.activo ? g : null; };
+  const ef = (e) => { const g = G(); return g && e ? g.efectivo(e) : e; }; // lo que se ve: la principal o, si colgó, quien la sustituye
+  const idAzar = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  // en grupo, ✓✓ cuando ha llegado a todas y ✓✓ azul cuando lo han visto todas (como en WhatsApp)
+  const grupoEnv = new Map();
+  function recibo(ids, quien, leido) {
+    for (const id of ids) {
+      const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (!li) continue;
+      const r = grupoEnv.get(id);
+      if (!r) { li.classList.add('llego'); if (leido) li.classList.add('leido'); continue; }
+      r.llego.add(quien); if (leido) r.leido.add(quien);
+      if (r.llego.size >= r.total) li.classList.add('llego');
+      if (r.leido.size >= r.total) li.classList.add('leido');
+    }
+  }
+  const apunta = (id, porM, n) => { if (n) grupoEnv.set(id, { total: (porM ? 1 : 0) + n, porM, llego: new Set(), leido: new Set() }); };
+  function leidosDe(quien, ids) { if (!quien || quien === 'p') { if (M.leidos) M.leidos(ids); } else { const g = window.ElixireGrupo; if (g && g.leidos) g.leidos(quien, ids); } }
+  // un texto mío, a la conversación y (en grupo) a cada persona, con el mismo identificador
+  function enviaTexto(t) {
+    const id = idAzar(12), g = G(); let m = M.envia(t, id); const porM = !!m, n = g ? g.envia(t, id) : 0;
+    if (!m && n) m = { id, texto: String(t).trim().slice(0, 20000), t: Date.now(), dir: 'mia' };
+    if (m) apunta(m.id, porM, n);
+    return m;
+  }
 
   // ---------- abrir y cerrar ----------
   function abre() {
@@ -62,6 +87,7 @@
   function pintaMensaje(m) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg ' + m.dir + (m.dir === 'mia' ? ' enviado' : ''); li.dataset.id = m.id;
+    if (m.dir !== 'mia') { li.dataset.de = m.quien || 'p'; if (m.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = m.de; li.append(d); } }
     li.append(contenido(m.texto)); toastMensaje(m);
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
@@ -82,15 +108,16 @@
     e.preventDefault();
     if (grab) { paraNota('enviar'); return; }
     if (revision) { enviaRevision(); return; }
-    const m = M.envia(texto.value); if (!m) return;
+    const m = enviaTexto(texto.value); if (!m) return;
     texto.value = ''; ajusta(); pintaVoz(); pintaMensaje(m);
   });
   texto.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#redactor').requestSubmit(); } });
   function ajusta() { texto.style.height = 'auto'; texto.style.height = Math.min(160, texto.scrollHeight + 2) + 'px'; }
-  texto.addEventListener('input', () => { ajusta(); pintaVoz(); if (texto.value.trim()) M.escribe(); });
+  texto.addEventListener('input', () => { ajusta(); pintaVoz(); if (texto.value.trim()) { M.escribe(); const g = G(); if (g) g.escribe(); } });
   let escribeT = null;
-  M.on('escribe', () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); });
-  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+  const alEscribe = () => { $('#escribiendo').hidden = false; clearTimeout(escribeT); escribeT = setTimeout(() => { $('#escribiendo').hidden = true; }, 3500); };
+  M.on('escribe', alEscribe);
+  M.on('mensaje', (m) => { $('#escribiendo').hidden = true; if (m.dir !== 'mia') { m.quien = 'p'; const g = G(); if (g) m.de = g.nombrePrincipal(); } pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
   // ✓ enviado · ✓✓ entregado · ✓✓ azul leído (dueño, 23:20: «como otras apps»). Como en WhatsApp (dueño, 23 nov 08:59: «le envío un
   // audio y en cuanto se lo envío ya salen los dos checks como visto… una cosa es que llegue y otra cuando le da»): se da por leído
   // solo lo que llega con la conversación de verdad delante (página visible, ventana activa y, en el móvil, el chat abierto; en el
@@ -99,14 +126,15 @@
   function marcaLeidos() {
     clearTimeout(leeT); leeT = setTimeout(() => {
       if (document.visibilityState !== 'visible' || !document.hasFocus() || !abierta || (movil.matches && !enChat) || amplia) return;
-      const ids = [...lista.querySelectorAll('li.msg.suya[data-id]:not(.leida):not(.nota)')].map((li) => { li.classList.add('leida'); return li.dataset.id; });
-      if (ids.length && M.leidos) M.leidos(ids);
+      const por = new Map();
+      for (const li of lista.querySelectorAll('li.msg.suya[data-id]:not(.leida):not(.nota)')) { li.classList.add('leida'); const q = li.dataset.de || 'p'; if (!por.has(q)) por.set(q, []); por.get(q).push(li.dataset.id); }
+      for (const [q, ids] of por) leidosDe(q, ids);
     }, 300);
   }
   new MutationObserver(marcaLeidos).observe(lista, { childList: true });
   document.addEventListener('visibilitychange', marcaLeidos);
   addEventListener('focus', marcaLeidos);
-  M.on('leido', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego', 'leido'); } });
+  M.on('leido', (ids) => recibo(ids, 'p', true));
   // salir a otra app sin colgar (dueño, 23:21): la imagen de la otra persona pasa sola a una ventana flotante (imagen en imagen) donde el
   // navegador lo permite (Safari en iPhone y, con el aviso de la sesión de medios, Chrome). Tu cámara la pausa el propio móvil mientras
   // estás fuera; al volver, todo sigue.
@@ -115,7 +143,7 @@
     try { vs.autoPictureInPicture = true; vs.setAttribute('autopictureinpicture', ''); } catch (_) {}
     try { if (navigator.mediaSession && document.pictureInPictureEnabled) navigator.mediaSession.setActionHandler('enterpictureinpicture', () => { if (vs.srcObject && !document.pictureInPictureElement) vs.requestPictureInPicture().catch(() => {}); }); } catch (_) {}
   })();
-  M.on('acuse', (ids) => { for (const id of ids) { const li = lista.querySelector('li.mia[data-id="' + CSS.escape(id) + '"]'); if (li) li.classList.add('llego'); } });
+  M.on('acuse', (ids) => recibo(ids, 'p', false));
 
   // ---------- archivos ----------
   // ---------- en la llamada del móvil: avisos breves arriba y la foto a pantalla completa ----------
@@ -247,7 +275,7 @@
     toast('ubi', { icono: 'pin', titulo: tr('buscandoUbicacion'), ms: 20000 });
     navigator.geolocation.getCurrentPosition((p) => {
       quitaToast('ubi');
-      const m = M.envia('\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6));
+      const m = enviaTexto('\u{1F4CD} ' + tr('miUbicacion') + '\nhttps://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6));
       if (m) pintaMensaje(m);
     }, () => toast('ubi', { icono: 'pin', titulo: tr('sinUbicacion'), ms: 5000 }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
@@ -289,19 +317,23 @@
     if (a.dir !== 'mia') noLeido();
     quitaVacio();
     const li = document.createElement('li'); li.dataset.id = a.id;
-    if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); lista.append(li); abajo(); return li; }
+    if (a.dir !== 'mia') li.dataset.de = a.quien || 'p';
+    const de = () => { if (a.dir !== 'mia' && a.de) { const d = document.createElement('b'); d.className = 'de'; d.textContent = a.de; li.prepend(d); } };
+    if (esAudio(a.mime, a.nombre)) { li.className = 'msg nota ' + a.dir; pintaNota(li, a); de(); lista.append(li); abajo(); return li; }
     li.className = 'msg archivo ' + a.dir + (esFoto(a.mime) ? ' foto' : '');
     if (esFoto(a.mime) && previas.get(a.id)) li.append(miniatura(previas.get(a.id), a.nombre));
     const n = document.createElement('span'); n.className = 'nombre'; n.textContent = a.nombre;
     const t = document.createElement('span'); t.className = 'tam'; t.textContent = tam(a.tam);
     const b = document.createElement('span'); b.className = 'barra'; b.append(document.createElement('i'));
-    li.append(n, t, b); lista.append(li); abajo();
+    li.append(n, t, b); de(); lista.append(li); abajo();
     return li;
   }
   const fila = (id) => lista.querySelector('li.archivo[data-id="' + CSS.escape(id) + '"],li.nota[data-id="' + CSS.escape(id) + '"]');
   function enviaArchivos(files, previa, dur) {
     for (const f of files) {
-      const r = M.enviaArchivo(f);
+      const idA = idAzar(8), g = G(); let r = M.enviaArchivo(f, idA); const porM = !!(r && r.ok), n = g ? g.enviaArchivo(f, idA) : 0;
+      if (!porM && n) r = { ok: true, id: idA, nombre: String(f.name || 'archivo').slice(0, 200), tam: f.size };
+      if (r.ok) apunta(r.id, porM, n);
       if (!r.ok) { sistema(r.por === 'grande' ? 'archivoGrande' : 'archivoNo', '(' + f.name + ')'); if (previa) URL.revokeObjectURL(previa); continue; }
       if (previa && esAudio(f.type, f.name)) notas.set(r.id, { url: previa, dur: dur || 0, mia: true }); else if (previa) previas.set(r.id, previa);
       filaArchivo({ id: r.id, dir: 'mia', nombre: r.nombre, tam: r.tam, mime: f.type, dur });
@@ -317,10 +349,12 @@
   sala.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); sala.classList.add('arrastra'); } });
   sala.addEventListener('dragleave', (e) => { if (e.target === sala || !sala.contains(e.relatedTarget)) sala.classList.remove('arrastra'); });
   sala.addEventListener('drop', (e) => { e.preventDefault(); sala.classList.remove('arrastra'); if (e.dataTransfer && e.dataTransfer.files.length) abrePrevia([...e.dataTransfer.files], false); });
-  M.on('archivo', (a) => filaArchivo(a));
-  M.on('archivo-progreso', (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); });
-  M.on('archivo-enviado', (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li) return; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); });
-  M.on('archivo-listo', (a) => {
+  M.on('archivo', (a) => { if (a.dir !== 'mia') { a.quien = 'p'; const g = G(); if (g) a.de = g.nombrePrincipal(); } filaArchivo(a); });
+  const alProgreso = (p) => { const li = fila(p.id); if (li) li.querySelector('.barra i').style.width = Math.round(p.hecho * 100) + '%'; const a = archivosVivos.get(p.id); if (a) toastArchivo(a, 'avanza', p.hecho); };
+  M.on('archivo-progreso', alProgreso);
+  const alEnviado = (p) => { const a = archivosVivos.get(p.id); if (a) { toastArchivo(a, 'hecho'); archivosVivos.delete(p.id); } const li = fila(p.id); if (!li || li.dataset.enviado) return; li.dataset.enviado = '1'; li.querySelector('.barra i').style.width = '100%'; if (li.classList.contains('nota')) { li.classList.add('llego'); return; } const s = document.createElement('span'); s.className = 'tam'; s.dataset.t = 'archivoEnviado'; s.textContent = tr('archivoEnviado'); li.append(s); };
+  M.on('archivo-enviado', alEnviado);
+  const alListo = (a) => {
     { const v = archivosVivos.get(a.id) || {}; toastArchivo(Object.assign({ dir: 'suya' }, v, a), 'listo'); archivosVivos.delete(a.id); }
     const li = fila(a.id); if (!li) return;
     li.querySelector('.barra i').style.width = '100%';
@@ -328,8 +362,10 @@
     if (esFoto(a.mime)) li.prepend(miniatura(a.url, a.nombre));
     const d = document.createElement('a'); d.className = 'cristal'; d.href = a.url; d.download = a.nombre;
     const s = document.createElement('span'); s.dataset.t = 'descargar'; s.textContent = tr('descargar'); d.append(s); li.append(d); abajo();
-  });
-  M.on('archivo-cancelado', (p) => { const li = fila(p.id); if (li) li.remove(); sistema('archivoCancelado'); });
+  };
+  M.on('archivo-listo', alListo);
+  const alCancelado = (p) => { const li = fila(p.id); if (li) li.remove(); sistema('archivoCancelado'); };
+  M.on('archivo-cancelado', alCancelado);
 
   // ---------- en la llamada del móvil: pasar al chat y volver al vídeo (dueño, 16:57: «la videollamada se debe poder pasar a
   // chat y después a vídeo nuevamente») ----------
@@ -399,7 +435,7 @@
     if (window.ElixireComprueba && window.ElixireComprueba.cierra) window.ElixireComprueba.cierra();
     if (window.ElixireVigia && window.ElixireVigia.cierra) window.ElixireVigia.cierra();
     enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
-    if (M.modoChat) M.modoChat(true);
+    { const g = G(); if (g) g.modoChat(true); else if (M.modoChat) M.modoChat(true); }
     $('#chat-tiempo').textContent = ultimo.t0 ? mmss(Date.now() - ultimo.t0) : '';
     { const vid = ultimo.video !== false, t = $('#chat-volver-txt'), k = vid ? 'volverVideo' : 'volverLlamada'; t.dataset.t = k; t.textContent = tr(k); $('#chat-pausa').hidden = !vid; }
     sala.classList.add('en-chat'); ajustaVista(); quitaVacio(); if (!lista.children.length) { const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v); }
@@ -407,7 +443,7 @@
   }
   function cierraChat() {
     if (!enChat) return;
-    enChat = false; paraNota(false); menuEnviar.hidden = true; if (enMarchaBotones) muestraBotones(); if (M.modoChat) M.modoChat(false);
+    enChat = false; paraNota(false); menuEnviar.hidden = true; if (enMarchaBotones) muestraBotones(); { const g = G(); if (g) g.modoChat(false); else if (M.modoChat) M.modoChat(false); }
     if (document.activeElement === texto) texto.blur();
     sala.classList.remove('en-chat', 'teclado'); sala.style.removeProperty('--vv-h'); sala.style.removeProperty('--vv-top');
   }
@@ -546,7 +582,7 @@
   }
   function tocaNota(id, donde) {
     const n = notas.get(id); if (!n || !n.url) return;
-    if (n.li && n.li.classList.contains('suya') && !n.li.classList.contains('leida')) { n.li.classList.add('leida'); if (M.leidos) M.leidos([id]); }
+    if (n.li && n.li.classList.contains('suya') && !n.li.classList.contains('leida')) { n.li.classList.add('leida'); leidosDe(n.li.dataset.de, [id]); }
     if (sonando !== id) { reproductor.src = n.url; sonando = id; }
     else if (donde == null && !reproductor.paused) { reproductor.pause(); return; }
     if (donde != null && n.dur) { try { reproductor.currentTime = donde * n.dur / 1000; } catch (_) {} }
@@ -629,7 +665,7 @@
     const vigia = (si) => { try { if (window.ElixireVigia && window.ElixireVigia.pausa) window.ElixireVigia.pausa(si); } catch (_) {} };
     const pinta = () => { raf = 0; if (d) vm.style.setProperty('transform', 'translate3d(' + (px - d.x0) + 'px,' + (py - d.y0) + 'px,0)' + (vm.classList.contains('trasera') ? '' : ' scaleX(-1)'), 'important'); };
     vm.addEventListener('pointerdown', (e) => {
-      if (!movil.matches) return;
+      if (!movil.matches || sala.classList.contains('en-grupo')) return;
       const r = vm.getBoundingClientRect(), x0 = Math.round(r.left), y0 = Math.round(r.top);
       ponEn(x0, y0); d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height, x0, y0 }; px = x0; py = y0;
       try { vm.setPointerCapture(e.pointerId); } catch (_) {}
@@ -643,7 +679,7 @@
     const suelta = (e) => { if (!d || e.pointerId !== d.id) return; cancelAnimationFrame(raf); raf = 0; ponEn(px, py); vm.style.removeProperty('transform'); d = null; vm.classList.remove('moviendo'); vigia(false); };
     vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta); vm.addEventListener('lostpointercapture', suelta);
   }
-  $('#salir-llamada').addEventListener('click', () => M.termina('mio'));
+  $('#salir-llamada').addEventListener('click', () => { const g = G(); if (g) g.sal(); M.termina('mio'); });
   // privacidad propia (dueño, 22 nov 21:03): cambiar la voz y ocultar la cara, dos botones; la otra persona ve un aviso
   const FILTROS = [['#b-cambiavoz', 'cambiaVoz', 'vozCambiada', 'cambiaVoz', 'vozCambiada'], ['#b-ocultacara', 'caraOculta', 'caraOcultaTxt', 'ocultaCara', 'caraOculta']];
   function pintaFiltro(b, si, kOn, kOff) { b.setAttribute('aria-pressed', si ? 'true' : 'false'); const sp = b.querySelector('span'); if (sp) { sp.dataset.t = si ? kOn : kOff; sp.textContent = tr(si ? kOn : kOff); } }
@@ -651,7 +687,7 @@
     const b = $(sel); if (!b || !M[fn]) continue;
     b.addEventListener('click', async () => {
       const si = b.getAttribute('aria-pressed') !== 'true'; b.disabled = true;
-      let ok = false; try { ok = await M[fn](si); } catch (_) {} b.disabled = false;
+      let ok = false; try { ok = await (G() || M)[fn](si); } catch (_) {} b.disabled = false;
       if (ok) { pintaFiltro(b, si, kOn, kOff); if (sel === '#b-ocultacara') $('#video-mio').classList.toggle('oculta', si); }
     });
   }
@@ -670,8 +706,8 @@
     if (!a) { a = document.createElement('p'); a.id = 'filtro-otro'; a.className = 'filtro-otro'; a.setAttribute('role', 'status'); $('#escena-video').append(a); }
     a.textContent = txt; a.hidden = false;
   }
-  M.on('filtro', (f) => avisoOtro(f));
-  M.on('llamada', (e) => filtrosDe(e));
+  M.on('filtro', (f) => { if (!G()) avisoOtro(f); else filtrosDe(ef(M.estadoLlamada())); });
+  M.on('llamada', (e) => filtrosDe(ef(e)));
   // compartir la pantalla (dueño, 23 nov 09:02: «añade el botón como en GUARDIANA, el de compartir pantalla»), en el ordenador
   const bPantalla = $('#b-pantalla');
   function pintaPantalla(e) {
@@ -683,10 +719,10 @@
   }
   if (bPantalla && M.pantalla) bPantalla.addEventListener('click', async () => {
     const si = bPantalla.getAttribute('aria-pressed') !== 'true'; bPantalla.disabled = true;
-    try { await M.pantalla(si); } catch (_) {}
-    bPantalla.disabled = false; pintaPantalla(M.estadoLlamada ? M.estadoLlamada() : null);
+    try { await (G() || M).pantalla(si); } catch (_) {}
+    bPantalla.disabled = false; pintaPantalla(ef(M.estadoLlamada ? M.estadoLlamada() : null));
   });
-  M.on('llamada', (e) => pintaPantalla(e));
+  M.on('llamada', (e) => pintaPantalla(ef(e)));
   // ---------- tu imagen y la pantalla partida, como en GUARDIANA (dueño, 23 nov 09:31 y 10:06: «que yo pueda mover por la pantalla
   // mi cámara… revísalo todo y hazlo como en GUARDIANA, ahí estaba perfecto») ----------
   // En el ordenador, la llamada empieza con la pantalla partida, mitad y mitad: la otra persona a la izquierda y tú a la derecha. La
@@ -701,7 +737,8 @@
   const enPC = () => !movil.matches;
   const conImagen = (e = ultimo) => e.estado === 'hablando' && e.video !== false && e.cam !== false;
   function ponParte(p) { parte = Math.max(0.3, Math.min(0.7, p)); sala.style.setProperty('--mi-p', parte.toFixed(4)); }
-  function pintaVista(e = ultimo) { if (bVista) { bVista.hidden = !(enPC() && conImagen(e)); bVista.classList.toggle('partida', dividida); } }
+  const enGrupo = () => sala.classList.contains('en-grupo');
+  function pintaVista(e = ultimo) { if (bVista) { bVista.hidden = !(enPC() && conImagen(e) && !enGrupo()); bVista.classList.toggle('partida', dividida); } }
   function colocaMi() {
     const v = leeVista();
     if (dividida || !enPC() || !Number.isFinite(v.x) || !Number.isFinite(v.y)) { sala.classList.remove('movida'); return; }
@@ -711,16 +748,16 @@
     sala.classList.add('movida');
   }
   function ponDividida(si, guardar) {
-    si = !!si && enPC() && abierta && conImagen();
+    si = !!si && enPC() && abierta && conImagen() && !enGrupo();
     dividida = si; sala.classList.toggle('dividida', si); raya.hidden = !si; ponParte(parte);
     if (guardar) guardaVista({ div: si });
     colocaMi(); pintaVista();
   }
   if (bVista) bVista.addEventListener('click', () => ponDividida(!dividida, true));
   // tu imagen pequeña: se mueve con el ratón (como en GUARDIANA); doble clic: pantalla partida ↔ pequeña
-  vm.addEventListener('dblclick', (e) => { if (!enPC()) return; e.stopPropagation(); arr = null; ponDividida(!dividida, true); });
+  vm.addEventListener('dblclick', (e) => { if (!enPC() || enGrupo()) return; e.stopPropagation(); arr = null; ponDividida(!dividida, true); });
   vm.addEventListener('pointerdown', (e) => {
-    if (!enPC() || dividida || e.button > 0 || !sala.classList.contains('en-llamada')) return;
+    if (!enPC() || dividida || enGrupo() || e.button > 0 || !sala.classList.contains('en-llamada')) return;
     const r = vm.getBoundingClientRect(), c = escena.getBoundingClientRect();
     arr = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, movido: false, W: r.width, H: r.height, cl: c.left, ct: c.top, CW: c.width, CH: c.height };
     try { vm.setPointerCapture(e.pointerId); } catch (_) {}
@@ -758,6 +795,7 @@
   vm.addEventListener('loadedmetadata', () => colocaMi());
   // al empezar la llamada, partida (o como la dejaste la última vez); sin imagen propia, nada que partir
   M.on('llamada', (e) => {
+    e = ef(e);
     if (conImagen(e) && enPC() && !vistaPuesta && abierta) { vistaPuesta = true; ultimo = e; ponDividida(leeVista().div !== false); }
     else if (!conImagen(e) && dividida) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; }
     if (e.estado !== 'hablando' && e.estado !== 'reconectando') vistaPuesta = false;
@@ -941,9 +979,10 @@
     if (fuera) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
   }
   M.on('llamada', (e) => {
-    if (abierta) pintaLlamada(e);
+    if (abierta) pintaLlamada(ef(e));
     const E = window.Elixire || {};
-    if (abierta && e.estado === 'entrante' && E.contestaSola) { E.contestaSola = false; M.contestar(); }
+    // (con el grupo en marcha, si la persona de la conversación vuelve a llamar, entra sin más)
+    if (abierta && e.estado === 'entrante' && (E.contestaSola || G())) { E.contestaSola = false; M.contestar(); }
   });
   M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) toast('capa', { icono: 'candado', titulo: tr('encriptadoEstandarT'), sub: tr(k), ms: 12000 }); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
   // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
@@ -995,9 +1034,14 @@
   });
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
-  $('#b-colgar').addEventListener('click', () => M.colgar());
-  $('#b-micro').addEventListener('click', (e) => M.micro(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
-  $('#b-camara').addEventListener('click', (e) => M.camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
+  $('#b-colgar').addEventListener('click', () => {
+    const g = G(), enLaPrincipal = M.estadoLlamada().estado !== 'libre';
+    if (g) g.sal(); M.colgar();
+    // (si la persona de la conversación ya había colgado, la llamada que quedaba era la del grupo: se acaba aquí)
+    if (g && !enLaPrincipal && abierta) { if (finPendiente || !M.activa) finSala(finPendiente || { motivo: 'mio' }); else pintaLlamada({ estado: 'fin', motivo: 'mio' }); }
+  });
+  $('#b-micro').addEventListener('click', (e) => (G() || M).micro(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
+  $('#b-camara').addEventListener('click', (e) => (G() || M).camara(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
@@ -1073,8 +1117,15 @@
   M.on('intruso', () => { if (abierta) sistema('intruso'); });
   M.on('integridad', () => { if (abierta) sistema('integridad'); });
   M.on('red', (si) => { if (abierta) ponEstado(si ? 'salaEstado' : 'sinRed', !si); });
-  $('#terminar').addEventListener('click', () => M.termina('mio'));
+  $('#terminar').addEventListener('click', () => { const g = G(); if (g) g.sal(); M.termina('mio'); if (!M.activa && abierta) finSala({ motivo: 'mio' }); });
+  let finPendiente = null;
   M.on('fin', (f) => {
+    const g = G();
+    if (g && g.quedan() && abierta && !/^alarma/.test(f.motivo || '') && f.motivo !== 'no-coinciden') { finPendiente = f; pintaLlamada(ef(M.estadoLlamada())); return; }
+    finSala(f);
+  });
+  function finSala(f) {
+    finPendiente = null;
     const enSala = abierta; cierraMovil(); cierra();
     const textos = {
       mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false], // (con la lista de lo borrado)
@@ -1082,7 +1133,7 @@
       'no-coinciden': ['alarmaEtiqueta', 'noCoincidenTitulo', 'noCoincidenTexto', true],
     }[f.motivo];
     if (textos && (enSala || f.motivo.startsWith('alarma'))) aviso(...textos, false, f.motivo === 'suyo' && !!(window.Elixire && window.Elixire.reinvita), f.motivo === 'mio' || f.motivo === 'suyo' ? ['finL1', 'finL2', 'finL3'] : null);
-  });
+  }
 
   // ---------- mantener pulsado un mensaje, una foto o una nota: «Copiar», «Borrar para todos» (lo tuyo) y «Borrar para mí» (dueño,
   // 18:20: «una vez que la foto está enviada… dejar pulsada y te dé la opción de borrar para los dos o borrar solo para uno»). En el
@@ -1112,15 +1163,16 @@
     navigator.clipboard.writeText(c.textContent.trim()).then(() => toast('copiado', { ok: true, titulo: tr('copiadoMsg'), ms: 1600 })).catch(() => {});
   });
   $('#borra-mi').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (li) quitaFila(li, false); });
-  $('#borra-todos').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (!li || !li.classList.contains('mia')) return; if (M.borra(li.dataset.id)) quitaFila(li, true); else quitaFila(li, false); });
-  M.on('borrado', (id) => { const li = lista.querySelector('li.msg.suya[data-id="' + CSS.escape(id) + '"]'); if (li) quitaFila(li, true, true); quitaToast('a-' + id); quitaToast('m-' + id); });
+  $('#borra-todos').addEventListener('click', () => { const li = objetivo; cierraHoja(); if (!li || !li.classList.contains('mia')) return; const g = G(); const ok = M.borra(li.dataset.id); if (g) g.borra(li.dataset.id); quitaFila(li, ok || !!g); });
+  const alBorrado = (id) => { const li = lista.querySelector('li.msg.suya[data-id="' + CSS.escape(id) + '"]'); if (li) quitaFila(li, true, true); quitaToast('a-' + id); quitaToast('m-' + id); };
+  M.on('borrado', alBorrado);
   function quitaFila(li, paraTodos, suyo) {
     const id = li.dataset.id;
     for (const a of li.querySelectorAll('a[href^="blob:"]')) URL.revokeObjectURL(a.href);
     for (const im of li.querySelectorAll('img[src^="blob:"]')) URL.revokeObjectURL(im.src);
     const n = notas.get(id); if (n) { if (n.li && n.li.classList.contains('sonando')) paraReproductor(); if (n.url) URL.revokeObjectURL(n.url); notas.delete(id); }
     const u = previas.get(id); if (u) { URL.revokeObjectURL(u); previas.delete(id); }
-    if (archivosVivos.has(id)) { archivosVivos.delete(id); if (M.cancelaArchivo) { try { M.cancelaArchivo(id); } catch (_) {} } quitaToast('a-' + id); }
+    if (archivosVivos.has(id)) { archivosVivos.delete(id); if (M.cancelaArchivo) { try { M.cancelaArchivo(id); } catch (_) {} } { const g = G(); if (g) g.cancelaArchivo(id); } quitaToast('a-' + id); }
     if (!paraTodos) { li.remove(); return; }
     li.className = 'msg borrado ' + (suyo ? 'suya' : 'mia'); li.textContent = '';
     const b = document.createElement('span'); b.textContent = tr(suyo ? 'mensajeBorradoSuyo' : 'mensajeBorrado'); li.append(b);
@@ -1154,7 +1206,7 @@
   escena.addEventListener('pointerup', sueltaMini, true); escena.addEventListener('pointercancel', sueltaMini, true);
 
   // ---------- girar la cámara (dueño, 18:51) ----------
-  $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await M.giraCamara(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
+  $('#b-girar').addEventListener('click', async () => { const b = $('#b-girar'); b.disabled = true; b.classList.add('girando'); try { await (G() || M).giraCamara(); } finally { b.disabled = false; setTimeout(() => b.classList.remove('girando'), 350); } });
 
   // ---------- avisos ----------
   function aviso(etiqueta, titulo, cuerpo, mal, enlace, invitar, lista) {
@@ -1169,6 +1221,39 @@
   // (dueño, 18:17: «que lo detecte para decirle… tiene que volver a enviar o invitar tú… para que la persona no pierda el tiempo»)
   $('#aviso-invitar').addEventListener('click', () => { $('#aviso').hidden = true; if (window.Elixire && window.Elixire.reinvita) window.Elixire.reinvita(); });
   window.ElixireAviso = aviso;
+
+  // ---------- para la llamada en grupo (grupo.js): cada persona más, con los mismos avisos y filas que la principal ----------
+  function avisoBreve(t) {
+    if (!abierta || !t) return;
+    if (movil.matches && !enChat) { toast('g-' + Date.now(), { icono: 'msj', titulo: t, ms: 4200 }); return; }
+    quitaVacio(); const li = document.createElement('li'); li.className = 'msg sistema'; li.textContent = t; lista.append(li); abajo();
+    if (!movil.matches && amplia) toast('g-' + Date.now(), { icono: 'msj', titulo: t, ms: 4200 });
+  }
+  function engancha(x, etiqueta, quien) {
+    x.on('escribe', alEscribe);
+    x.on('mensaje', (m) => { if (m.dir !== 'mia') { m.de = etiqueta(); m.quien = quien; } $('#escribiendo').hidden = true; pintaMensaje(m); if (m.dir !== 'mia') noLeido(); });
+    x.on('acuse', (ids) => recibo(ids, quien, false));
+    x.on('leido', (ids) => recibo(ids, quien, true));
+    x.on('archivo', (a) => { if (a.dir !== 'mia') { a.de = etiqueta(); a.quien = quien; } filaArchivo(a); });
+    x.on('archivo-progreso', (p) => { const r = grupoEnv.get(p.id); if (p.dir !== 'mia' || !r || !r.porM) alProgreso(p); });
+    x.on('archivo-enviado', alEnviado); x.on('archivo-listo', alListo); x.on('archivo-cancelado', alCancelado);
+    x.on('borrado', alBorrado);
+    // la calidad de arriba: la de la llamada principal; si ha colgado, la de las demás
+    x.on('calidad', (q) => { if (M.estadoLlamada().estado === 'libre' || M.estadoLlamada().estado === 'fin') calidadUlt = q; });
+  }
+  // el grupo se ha quedado sin nadie: si la conversación principal ya no está, se cierra como siempre; si está, lo de colgar
+  function finGrupo() {
+    if (!abierta) return;
+    if (finPendiente || !M.activa) { finSala(finPendiente || { motivo: 'suyo' }); return; }
+    const e = M.estadoLlamada(); pintaLlamada(e.estado === 'libre' ? { estado: 'fin', motivo: 'suyo' } : e);
+  }
+  function repinta() { if (abierta) { const e = ef(M.estadoLlamada()); pintaLlamada(e); filtrosDe(e); pintaPantalla(e); } }
+  function grupoCambia(si) {
+    if (si) { if (dividida) { dividida = false; sala.classList.remove('dividida'); raya.hidden = true; } }
+    else if (enPC() && abierta && conImagen() && leeVista().div !== false) ponDividida(true, false);
+    colocaMi(); pintaVista();
+  }
+  window.ElixireSala = { engancha, aviso: avisoBreve, finGrupo, repinta, grupoCambia };
   // «Verificar esta página»: el código es público y cada script lleva su huella SHA-384 (herramientas/huellas.py)
   for (const v of document.querySelectorAll('.verificar')) v.addEventListener('click', (e) => { e.preventDefault(); aviso('verificarEtiqueta', 'verificarTitulo', 'verificarTexto', false, true); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#aviso').hidden) $('#aviso').hidden = true; });

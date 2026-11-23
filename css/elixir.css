@@ -2048,3 +2048,56 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .cabecera .idiomas .seg:focus-visible{outline:2px solid rgba(156,195,228,.85);outline-offset:-3px;border-radius:11px}
 @media (max-width:760px){ .cabecera .idiomas .seg{height:26px;min-width:44px;padding:0 10px} }
 @media (prefers-reduced-motion:reduce){ .idiomas.listo .idioma-ficha{transition:none} }
+
+/* ---------- la llamada en grupo, hasta 4 (dueño, 23 nov 11:50): un recuadro por persona, también el tuyo, como en Meet, FaceTime o
+   WhatsApp. grupo.js pone la posición y el tamaño de cada uno; en el ordenador, recuadros 16:9 con aire entre ellos, y en el móvil, a
+   sangre. Quien habla, con su recuadro en verde. Cada recuadro lleva su nombre («Persona 2», «Tú») y lo que tiene puesto. ---------- */
+.video-par{display:none}
+.sala .tesela-nombre{display:none}
+.sala.en-grupo:not(.en-chat) .escena-video>.en-tesela{display:block;position:absolute!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;
+  background:#0E131A!important;border:0!important;border-radius:14px!important;box-shadow:0 18px 40px -24px rgba(0,0,0,.9)!important;opacity:1!important;z-index:1!important;cursor:default!important;transition:none!important}
+.sala.en-grupo .escena-video>.en-tesela.habla{outline:3px solid rgba(92,201,138,.95);outline-offset:-3px}
+.sala.en-grupo:not(.en-chat) .tesela-nombre:not([hidden]){display:block;position:absolute;z-index:3;height:26px;padding:0 10px;border-radius:999px;background:rgba(5,7,10,.62);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:500 12.5px/26px var(--ui);color:#F4F6F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.sala.en-grupo #raya-division,.sala.en-grupo #filtro-otro,.sala.en-grupo #otro-chat,.sala.en-grupo .controles .seg#b-vista,.sala.en-grupo .controles .seg#b-comprobar,
+.sala.en-grupo .sala-botones #b-movil,.sala.con-grupo .sala-botones #b-movil,.sala.en-grupo .controles .seg#b-volver-pc,.sala.en-grupo .controles .seg#b-reto{display:none!important}
+.sala.en-grupo .escena-video{background:#06080C}
+@media (max-width:760px){
+  .sala.en-grupo:not(.en-chat) .escena-video>.en-tesela{border-radius:0!important;box-shadow:none!important}
+  .sala.en-chat .video-par,.sala.en-chat .tesela-nombre{display:none!important}
+  /* «Añadir», con los otros dos de la izquierda (cambiar la voz y ocultar la cara), encima */
+  .sala .controles .seg#b-anadir{bottom:calc(100% + 132px);border-color:rgba(156,195,228,.55);color:#CFE2F3}
+  .sala .controles:has(#b-volver-pc:not([hidden])) .seg#b-anadir{bottom:calc(100% + 182px)}
+}
+/* en el ordenador, «Añadir» en la barra, como los demás */
+.sala .controles .seg#b-anadir[hidden]{display:none!important}
+
+/* la tarjeta de «Añadir» en el ordenador: el código grande y cómo enviarlo */
+.grupo-invita{position:fixed;z-index:40;left:50%;top:50%;width:min(460px,calc(100vw - 32px));padding:30px 28px 24px;border-radius:22px;text-align:center;
+  background:rgba(10,14,20,.94);border:1px solid rgba(156,195,228,.28);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);box-shadow:0 40px 90px -30px rgba(0,0,0,.9);
+  opacity:0;transform:translate(-50%,-46%) scale(.98);transition:opacity .2s ease,transform .22s cubic-bezier(.2,.85,.25,1)}
+.grupo-invita.visible{opacity:1;transform:translate(-50%,-50%)}
+.grupo-invita[hidden]{display:none}
+.grupo-invita .etiqueta{display:block;font:600 11px/1 var(--ui);letter-spacing:.24em;color:#9CC3E4}
+.grupo-invita .gi-codigo{margin:18px 0 10px;font:500 27px/1.2 var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace);letter-spacing:.08em;color:#F4F6F8;user-select:text;-webkit-user-select:text}
+.grupo-invita .gi-texto{margin:0 auto 20px;max-width:380px;font:400 14px/1.5 var(--ui);color:#B9C6D3}
+.grupo-invita .gi-botones{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grupo-invita .gi-boton{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;height:76px;padding:0 4px;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#F4F6F8;font:500 12.5px/1.2 var(--ui);text-decoration:none;transition:background .15s,border-color .15s,transform .1s}
+.grupo-invita .gi-boton svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.grupo-invita .gi-boton:hover{background:rgba(156,195,228,.12);border-color:rgba(156,195,228,.45)}
+.grupo-invita .gi-boton:active{transform:scale(.96)}
+.grupo-invita .gi-boton[aria-disabled="true"],.grupo-invita .gi-boton:disabled{opacity:.4;pointer-events:none}
+.grupo-invita .gi-estado{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:18px;font:400 13.5px/1.3 var(--ui);color:#B9C6D3}
+.grupo-invita .gi-estado .punto{width:7px;height:7px;border-radius:50%;background:#F0C77F;animation:giLate 1.4s ease-in-out infinite}
+.grupo-invita.lista .gi-estado .punto{background:#5CC98A;animation:none}
+.grupo-invita.mal .gi-estado .punto{background:#E07A6C;animation:none}
+@keyframes giLate{0%,100%{opacity:.35}50%{opacity:1}}
+.grupo-invita .gi-cerrar{position:absolute;right:12px;top:12px;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#B9C6D3;cursor:pointer}
+.grupo-invita .gi-cerrar:hover{background:rgba(255,255,255,.08);color:#F4F6F8}
+.grupo-invita .gi-cerrar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+@media (prefers-reduced-motion:reduce){.grupo-invita{transition:none}.grupo-invita .gi-estado .punto{animation:none}}
+.sala.en-grupo .video-tiempo{z-index:5}
+/* en el chat del grupo, quién lo dice (encima del mensaje, en azul hielo) */
+.mensajes li.msg>b.de{display:block;margin:0 0 4px;font:600 12px/1.3 var(--ui);letter-spacing:.01em;color:#9CC3E4}
+.mensajes li.nota>b.de,.mensajes li.archivo>b.de{flex-basis:100%;width:100%}
