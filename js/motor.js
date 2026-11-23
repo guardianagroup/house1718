@@ -250,6 +250,7 @@
     if (!w || s.fin) return;
     s.palabras = w; clearTimeout(s.plazoPalabras);
     av(s, 'palabras', w.slice());
+    if (s.canal === 'par' && s.esperaVuelta) av(s, 'vuelve');
     // ir y volver, como en GUARDIANA: quien da la llamada no espera a que nadie compare palabras
     if (s.canal === 'par' && s.papel === 'pc' && T === s && !s.trasp) setTimeout(() => { if (T === s && !s.trasp && !s.fin) confirmaMovil(); }, 300);
   }
@@ -1202,9 +1203,12 @@
     const resto = Math.max(0, restante(s) - (enLlamada ? Date.now() - L.t0 : 0));
     t.trasp = s.trasp = { okMovil: false, okSuyo: false };
     clearTimeout(t.caducaT);
-    vueltaMia = C.nuevaSemilla(); // (lo tienen solo los dos aparatos: va por la sesión comprobada del traspaso)
+    // el secreto para volver (lo tienen solo los dos aparatos: va por la sesión comprobada del traspaso). Como en GUARDIANA, solo el
+    // ordenador se queda esperando: el móvil, al devolver la llamada, se borra (dueño, 23 nov 10:36: «en cuanto pase al PC, que se
+    // cierre en el móvil»)
+    vueltaMia = TEL ? null : C.nuevaSemilla();
     const dest = t.vuelve ? 'pc' : 'movil';
-    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: C.b64u(vueltaMia) });
+    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: vueltaMia ? C.b64u(vueltaMia) : undefined });
     enviaControl(s, { tipo: 'traspaso', k: C.b64u(k), llamada: enLlamada ? 1 : 0, dest });
     k.fill(0);
     s.trasp.plazo = setTimeout(() => acabaTraspaso(true), 7000);

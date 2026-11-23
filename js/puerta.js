@@ -332,6 +332,10 @@
       if (window.Sala3D) await window.Sala3D.abre(); else { $('#monolito-css').classList.add('abierto'); await espera(quieto ? 0 : 1400); }
       textoMovil('movilAquiTexto'); errorMovil(''); $('#movil-aqui-palabras').hidden = true; $('#movil-continuar').hidden = false; $('#movil-continuar').disabled = false;
       muestra('movil', $('#movil-continuar'));
+      // (dueño, 23 nov 10:36: «sin que haya que tocar pantalla ni aprobar nada»): como en GUARDIANA, empieza sola; la cámara y el
+      // micrófono se piden ya (el navegador puede preguntar la primera vez); «Continuar aquí» queda solo si algo falla
+      if (M && M.preparaMedios) M.preparaMedios();
+      setTimeout(() => { const b = $('#movil-continuar'); if (abierta === 'movil' && b && !b.disabled && semillaMovil) b.click(); }, 350);
     } finally { ocupado = false; }
   }
   $('#movil-continuar').addEventListener('click', async () => {

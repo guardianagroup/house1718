@@ -607,11 +607,16 @@
   let otroFuera = false;
   // Si el navegador no deja arrancar la imagen y el sonido sin un toque (dueño, 15:50: Android con Brave: «ni me escuchaba y veía toda
   // la pantalla negra»; en GUARDIANA pasó igual el 2 de noviembre): «Toca para ver y oír a la otra persona», y con el toque, arranca.
+  // (dueño, 23 nov 10:36: «al volver al PC, que se abra de forma automática sin tener que presionar un botón ni nada»): si el navegador
+  // aún no deja (la cámara propia tarda un instante en arrancar, y con ella el permiso de sonar), se reintenta solo durante unos
+  // segundos y al volver a la pestaña; el «Toca para ver y oír» queda solo para cuando de verdad hace falta
+  let verT = null, verN = 0;
   function intentaVer() {
     const vs = $('#video-suyo'); if (!vs.srcObject) return;
-    try { const p = vs.play(); if (p && p.catch) p.catch((x) => { if (x && x.name === 'NotAllowedError' && abierta) $('#video-toca').hidden = false; }); } catch (_) {}
+    try { const p = vs.play(); if (p && p.catch) p.catch((x) => { if (!(x && x.name === 'NotAllowedError' && abierta)) return; clearTimeout(verT); if (verN++ < 15) verT = setTimeout(intentaVer, 700); else $('#video-toca').hidden = false; }); } catch (_) {}
   }
-  $('#video-suyo').addEventListener('playing', () => { $('#video-toca').hidden = true; });
+  $('#video-suyo').addEventListener('playing', () => { $('#video-toca').hidden = true; verN = 0; clearTimeout(verT); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && abierta && ultimo.estado === 'hablando') { verN = 0; intentaVer(); } });
   $('#video-toca').addEventListener('click', () => {
     $('#video-toca').hidden = true;
     for (const v of [$('#video-suyo'), $('#video-mio')]) { try { const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
@@ -1026,18 +1031,26 @@
     if (f && f.motivo === 'no-espera') { if (!dm.hidden) { pasoMovil(1); errorDm('vueltaNoEspera'); } else if (abierta) sistema('vueltaNoEspera'); pintaVolver(); return; }
     if (!dm.hidden) { pasoMovil(1); $('#movil-qr').removeAttribute('src'); errorDm(f && f.motivo === 'caduca' ? 'movilCaducado' : 'movilCancelado'); }
   });
-  // la llamada pasó al otro aparato: este se queda esperando, por si vuelve
+  // la llamada pasó al otro aparato. El ordenador se queda esperando, por si vuelve; el móvil, como en GUARDIANA, se borra y lo dice
+  // (dueño, 23 nov 10:36: «en cuanto pase al PC, que se cierre en el móvil»): si el navegador lo deja, la pestaña se cierra sola
   M.on('traspasada', (x) => {
     cierraMovil(); cierra();
-    if (x && x.aPc) aviso('pcHechoEtiqueta', 'pcHechoTitulo', x.vuelta ? 'pcHechoTexto' : 'movilHechoTexto', false);
+    if (x && x.aPc) { aviso('pcHechoEtiqueta', 'pcHechoTitulo', 'enPcTexto', false); setTimeout(() => { try { window.close(); } catch (_) {} }, 1500); }
     else aviso('movilHechoEtiqueta', 'movilHechoTitulo', x && x.vuelta ? 'movilHechoVuelta' : 'movilHechoTexto', false);
   });
+  M.on('par-vuelve', () => { cierraMovil(); aviso('pcVuelveEtiqueta', 'pcVuelveTitulo', 'pcVuelveTexto', false); });
   // la otra persona pasa a otro aparato: esta sala sigue abierta y continúa con él, con claves nuevas
   M.on('traspaso', (x) => { if (abierta) { const k = x && x.dest === 'pc' ? 'traspasoEsperaPc' : 'traspasoEspera'; ponEstado(k, false); sistema(k); } });
   M.on('continua', (e) => {
     continuada = true; $('#aviso').hidden = true;
     // la llamada llega a este aparato (por el QR o de vuelta): se contesta sola
     if (e && e.movil && e.reanuda && window.Elixire) window.Elixire.contestaSola = true;
+    if (e && e.movil && document.hidden) {
+      const t0 = document.title; document.title = '● ' + tr('llamadaAqui');
+      const vuelve = () => { if (document.hidden) return; document.title = t0; document.removeEventListener('visibilitychange', vuelve); };
+      document.addEventListener('visibilitychange', vuelve);
+    }
+    verN = 0;
     if (!abierta) abre();
     $('#sala-palabras').hidden = true; sala.classList.remove('por-comprobar'); ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
     sistema(e && e.movil ? (e.tel ? 'continuaAqui' : 'continuaAquiPc') : e && e.dest === 'pc' ? 'continuaSuPc' : 'continuaSuMovil');
