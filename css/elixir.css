@@ -266,7 +266,7 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
 .reto-texto{font:300 26px/1.25 var(--display);letter-spacing:-.01em;color:#F4F6F8}
 .nota-panel{margin:-4px 0 0;font:300 12px/1.55 var(--ui);color:var(--texto-3);max-width:38ch}
 .controles .seg{min-width:110px}
-.chat{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;min-height:0;padding:20px 22px 22px}
+.chat{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-columns:minmax(0,1fr);gap:12px;min-height:0;padding:20px 22px 22px}
 .mensajes{list-style:none;margin:0;padding:4px 2px 4px 0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
 .mensajes .vacio{margin:auto 0;padding:18px;text-align:center;font:300 13.5px/1.6 var(--ui);color:var(--texto-3)}
 .msg{max-width:86%;padding:11px 14px 9px;border:1px solid var(--hilo);border-radius:2px;background:rgba(255,255,255,.025);font:300 14.5px/1.55 var(--ui);color:var(--texto);white-space:pre-wrap;overflow-wrap:anywhere}
@@ -1632,3 +1632,58 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
 .aviso-lista li::after{content:'';position:absolute;left:6.5px;top:50%;width:6px;height:9px;margin-top:-6px;border:solid #5CC98A;border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
 .aviso.fin .aviso-caja h2{font-size:30px}
 .aviso.fin #aviso-texto{margin-bottom:0}
+
+/* (22 nov 23:16) el chat del móvil, como los grandes (WhatsApp, Signal, el iPhone): arriba «Chat · Encriptado poscuántico»; debajo, la barra
+   verde de llamada en curso con el tiempo y el botón «Volver al vídeo». El vídeo se quita (la voz sigue: queda en 1 px invisible) y la
+   conversación empieza con un único cartel de encriptado, sin avisos sueltos */
+@media (max-width:760px){
+  .sala.en-chat .chat-cab,.sala.en-chat.teclado .chat-cab{display:flex;flex-direction:column;align-items:stretch;gap:0;min-height:0;padding:0;
+    background:linear-gradient(180deg,#0D1219,#0A0E14);border-bottom:1px solid rgba(255,255,255,.07);box-shadow:0 10px 24px -18px rgba(0,0,0,.9)}
+  .chat-cab-fila{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px}
+  .sala.en-chat.teclado .chat-cab-fila{padding-top:calc(env(safe-area-inset-top) + 8px);padding-bottom:8px}
+  .chat-cab-id{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;color:#9CC3E4;background:radial-gradient(circle at 30% 25%,#1C2836,#0F151D);box-shadow:inset 0 0 0 1px rgba(156,195,228,.3)}
+  .chat-cab-id svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .sala.en-chat .chat-cab-txt{align-items:flex-start;text-align:left;gap:4px}
+  .sala.en-chat .chat-cab-txt b{font:600 18px/1.15 var(--ui);letter-spacing:-.01em;color:#F4F6F8}
+  .sala.en-chat .chat-cab-txt small{display:block;font:500 12.5px/1.2 var(--ui);color:#9CC3E4}
+  .sala.en-chat .chat-cab-txt small.estandar,.sala.en-chat #chat-cifrado[data-t="chatCifradoEstandar"]{color:#F0C77F}
+  .sala.en-chat .chat-volver{display:flex;align-items:center;gap:12px;width:100%;height:auto;min-height:56px;margin:0;padding:8px 12px 8px 16px;border:0;border-top:1px solid rgba(92,201,138,.2);border-radius:0;
+    background:linear-gradient(90deg,rgba(92,201,138,.17),rgba(92,201,138,.06));color:#F4F6F8;text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .chat-volver-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .chat-volver-txt b{font:600 14.5px/1.2 var(--ui);color:#F4F6F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+  .chat-volver-txt small{font:500 12px/1.2 var(--ui);color:#8FD9AC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-volver-txt small[hidden]{display:none}
+  #chat-tiempo:not(:empty)::before{content:'·';margin:0 6px;color:#7FA98F}
+  .chat-volver-pill{flex:none;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px 0 12px;border-radius:19px;background:#5CC98A;color:#06080C;font:600 14px/1 var(--ui);
+    box-shadow:0 8px 20px -10px rgba(92,201,138,.9);transition:transform .15s ease}
+  .sala.en-chat .chat-volver .chat-volver-pill svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .sala.en-chat .chat-volver:active .chat-volver-pill{transform:scale(.96)}
+  .chat-punto{flex:none;width:9px;height:9px;border-radius:50%;background:#5CC98A;box-shadow:0 0 0 0 rgba(92,201,138,.5);animation:chatLatido 1.8s ease-out infinite}
+  @keyframes chatLatido{0%{box-shadow:0 0 0 0 rgba(92,201,138,.5)}70%,100%{box-shadow:0 0 0 7px rgba(92,201,138,0)}}
+  .sala.en-chat .escena-video,.sala.en-chat .escena-video.movida,.sala.en-chat.teclado .escena-video{position:fixed!important;inset:0 auto auto 0!important;width:1px!important;height:1px!important;
+    opacity:0!important;pointer-events:none!important;overflow:hidden!important;box-shadow:none!important;border:0!important;transition:none!important}
+}
+.cartel-cifrado{list-style:none;align-self:center;display:flex;gap:11px;align-items:flex-start;width:min(100%,400px);box-sizing:border-box;margin:4px auto 16px;padding:12px 14px;border-radius:14px;
+  background:rgba(156,195,228,.07);border:1px solid rgba(156,195,228,.17);text-align:left}
+.cartel-cifrado>svg{flex:none;width:16px;height:16px;margin-top:1px;fill:none;stroke:#9CC3E4;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.cartel-cifrado>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cartel-cifrado b{font:600 13px/1.35 var(--ui);color:#E3EBF2}
+.cartel-cifrado b[data-t="cifradaEstandar"]{color:#F0C77F}
+.cartel-cifrado small{font:400 12.5px/1.45 var(--ui);color:#9AAFC3}
+/* la otra persona en el chat: un aviso claro en el centro de su vídeo (en pausa) */
+.otro-chat{position:absolute;left:50%;top:50%;z-index:5;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(86%,340px);box-sizing:border-box;padding:20px 18px 18px;
+  border-radius:20px;background:rgba(10,13,18,.78);border:1px solid rgba(156,195,228,.2);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);text-align:center;pointer-events:none}
+.otro-chat[hidden]{display:none}
+.otro-chat-ico{display:grid;place-items:center;width:48px;height:48px;margin-bottom:4px;border-radius:50%;background:rgba(156,195,228,.12);color:#9CC3E4}
+.otro-chat-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.otro-chat b{font:600 17px/1.2 var(--ui);color:#F4F6F8}
+.otro-chat small{font:400 13px/1.45 var(--ui);color:#AFC0D1;text-wrap:balance}
+/* el redactor del ordenador, como en el móvil y en las apps de escritorio: botones de icono (adjuntar, nota de voz, enviar) y más sitio para escribir */
+@media (min-width:761px){
+  .redactor .cristal{flex:none;width:44px;padding:0;display:grid;place-items:center}
+  .redactor .cristal span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .redactor .cristal .ico{display:block}
+  .redactor #enviar:not([hidden]),.redactor #b-voz:not([hidden]){color:#06080C;background:#9CC3E4;border-color:#9CC3E4}
+}
+/* la app del iPhone: la portada y la roca, a pantalla entera (el botón baja la altura de la barra de estado) */
+@media (max-width:760px){ .app-ios .portada{height:var(--alto-app,100svh)} .app-ios .lienzo3d{height:var(--alto-app,100vh)} }

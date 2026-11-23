@@ -642,7 +642,7 @@
     const e = M.estadoLlamada ? M.estadoLlamada() : null; if (!e || e.estado !== 'hablando') return;
     // si la otra persona te está comprobando a ti, la tuya espera a que termine (y empieza sola)
     if (teComprueban > performance.now()) { enEspera = true; muestraEspera(true); return; }
-    if (e.otroFiltro && e.otroFiltro.cara) { const tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr('vc_otroOculta'); tx.dataset.k = 'vc_otroOculta'; cabecera.classList.add('vg-espera'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible')); clearTimeout(cabecera._t); cabecera._t = setTimeout(() => { if (!compr) { cabecera.classList.remove('visible', 'vg-espera'); cabecera.hidden = true; } }, 3500); return; }
+    if (e.otroFiltro && (e.otroFiltro.cara || e.otroFiltro.chat)) { const kf = e.otroFiltro.chat ? 'vc_otroChat' : 'vc_otroOculta', tx = cabecera.querySelector('.vg-a-texto'); tx.textContent = tr(kf); tx.dataset.k = kf; cabecera.classList.add('vg-espera'); cabecera.hidden = false; requestAnimationFrame(() => cabecera.classList.add('visible')); clearTimeout(cabecera._t); cabecera._t = setTimeout(() => { if (!compr) { cabecera.classList.remove('visible', 'vg-espera'); cabecera.hidden = true; } }, 3500); return; }
     enEspera = false; muestraEspera(false);
     try { M.gesto('inicio', 0, 0); } catch (_) {}
     compr = { t0: performance.now(), fase: 'prepara' };
@@ -974,6 +974,7 @@
     clearTimeout(tArranca); clearTimeout(tDet); clearInterval(tEval); clearInterval(tFuente); clearTimeout(tBien); paraMuestreo();
     cierraComprobacion(); S = null; oculta(); if (pre) pre.hidden = true;
   }
+  M.on('filtro', (f) => { if (compr && compr.fase !== 'fin' && f && (f.chat || f.cara)) { cierraComprobacion(); comprueba(); } });
   M.on('llamada', (e) => { if (e && e.estado === 'hablando' && e.video !== false) arranca(); else if (e && ['fin', 'libre', 'rechazada', 'caida'].includes(e.estado)) para(); });
   M.on('fin', () => para());
   window.ElixireVigia = { pausa(si) { enPausa = si ? performance.now() + 8000 : 0; }, get estado() { return S ? { reflejo: S.reflejo, reflejoDif: S.reflejoDif, giro: S.giro, giroMax: S.giroMax, giroPerdida: S.giroPerdida, giroBueno: S.giroBueno, giroContra: S.giroContra, espectro: S.reflejoEspectro, pantalla: S.pantalla, mano: S.mano, manoDatos: S.manoDatos, costura: S.costura, cuello: S.reflejoCuello, perfil: S.perfil, texR: S.texR, indicios: Object.keys(S.indicios), vida: S.vida.slice(), aviso: S.mostrado, n: S.n, conCara: S.conCara, frames: S.frames, quietas: media(S.quietas.map((x) => x.q)), bucle: S.bucle.racha, plano: S.plano, parpadeos: S.parpadeos.length, ojosMs: S.ojosMs, dt: S.dtMedio, fuente: S.fuente, fallo } : null; }, diag: () => { diagVisible = true; pintaDiag(); }, comprueba: () => comprueba(), cierra: () => cierraComprobacion() };

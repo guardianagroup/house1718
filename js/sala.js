@@ -59,6 +59,13 @@
     const h = document.createElement('span'); h.className = 'hora'; h.textContent = hora(m.t); li.append(h);
     lista.append(li); abajo();
   }
+  function cartelCifrado() {
+    if (lista.querySelector('.cartel-cifrado')) return; quitaVacio();
+    const li = document.createElement('li'); li.className = 'cartel-cifrado';
+    li.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="10" rx="2.4"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span><b></b><small></small></span>';
+    const k = ultimo && ultimo.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo', b = li.querySelector('b'), sm = li.querySelector('small');
+    b.dataset.t = k; b.textContent = tr(k); sm.dataset.t = 'cartelBorra'; sm.textContent = tr('cartelBorra'); lista.prepend(li);
+  }
   function sistema(k, extra) {
     quitaVacio();
     const li = document.createElement('li'); li.className = 'msg sistema'; li.textContent = tr(k) + (extra ? ' ' + extra : '');
@@ -297,13 +304,15 @@
     if (window.ElixireComprueba && window.ElixireComprueba.cierra) window.ElixireComprueba.cierra();
     if (window.ElixireVigia && window.ElixireVigia.cierra) window.ElixireVigia.cierra();
     enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
-    sala.classList.add('en-chat'); ajustaVista(); quitaVacio(); if (!lista.children.length) { const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v); }
+    if (M.modoChat) M.modoChat(true);
     $('#chat-tiempo').textContent = ultimo.t0 ? mmss(Date.now() - ultimo.t0) : '';
+    { const vid = ultimo.video !== false, t = $('#chat-volver-txt'), k = vid ? 'volverVideo' : 'volverLlamada'; t.dataset.t = k; t.textContent = tr(k); $('#chat-pausa').hidden = !vid; }
+    sala.classList.add('en-chat'); ajustaVista(); quitaVacio(); if (!lista.children.length) { const v = document.createElement('li'); v.className = 'vacio'; v.dataset.t = 'vacio'; v.textContent = tr('vacio'); lista.append(v); }
     requestAnimationFrame(abajo);
   }
   function cierraChat() {
     if (!enChat) return;
-    enChat = false; paraNota(false); menuEnviar.hidden = true; if (enMarchaBotones) muestraBotones();
+    enChat = false; paraNota(false); menuEnviar.hidden = true; if (enMarchaBotones) muestraBotones(); if (M.modoChat) M.modoChat(false);
     if (document.activeElement === texto) texto.blur();
     sala.classList.remove('en-chat', 'teclado'); sala.style.removeProperty('--vv-h'); sala.style.removeProperty('--vv-top');
   }
@@ -543,7 +552,10 @@
     avisoOtro(e && e.estado === 'hablando' ? e.otroFiltro : null);
   }
   function avisoOtro(f) {
-    let a = $('#filtro-otro'); const txt = [f && f.voz ? tr('otroVoz') : '', f && f.cara ? tr('otroCara') : ''].filter(Boolean).join(' · ');
+    let c = $('#otro-chat');
+    if (f && f.chat && !c) { c = document.createElement('div'); c.id = 'otro-chat'; c.className = 'otro-chat'; c.setAttribute('role', 'status'); c.innerHTML = '<span class="otro-chat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M8 10h8M8 13h5"/></svg></span><b data-t="otroChatTit"></b><small data-t="otroChatTxt"></small>'; c.querySelector('b').textContent = tr('otroChatTit'); c.querySelector('small').textContent = tr('otroChatTxt'); $('#escena-video').append(c); }
+    if (c) c.hidden = !(f && f.chat);
+    let a = $('#filtro-otro'); const txt = [f && f.voz ? tr('otroVoz') : '', f && f.cara && !f.chat ? tr('otroCara') : ''].filter(Boolean).join(' · ');
     if (!txt) { if (a) a.hidden = true; return; }
     if (!a) { a = document.createElement('p'); a.id = 'filtro-otro'; a.className = 'filtro-otro'; a.setAttribute('role', 'status'); $('#escena-video').append(a); }
     a.textContent = txt; a.hidden = false;
@@ -567,6 +579,7 @@
     $('#video-cifrado').classList.toggle('estandar', !!e.sinCapa); $('#video-cifrado').classList.toggle('comprobando', k === 'cifradaComprobando');
     d.hidden = !en || k === 'cifradaComprobando'; d.textContent = e.sinCapa ? textoEstandar() : 'ML-KEM-1024 · ECDH P-384 · AES-256-GCM';
     const cc = $('#chat-cifrado'), kc = e.sinCapa ? 'chatCifradoEstandar' : 'chatCifrado'; if (cc.dataset.t !== kc) { cc.dataset.t = kc; cc.textContent = tr(kc); }
+    { const cb = lista.querySelector('.cartel-cifrado b'), kb = e.sinCapa ? 'cifradaEstandar' : 'cifradaExtremo'; if (cb && cb.dataset.t !== kb) { cb.dataset.t = kb; cb.textContent = tr(kb); } }
   }
   M.on('calidad', (q) => { calidadUlt = q; if (ultimo.sinCapa) pintaCifrado(ultimo); });
   // Los tonos, como en GUARDIANA (dueño, 16:09: al volver a llamar no sonaba nada): quien llama oye el tono de llamada; a quien le
@@ -747,7 +760,7 @@
 
   // ---------- el estado de la conversación ----------
   M.on('conectado', () => {
-    continuada = false; otroFuera = false; abre(); sistema('mConectado');
+    continuada = false; otroFuera = false; abre(); cartelCifrado();
     // invitación a una llamada: quien entra con el enlace llama sin más; quien invitó contesta sola (ver puerta.js)
     const E = window.Elixire || {};
     esperaLlamada = !!(E.llamaAlEntrar || E.contestaSola); clearTimeout(esperaT);
@@ -783,7 +796,7 @@
     $('#sala-palabras').hidden = true; sala.classList.remove('por-comprobar'); ponEstado('salaEstado', false); pintaLlamada({ estado: 'libre' }); $('#llamar').disabled = false;
     sistema(e && e.movil ? 'continuaAqui' : 'continuaSuMovil');
   });
-  M.on('claves', (c) => { if (abierta && c.renovada) sistema('clavesRenovadas'); });
+  // (las claves se renuevan solas y sin avisos en la conversación: dueño, 22 nov 23:16, «desordenado»)
   M.on('se-va', () => { otroFuera = true; if (abierta) { ponEstado('seFue', true); sistema('seFue'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
   M.on('vuelve', () => { otroFuera = false; if (abierta) { ponEstado('salaEstado', false); sistema('vuelve'); if (ultimo.estado === 'libre' || ultimo.estado === 'fin') pintaLlamada(ultimo); } });
   M.on('intruso', () => { if (abierta) sistema('intruso'); });

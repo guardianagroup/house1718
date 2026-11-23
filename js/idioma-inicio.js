@@ -14,3 +14,17 @@
   raiz.lang = g === 'es' ? 'es' : 'en';
   if (raiz.lang !== 'es') raiz.classList.add('traduciendo');
 })();
+
+// En la app del iPhone (pantalla de inicio, barra de estado translúcida), 100vh y 100svh se quedan cortos justo la altura de la barra
+// de estado y el botón de la portada quedaba alto (dueño, 22 nov 23:28). En la app, la portada y la roca miden la pantalla entera.
+(() => {
+  if (navigator.standalone !== true) return;
+  const raiz = document.documentElement; let ultimo = 0;
+  const mide = () => {
+    if (!matchMedia('(max-width:760px)').matches) { raiz.classList.remove('app-ios'); return; }
+    const vert = matchMedia('(orientation: portrait)').matches, h = vert ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    raiz.classList.add('app-ios'); if (h === ultimo) return; ultimo = h; raiz.style.setProperty('--alto-app', h + 'px');
+    window.dispatchEvent(new Event('resize'));
+  };
+  mide(); addEventListener('resize', mide); addEventListener('orientationchange', mide);
+})();

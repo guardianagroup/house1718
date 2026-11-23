@@ -870,7 +870,7 @@
     if (que === 'rerespuesta') { if (L.rol === 'llama' && L.pc && typeof j.sdp === 'string' && L.pc.signalingState === 'have-local-offer') { try { await L.pc.setRemoteDescription({ type: 'answer', sdp: j.sdp }); } catch (e) { console.warn('rerespuesta', e); } } return; }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
     if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
-    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara }; emite('filtro', L.otroFiltro); }
+    if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat }; emite('filtro', L.otroFiltro); }
     if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
     // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
     if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
@@ -962,7 +962,13 @@
   const verJs = (((document.querySelector('script[src*="js/motor.js"]') || {}).src || '').split('?v=')[1] || '').replace(/[^\w.-]/g, '');
   let actx = null, vozN = null, ocu = null;
   const emisor = (kind) => L && L.pc && L.pc.getSenders().find((x) => x.track && x.track.kind === kind);
-  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta }); }
+  function avisaFiltros() { if (L && S && L.estado === 'hablando') enviaControl(S, { tipo: 'llamada', que: 'filtro', id: L.id, voz: !!L.vozCambiada, cara: !!L.caraOculta, chat: !!L.enChat }); }
+  // en el chat del móvil, la cámara propia se apaga (la voz sigue) y vuelve como estaba al volver al vídeo; la otra persona lo ve
+  function modoChat(si) {
+    if (!L || L.estado !== 'hablando' || !!L.enChat === !!si) return;
+    if (si) { L.camAntesChat = L.cam !== false; L.enChat = true; camara(false); } else { L.enChat = false; if (L.camAntesChat) camara(true); }
+    avisaFiltros();
+  }
   async function cambiaVoz(si) {
     if (!L || !L.local || !L.pc) return false;
     const mic = L.local.getAudioTracks()[0], snd = emisor('audio'); if (!mic || !snd) return false;
@@ -1133,7 +1139,7 @@
   }
   window.ElixireMotor = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo,
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, modoChat, reto, gesto, fuente, nivelVoz, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil,
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
