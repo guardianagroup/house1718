@@ -159,6 +159,13 @@
     if (x1 - x0 < 6 || y1 - y0 < 6) return null;
     try { g.drawImage(video, x0, y0, x1 - x0, y1 - y0, 0, 0, n, n); return luma(g.getImageData(0, 0, n, n).data); } catch (_) { return null; }
   }
+  // ¿el iris cae dentro del contorno de su ojo? (si no, el modelo de iris se ha perdido: se usa el contorno)
+  function irisBien(m) {
+    if (!m || m.length < 478) return false;
+    const dentro = (p, ids) => { const xs = ids.map((i) => m[i][0]), ys = ids.map((i) => m[i][1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), mx = (x1 - x0) * 0.15, my = Math.max((y1 - y0) * 0.6, (x1 - x0) * 0.15); return p[0] >= x0 - mx && p[0] <= x1 + mx && p[1] >= y0 - my && p[1] <= y1 + my; };
+    const a = [33, 133, 159, 145, 160, 144, 158, 153], b = [362, 263, 386, 374, 387, 373, 385, 380];
+    return (dentro(m[468], a) && dentro(m[473], b)) || (dentro(m[468], b) && dentro(m[473], a));
+  }
   // el detalle fino (laplaciano medio, relativo al brillo)
   function textura(l, n) { let s = 0, m = 0, c = 0; for (let y = 1; y < n - 1; y++) for (let x = 1; x < n - 1; x++) { const i = y * n + x; s += Math.abs(4 * l[i] - l[i - 1] - l[i + 1] - l[i - n] - l[i + n]); m += l[i]; c++; } return c && m ? (s / c) / (m / c) : null; }
   function luma(d) { const o = new Uint8Array(d.length / 4); for (let i = 0, j = 0; i < d.length; i += 4, j++) o[j] = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; return o; }
@@ -202,7 +209,7 @@
         const ojo = (ids) => [ids.reduce((a, i) => a + mm[i][0], 0) / ids.length, ids.reduce((a, i) => a + mm[i][1], 0) / ids.length], ro = Math.max(4, cara.io * 0.28);
         const zo = [ojo([33, 133, 159, 145]), ojo([362, 263, 386, 374])].map(([x, y]) => colorZona(x, y, ro));
         if (zo.every(Boolean)) { S.ojos.push({ t, z: zo, f: fr }); corta(S.ojos, t, 12000); }
-        if (mm.length >= 478) { const ri = Math.max(2.5, cara.io * 0.09), zi = [mm[468], mm[473]].map((p) => colorZona(p[0], p[1], ri)); if (zi.every(Boolean)) { S.iris.push({ t, z: zi, f: fr }); corta(S.iris, t, 12000); } }
+        if (irisBien(mm)) { const ri = Math.max(2.5, cara.io * 0.09), zi = [mm[468], mm[473]].map((p) => colorZona(p[0], p[1], ri)); if (zi.every(Boolean)) { S.iris.push({ t, z: zi, f: fr }); corta(S.iris, t, 12000); } }
       }
       if (!S.tTex || t - S.tTex > 1000) { S.tTex = t; texturaMuestra(cara, t); }
       if (compr && compr.pruebas) {
@@ -252,7 +259,7 @@
     const m = f.mesh, io = d2(m[33], m[263]) || 1, ang = (f.rotation && f.rotation.angle) || {}, yaw = ang.yaw || 0, pitch = ang.pitch || 0;
     const caja = f.box ? f.box.map((v) => Math.round(v)) : null; if (!caja) return;
     const centro = [(m[33][0] + m[263][0]) / 2, (m[33][1] + m[263][1]) / 2];
-    const piel = [[m[151][0], m[151][1], Math.max(3, io * 0.22)], [m[205][0], m[205][1], Math.max(3, io * 0.16)], [m[425][0], m[425][1], Math.max(3, io * 0.16)]];
+    const piel = [[m[151][0], m[151][1], Math.max(3, io * 0.22)], [m[205][0], m[205][1], Math.max(3, io * 0.16)], [m[425][0], m[425][1], Math.max(3, io * 0.16)], [m[199][0], m[199][1], Math.max(3, io * 0.14)], [m[4][0], m[4][1], Math.max(3, io * 0.1)]];
     const ancho = Math.abs(m[454][0] - m[234][0]) || 1, giro = (m[1][0] - (m[234][0] + m[454][0]) / 2) / ancho;
     S.pitches = S.pitches || []; S.pitches.push(pitch); if (S.pitches.length > 40) S.pitches.shift();
     const pm = S.pitches.length >= 5 ? cuantil(S.pitches, 0.5) : 0, frontal = Math.abs(giro) < 0.25 && Math.abs(pitch - pm) < (S.pitches.length >= 5 ? 0.3 : 0.6);
@@ -486,7 +493,7 @@
   cabecera.innerHTML = '<i class="vg-a-punto" aria-hidden="true"></i><b class="vg-a-texto"></b><i class="vg-a-barra" aria-hidden="true"><i></i></i>';
   const res = document.createElement('div'); res.className = 'vg-resultado'; res.setAttribute('role', 'status'); res.hidden = true;
   res.innerHTML = '<svg class="vg-r-anillo" viewBox="0 0 120 120" aria-hidden="true"><circle class="vg-r-fondo" cx="60" cy="60" r="52"/><circle class="vg-r-valor" cx="60" cy="60" r="52" pathLength="100"/></svg>' +
-    '<b class="vg-r-pct"></b><span class="vg-r-et"></span><p class="vg-r-txt"></p><button type="button" class="vg-r-cerrar"></button>';
+    '<b class="vg-r-pct"></b><span class="vg-r-et"></span><p class="vg-r-txt"></p><ul class="vg-r-pruebas"></ul><button type="button" class="vg-r-cerrar"></button>';
   caja.append(lienzo, cabecera, res);
   res.querySelector('.vg-r-cerrar').addEventListener('click', () => cierraComprobacion());
   const facil = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3), suave = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
@@ -577,7 +584,7 @@
         g.restore();
         // los ojos
         const ojo = (ids) => { let x = 0, y = 0; for (const i of ids) { x += pts[i][0]; y += pts[i][1]; } return [x / ids.length, y / ids.length]; };
-        const conIris = u.malla.length >= 478, ojos = conIris ? [pts[468], pts[473]] : [ojo([33, 133, 159, 145]), ojo([362, 263, 386, 374])], ro = (x1 - x0) * 0.085, oo = facil((t - 1.6) / 0.5);
+        const conIris = irisBien(u.malla), ojos = conIris ? [pts[468], pts[473]] : [ojo([33, 133, 159, 145]), ojo([362, 263, 386, 374])], ro = (x1 - x0) * 0.085, oo = facil((t - 1.6) / 0.5);
         g.save(); g.strokeStyle = 'rgba(' + (fin ? col : '240,199,127') + ',' + 0.9 * oo + ')'; g.lineWidth = 1.4 * d; g.shadowColor = 'rgba(240,199,127,.7)'; g.shadowBlur = 8 * d;
         for (const [ex, ey] of ojos) { const rr = ro * (1.4 - 0.4 * oo); g.beginPath(); g.arc(ex, ey, rr, 0, PI2); g.stroke(); g.beginPath(); g.moveTo(ex - rr * 1.5, ey); g.lineTo(ex - rr * 0.6, ey); g.moveTo(ex + rr * 0.6, ey); g.lineTo(ex + rr * 1.5, ey); g.moveTo(ex, ey - rr * 1.5); g.lineTo(ex, ey - rr * 0.6); g.moveTo(ex, ey + rr * 0.6); g.lineTo(ex, ey + rr * 1.5); g.stroke(); }
         g.restore();
@@ -628,8 +635,8 @@
       const u = S && S.ultima, vista = u && u.frontal && performance.now() - u.t < 2500;
       if (vista) { compr.frontalMs += 250; compr.sinMirar = 0; } else if (!compr.reto && !compr.manoReto) compr.sinMirar += 250;
       const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzTxt' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
-      const el = performance.now() - compr.tA, listo = !compr.pruebas && compr.frontalMs >= 2000 && S && S.tCara && performance.now() - S.tCara < 2000 && (datosListos() || el >= 15000 || S.vida.length >= 3 || Object.keys(S.indicios).length > 0), acaba = el >= DUR_COMPR && (listo || el >= 26000);
-      cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / 20000)).toFixed(3));
+      const el = performance.now() - compr.tA, listo = !compr.pruebas && compr.frontalMs >= 2000 && S && S.tCara && performance.now() - S.tCara < 2000 && (datosListos() || el >= 15000 || S.vida.length >= 3 || Object.keys(S.indicios).length > 0), acaba = el >= DUR_COMPR && (listo || el >= 38000); // (con los retos, en el peor caso, unos 31 s)
+      cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / 24000)).toFixed(3));
       if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
     };
     paso();
@@ -675,7 +682,7 @@
     const espera = (ms) => new Promise((r) => setTimeout(r, ms)), vivo = () => compr === yo && !!S;
     const u0 = S.ultima && performance.now() - S.ultima.t < 900 ? S.ultima : null;
     if (M.gesto(lado, 0, 0) === false) return { estado: 'nd' };
-    const t0 = performance.now(); let pos = 0, neg = 0, maximo = 0, visto = 0, tPerd = 0, previo = 0, perdPos = 0, perdNeg = 0, ultT = 0, seFue = false;
+    const t0 = performance.now(); let pos = 0, neg = 0, maximo = 0, visto = 0, tPerd = 0, previo = 0, perdPos = 0, perdNeg = 0, perdSin = 0, ultT = 0, seFue = false;
     const vale = (sg) => !signoExigido || sg === signoExigido;
     while (performance.now() - t0 < 5500) {
       await espera(120); if (!vivo()) return { estado: 'nd' };
@@ -684,14 +691,15 @@
       if (!fresca) { if (!tPerd) tPerd = performance.now(); seFue = true; continue; }
       if (u.t === ultT) continue; ultT = u.t; // cada análisis cuenta una vez
       // la cara se perdió al girar (de perfil el detector deja de verla) y vuelve en el mismo sitio (no un corte de vídeo)
-      if (tPerd) { if (performance.now() - tPerd >= 400 && Math.abs(previo) >= 0.1 && (!u0 || d2(u.centro, u0.centro) < 0.8 * u0.io)) { if (previo > 0) perdPos++; else perdNeg++; } tPerd = 0; }
+      if (tPerd) { if (performance.now() - tPerd >= 400 && (!u0 || d2(u.centro, u0.centro) < 0.8 * u0.io)) { if (previo >= 0.05) perdPos++; else if (previo <= -0.05) perdNeg++; else if (!signoExigido) perdSin++; } tPerd = 0; }
       visto++; const g = u.giro || 0; previo = g; maximo = Math.max(maximo, Math.abs(g)); pos = Math.max(pos, g); neg = Math.max(neg, -g);
-      const hecho = (vale(1) && (pos >= 0.22 || perdPos)) || (vale(-1) && (neg >= 0.22 || perdNeg));
+      const hecho = (vale(1) && (pos >= 0.22 || perdPos)) || (vale(-1) && (neg >= 0.22 || perdNeg)) || perdSin;
       if (hecho && Math.abs(g) < 0.12 && performance.now() - t0 > 1300) break; // giró y volvió
     }
     S.giroMax = Math.max(S.giroMax || 0, maximo); S.giroBueno = Math.max(S.giroBueno || 0, signoExigido ? (signoExigido > 0 ? pos : neg) : Math.max(pos, neg)); S.giroPerdida = (S.giroPerdida || 0) + perdPos + perdNeg;
     const okPos = vale(1) && (pos >= 0.22 || perdPos), okNeg = vale(-1) && (neg >= 0.22 || perdNeg);
     if (okPos || okNeg) return { estado: 'si', signo: okPos && (!okNeg || pos >= neg) ? 1 : -1 };
+    if (perdSin) return { estado: 'si', signo: 0 }; // se fue de la imagen al girar, sin saber hacia dónde: el segundo vale hacia cualquier lado
     if (visto >= 6 && !seFue && maximo < 0.12) return { estado: 'no' }; // con la cara siempre a la vista (6 análisis o más), no se movió nada
     if (signoExigido) S.giroContra = Math.max(S.giroContra || 0, signoExigido > 0 ? neg : pos);
     return { estado: 'nd' };
@@ -702,7 +710,7 @@
   // franja a cada lado de su cara, a la altura de ojos y nariz, y la cara. Si la mano cruza de un lado al otro (cambian las dos
   // franjas) y la cara no cambia nada, la cara está superpuesta. Si la cara se tapa, es lo normal. Antes, todo quieto (si ya se movía
   // mucho, no se juzga) y sin mover la cabeza durante la prueba (eso no sería la mano).
-  let manosListas = false;
+  let manosListas = false, cargandoManos = false;
   // la misma cara de principio a fin: FaceRes (incluido en Human) solo mientras dura la comprobación
   let identLista = false;
   function precargaIdent() {
@@ -722,10 +730,12 @@
   }
   function precargaManos() {
     if (manosListas || !humano || CONFIG.backend === 'cpu') return;
-    humano.config.hand.enabled = true; humano.load().then(() => { const reg = humano.models && (humano.models.models || humano.models); manosListas = !!(reg && (reg.handtrack || reg.handdetect)); }).catch(() => {}).finally(() => { if (!(compr && compr.manoReto)) humano.config.hand.enabled = false; });
+    cargandoManos = true; humano.config.hand.enabled = true; humano.load().then(() => { const reg = humano.models && (humano.models.models || humano.models); manosListas = !!(reg && (reg.handtrack || reg.handdetect)); }).catch(() => {}).finally(() => { cargandoManos = false; if (!(compr && compr.manoReto)) humano.config.hand.enabled = false; });
   }
   async function manoReto() {
     const yo = compr; if (!M.gesto || !S || !yo) return;
+    for (let i = 0; i < 25 && !manosListas && cargandoManos; i++) await new Promise((r) => setTimeout(r, 100));
+    if (compr !== yo || !S) return;
     S.mano = 'nd'; S.manoDatos = null;
     const u = S.ultima; if (!u || performance.now() - u.t > 1500) return;
     const [bx, by, bw, bh] = u.caja, y0 = by + bh * 0.2, h0 = bh * 0.6;
@@ -793,18 +803,21 @@
     const okC = S.cuello.filter((x) => x.f), okI = S.iris.filter((x) => x.f), okO = (okI.length >= 20 ? okI : S.ojos).filter((x) => x.f), ok = S.piel.filter((x) => x.f), fondo = S.fondo.filter((x) => x.z.length === (S.fondo[S.fondo.length - 1] || { z: [] }).z.length);
     // el ruido: cuánto baila ese color sin destellos (los 2 s de antes)
     const quieto = ok.filter((x) => x.t >= marcas[0].t - 2200 && x.t < marcas[0].t + 100).map((x) => media(zonas(x))); if (quieto.length < 6) return;
+    const previas = ok.filter((x) => x.t >= marcas[0].t - 2200 && x.t < marcas[0].t + 100), nz = previas.length ? previas[0].z.length : 0, esPiel = [];
+    for (let q = 0; q < nz; q++) { let R = 0, G = 0, B = 0; for (const x of previas) { R += x.z[q][0]; G += x.z[q][1]; B += x.z[q][2]; } const n = previas.length || 1; R /= n; G /= n; B /= n; const rgq = (R - G) / ((R + G + B) || 1); esPiel.push(R > G && G > B * 0.75 && rgq > 0.02 && rgq < 0.4 && (R + G + B) / 3 > 35); }
+    if (esPiel.filter(Boolean).length < 2) esPiel.fill(true); // si casi nada parece piel (luz rara), se usan todas
     const ruido = desv(quieto), quietoO = okO.filter((x) => x.t >= marcas[0].t - 2200 && x.t < marcas[0].t + 100).map((x) => media(zonas(x))), ruidoO = quietoO.length >= 6 ? desv(quietoO) : null; let mejor = null;
     for (let L = 100; L <= 1300; L += 100) {
-      const por = [], porZona = [0, 0, 0], bg = [], cu = [], oj = []; let falta = false;
+      const por = [], porZona = new Array(nz).fill(0), bg = [], cu = [], oj = []; let falta = false;
       for (const m of marcas) {
         const sg = m.c ? -1 : 1, antes = tramo(ok, m.t - 450, m.t + 100), luz = tramo(ok, m.t + L, m.t + L + 380); if (!antes || !luz) { falta = true; break; }
-        const dz = luz.map((v, k) => (v - antes[k]) * sg); dz.forEach((v, k) => { if (k < 3) porZona[k] += v; }); por.push(media(dz));
+        const dz = luz.map((v, k) => (v - antes[k]) * sg).filter((v, k) => esPiel[k]); luz.forEach((v, k) => { if (k < nz) porZona[k] += (v - antes[k]) * sg; }); por.push(media(dz));
         const fa = tramo(fondo, m.t - 450, m.t + 100), fl = tramo(fondo, m.t + L, m.t + L + 380); if (fa && fl) bg.push(media(fl.map((v, k) => (v - fa[k]) * sg)));
         const ca = tramo(okC, m.t - 450, m.t + 100), cl = tramo(okC, m.t + L, m.t + L + 380); if (ca && cl) cu.push((cl[0] - ca[0]) * sg);
         const oa = tramo(okO, m.t - 450, m.t + 100), ol = tramo(okO, m.t + L, m.t + L + 380); oj.push(oa && ol ? media(ol.map((v, k) => (v - oa[k]) * sg)) : null);
       }
       if (falta) continue;
-      const prom = media(por), dBg = bg.length >= 3 ? media(bg) : 0, neto = prom - Math.max(0, dBg), zonasBien = porZona.filter((v) => v > 0).length, dCu = cu.length >= 3 ? media(cu) : null;
+      const prom = media(por), dBg = bg.length >= 3 ? media(bg) : 0, neto = prom - Math.max(0, dBg), zonasBien = porZona.filter((v, k) => esPiel[k] && v > 0).length, dCu = cu.length >= 3 ? media(cu) : null;
       // el retraso que mejor se ve, en la cara o en el cuello (si la cara no responde, se ve en el cuello)
       const ojV = oj.filter((v) => v != null), dOj = ojV.length >= 4 ? media(ojV) : null, bienOj = ojV.filter((v) => v > 0).length, coloresOj = new Set(marcas.filter((m, i) => oj[i] != null && oj[i] > 0).map((m) => m.c)).size;
       const valor = Math.max(neto, dCu == null ? -1 : dCu - Math.max(0, dBg), dOj == null ? -1 : dOj - Math.max(0, dBg));
@@ -820,7 +833,7 @@
     const cocientes = [];
     for (const m of marcas) {
       const a = rgb(ok, m.t - 450, m.t + 100), l = rgb(ok, m.t + mejor.L, m.t + mejor.L + 380); if (!a || !l) continue;
-      let dR = 0, dG = 0, dB = 0; for (let q = 0; q < a.length; q++) { const br = (a[q][0] + a[q][1] + a[q][2]) / 3 || 1; dR += (l[q][0] - a[q][0]) / br; dG += (l[q][1] - a[q][1]) / br; dB += (l[q][2] - a[q][2]) / br; }
+      let dR = 0, dG = 0, dB = 0; for (let q = 0; q < a.length; q++) { if (esPiel[q] === false) continue; const br = (a[q][0] + a[q][1] + a[q][2]) / 3 || 1; dR += (l[q][0] - a[q][0]) / br; dG += (l[q][1] - a[q][1]) / br; dB += (l[q][2] - a[q][2]) / br; }
       const den = m.c ? dG : dR; if (den > 0.004 * a.length) cocientes.push(dB / den);
     }
     S.reflejoEspectro = cocientes.length >= 3 ? cuantil(cocientes, 0.5) : null;
@@ -848,6 +861,10 @@
     res.querySelector('.vg-r-et').textContent = tr('vc_probabilidad');
     const n = S && S.fuente && S.fuente.n ? S.fuente.n : tr('vg_programa'), { A, F } = cuentas(), motivo = k.length ? tr(TXT[k[0]]).replace('{n}', n) : A === 0 && F ? tr('vg_noResponde') : A === 0 ? tr('vg_inconcluso') : S && S.giro === 'no' ? tr('vg_noGira') : S && S.mano === 'no' ? tr('vg_noMano') : '';
     res.querySelector('.vg-r-txt').textContent = nivel === 'nd' ? tr(poco ? 'vc_noMira' : 'vc_sinCara') : nivel === 'real' ? tr('vc_real') : nivel === 'bien' ? (tr('vc_bien') + (motivo ? ' ' + motivo : '')) : (nivel === 'raro' ? tr('vc_raro') : tr('vc_falso')) + ' ' + motivo;
+    const lista = res.querySelector('.vg-r-pruebas'); lista.textContent = '';
+    if (S) for (const [k, v] of [['vc_pLuz', S.reflejo === 'si' ? 'si' : 'nd'], ['vc_pMano', S.mano === 'si' ? 'si' : S.mano === 'no' || S.mano === 'oculta' ? 'no' : 'nd'], ['vc_pGiro', S.giro === 'si' ? 'si' : S.giro === 'no' ? 'no' : 'nd']]) {
+      const li = document.createElement('li'); li.className = 'vg-p-' + v; li.textContent = tr(k); lista.append(li);
+    }
     res.querySelector('.vg-r-cerrar').textContent = tr('vc_cerrar');
     res.hidden = false; requestAnimationFrame(() => res.classList.add('visible'));
     if (nivel === 'falso') { try { if (navigator.vibrate) navigator.vibrate([70, 60, 70]); } catch (_) {} }

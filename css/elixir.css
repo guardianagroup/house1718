@@ -1585,3 +1585,14 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala:not(.en-chat) .video-mio{z-index:4!important}
   .sala .video-mio.moviendo{transition:none!important;will-change:transform}
 }
+
+/* (22 nov 20:44) el resultado dice qué pruebas pasó: ✓ superada, ✕ no la hizo, · no se pudo comprobar */
+.vg-r-pruebas{display:flex;justify-content:center;gap:8px;margin:2px 0 0;padding:0;list-style:none}
+.vg-r-pruebas li{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:14px;font:600 12px/1 var(--ui);letter-spacing:.02em;border:1px solid rgba(255,255,255,.14);color:#C9D6E3;background:rgba(255,255,255,.04)}
+.vg-r-pruebas li::before{font-size:12px;line-height:1}
+.vg-r-pruebas li.vg-p-si{color:#8FE0AE;border-color:rgba(92,201,138,.45);background:rgba(92,201,138,.10)}
+.vg-r-pruebas li.vg-p-si::before{content:'\2713'}
+.vg-r-pruebas li.vg-p-no{color:#F2A094;border-color:rgba(224,122,108,.5);background:rgba(224,122,108,.10)}
+.vg-r-pruebas li.vg-p-no::before{content:'\2715'}
+.vg-r-pruebas li.vg-p-nd{color:#9FB2C4}
+.vg-r-pruebas li.vg-p-nd::before{content:'\00B7';font-size:18px}
