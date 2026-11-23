@@ -2023,3 +2023,6 @@ table.comparar{display:table!important;width:100%;border-collapse:separate;borde
   .sala .controles .seg#b-comprobar[data-e="atencion"]{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #F0C77F,0 12px 30px -10px rgba(0,0,0,.75)}
   .sala .controles .seg#b-comprobar[data-e="riesgo"]{box-shadow:0 0 0 3px rgba(6,8,12,.9),0 0 0 5px #E07A6C,0 12px 30px -10px rgba(0,0,0,.75)}
 }
+/* (dueño, 23 nov 11:38: «de la versión móvil quítame lo de "Tengo un código"; solamente uno es el que invita y ya está; más fácil
+   así»): en el móvil, en la portada, solo «Invitar a una llamada» (quien recibe la invitación por WhatsApp entra con el enlace) */
+@media (max-width:760px){ .portada-botones #empezar-codigo{display:none!important} }
