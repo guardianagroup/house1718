@@ -398,7 +398,7 @@
     if (x.sinVideo) return { tipo: 'sinVideo', senales: [cam] };
     const con = datos.filter((d) => d.p), presencia = con.length / (datos.length || 1);
     const luz = x.luz != null ? x.luz : 128, tam = con.length ? mediana(con.map((d) => dist(d.p[0], d.p[16]) / (d.w || 1))) : 0;
-    const imagen = { k: 'imagen', estado: luz < 55 || (tam && tam < 0.13) ? 'aviso' : 'si', v: luz < 55 ? tr('v_oscura') : tam && tam < 0.13 ? tr('v_lejos') : tr('v_buena') };
+    const imagen = { k: 'imagen', estado: luz < 25 || (tam && tam < 0.13) ? 'aviso' : 'si', v: luz < 25 ? tr('v_oscura') : tam && tam < 0.13 ? tr('v_lejos') : tr('v_buena') }; // (muy oscura, no poca luz)
     if (con.length < 5) return { tipo: cam.estado === 'no' ? 'virtual' : 'sinCara', senales: [cam, imagen], fuente: x.fuente };
     const io = con.map((d) => dist(d.p[36], d.p[45]) || 1);
     const ear = con.map((d) => (ojo(d.p, 36) + ojo(d.p, 42)) / 2), base = [...ear].sort((a, b) => a - b)[Math.floor(ear.length * 0.6)];

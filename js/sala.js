@@ -1106,28 +1106,11 @@
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
   // ---- por dónde suena (dueño, 23 nov 17:55: «Déjalo en altavoz y que se pueda escuchar con auriculares por cable y bluetooth»):
-  // por el altavoz, como siempre, y con auriculares (de cable o bluetooth), por ellos: lo elige el teléfono. En el iPhone, al abrir
-  // el micrófono, Safari a veces se queda con el del iPhone y saca el sonido por su altavoz aunque haya auriculares puestos (WebKit,
-  // error 282939); con auriculares, poner el tipo de sesión en «auto» y luego en «play-and-record» hace que el iPhone vuelva a
-  // ellos. Sin auriculares (o al quitarlos), «auto»: el altavoz. Al acabar la llamada, «auto».
-  const SESION_IPHONE = /iPhone|iPod/.test(navigator.userAgent) && !!(navigator.audioSession && 'type' in navigator.audioSession);
-  let audioEnLlamada = false, sesionT = 0;
-  const DEL_TELEFONO = /iphone|ipad|altavoz|speaker|receptor|receiver|default|predeterminad/i;
-  async function conAuriculares() {
-    try { return (await navigator.mediaDevices.enumerateDevices()).some((d) => (d.kind === 'audioinput' || d.kind === 'audiooutput') && d.label && !DEL_TELEFONO.test(d.label)); } catch (_) { return false; }
-  }
-  function tipoSesion(t) { try { if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } catch (_) {} }
-  async function haciaAuriculares() {
-    if (!SESION_IPHONE || !audioEnLlamada) return;
-    const con = await conAuriculares(); clearTimeout(sesionT);
-    if (!con || !audioEnLlamada) { tipoSesion('auto'); return; }
-    tipoSesion('auto'); sesionT = setTimeout(() => { if (audioEnLlamada) tipoSesion('play-and-record'); }, 300);
-  }
-  function ponAudio(enCurso) {
-    if (enCurso === audioEnLlamada) return; audioEnLlamada = enCurso;
-    if (enCurso) haciaAuriculares(); else if (SESION_IPHONE) { clearTimeout(sesionT); tipoSesion('auto'); }
-  }
-  if (SESION_IPHONE && navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { haciaAuriculares(); });
+  // lo elige el teléfono, sin tocar la sesión de sonido (por el altavoz y, con auriculares de cable o bluetooth, por ellos). (Antes,
+  // con auriculares, se cambiaba el tipo de sesión del iPhone y se volvía a mirar en cada cambio de aparatos; cada cambio de tipo
+  // provoca otro aviso de cambio de aparatos y, en un iPhone en español, el auricular del teléfono podía tomarse por unos
+  // auriculares: un bucle que pudo dejar la llamada bloqueada. Dueño, 20:04: «Los botones no funcionaban y se bloqueó todo».)
+  function ponAudio() {}
   function pintaLlamadaVoz(si, e) {
     const bc = $('#b-camara'), s0 = bc && bc.querySelector('span');
     if (bc) { const sinCam = !!(e && (e.estado === 'hablando' || e.estado === 'reconectando') && e.videoMio === false); bc.classList.toggle('a-video', sinCam); if (s0) { const k = sinCam ? 'pasarVideo' : 'camara'; if (s0.dataset.t !== k) { s0.dataset.t = k; s0.textContent = tr(k); } } if (sinCam) bc.setAttribute('aria-pressed', 'false'); }
@@ -1245,7 +1228,7 @@
     const v = $('#video-mio'); if (!v || !v.videoWidth || v.readyState < 2) return;
     let d; try { luzG.drawImage(v, 0, 0, 24, 18); d = luzG.getImageData(0, 0, 24, 18).data; } catch (_) { return; }
     let s = 0; for (let i = 0; i < d.length; i += 4) s += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    luzN = s / (d.length / 4) < 42 ? luzN + 1 : 0;
+    luzN = s / (d.length / 4) < 20 ? luzN + 1 : 0; // (dueño, 23 nov 20:04: el aviso, solo cuando está muy oscuro; con poca luz, nada)
     if (luzN >= 2 && Date.now() - luzUlt > 60000) { luzUlt = Date.now(); if (movil.matches) toast('luz', { icono: 'foto', titulo: tr('pocaLuzT'), sub: tr('pocaLuz'), ms: 8000 }); else sistema('pocaLuz'); }
   }, 2000);
   $('#b-reto').addEventListener('click', () => M.reto());

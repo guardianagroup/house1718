@@ -304,7 +304,8 @@
     const ancho = Math.abs(m[454][0] - m[234][0]) || 1, giro = (m[1][0] - (m[234][0] + m[454][0]) / 2) / ancho;
     S.pitches = S.pitches || []; S.pitches.push(pitch); if (S.pitches.length > 40) S.pitches.shift();
     const pm = S.pitches.length >= 5 ? cuantil(S.pitches, 0.5) : 0, frontal = Math.abs(giro) < 0.25 && Math.abs(pitch - pm) < (S.pitches.length >= 5 ? 0.3 : 0.6);
-    const grande = io >= 26, luz = S.brilloCara == null || S.brilloCara > 30;
+    // (dueño, 23 nov 20:04: «solo debe no hacerse la prueba cuando es muy oscuro, con poca luz debe de hacerlo»)
+    const grande = io >= 26, luz = S.brilloCara == null || S.brilloCara > 14;
     S.ultima = { t, caja, centro, io, yaw, pitch, piel, frontal, giro, malla: m };
     // el temblor en 3D entre dos análisis seguidos: lo que queda tras quitar el giro, el movimiento y la escala (una cara pegada
     // por un programa tiembla y se deforma al ponerse de perfil; una real, no)
@@ -809,7 +810,7 @@
       // cuánto tiempo se le ha visto la cara de frente (si deja de mirar, no se le juzga: se espera y se le pide que mire)
       const u = S && S.ultima, vista = u && u.frontal && performance.now() - u.t < 2500;
       if (vista) { compr.frontalMs += 250; compr.sinMirar = 0; } else if (!compr.reto && !compr.manoReto) compr.sinMirar += 250;
-      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzVozTxt' : S && S.brilloCara != null && S.brilloCara < 32 ? 'vc_luzBaja' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
+      const k = compr.reto ? 'vc_giroTxt' : compr.manoReto ? 'vc_manoTxt' : compr.luz && compr.flash ? 'vc_luzVozTxt' : S && S.brilloCara != null && S.brilloCara < 15 ? 'vc_luzBaja' : compr.sinMirar >= 1500 ? 'vc_mira' : 'vc_analizando'; if (txt.dataset.k !== k) { txt.dataset.k = k; txt.textContent = tr(k); }
       const el = performance.now() - compr.tA, listo = !compr.pruebas && compr.frontalMs >= 2000 && S && S.tCara && performance.now() - S.tCara < 2000 && (datosListos() || el >= 15000 || S.vida.length >= 3 || Object.keys(S.indicios).length > 0), acaba = el >= DUR_COMPR && (listo || el >= 38000); // (con los retos, en el peor caso, unos 31 s)
       cabecera.querySelector('.vg-a-barra i').style.setProperty('--p', (acaba ? 1 : Math.min(0.97, el / 24000)).toFixed(3));
       if (!acaba) compr.tp = setTimeout(paso, 250); else { evalua(); fin(); }
