@@ -2277,3 +2277,10 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .sala.solo-voz:not(.en-chat) .controles>#b-colgar:not([hidden]){margin:0 calc((100% - 56px) / 2)!important}
   .sala.solo-voz:not(.en-chat) .controles>.seg>span{top:calc(100% + 7px)!important;font-size:11.5px!important}
 }
+/* precios (dueño, 24 nov 08:39: «Hazlo tú todo»; Dodo Payments pide que la web muestre precios, reembolsos y contacto) */
+.pasos.precios li{padding-left:0}
+.pasos.precios li::before{content:none}
+.pasos.precios b{font:300 clamp(26px,2.4vw,34px)/1.15 var(--display);letter-spacing:.01em;margin-bottom:10px}
+.precios-nota{grid-column:1/-1;margin:26px 0 0;font:400 15px/1.6 var(--ui);color:var(--texto-2)}
+.precios-nota a{color:#9CC3E4;text-underline-offset:3px}
+@media (max-width:760px){ .pasos.precios li{padding-left:0} }
