@@ -68,7 +68,7 @@
     escribeAqui: 'Escribe un mensaje',
     bajarAria: 'Desliza hacia abajo',
     
-    cambiaVoz: 'Cambiar voz', volverVideo: 'Volver al vídeo', enLlamada: 'En llamada', volverLlamada: 'Volver a la llamada', camPausa: 'Tu cámara, en pausa', otroChat: 'Ha pasado al chat · solo voz', otroChatTit: 'Está en el chat', otroChatTxt: 'Te sigue oyendo · su cámara está en pausa', cartelBorra: 'Los mensajes se encriptan en cada equipo y desaparecen al terminar.', vozCambiada: 'Voz cambiada', ocultaCara: 'Ocultar cara', caraOcultaTxt: 'Cara oculta', otroVoz: 'Su voz está cambiada', otroCara: 'Su cara está oculta', 
+    cambiaVoz: 'Cambiar voz', otroSinCamara: 'Cámara apagada', otroSinCamaraTxt: 'Sigue en la llamada, solo con voz.', volverVideo: 'Volver al vídeo', enLlamada: 'En llamada', volverLlamada: 'Volver a la llamada', camPausa: 'Tu cámara, en pausa', otroChat: 'Ha pasado al chat · solo voz', otroChatTit: 'Está en el chat', otroChatTxt: 'Te sigue oyendo · su cámara está en pausa', cartelBorra: 'Los mensajes se encriptan en cada equipo y desaparecen al terminar.', vozCambiada: 'Voz cambiada', ocultaCara: 'Ocultar cara', caraOcultaTxt: 'Cara oculta', otroVoz: 'Su voz está cambiada', otroCara: 'Su cara está oculta', 
     enlaceCopiado: 'Enlace copiado', correoAsunto: 'Videollamada privada en 1718', enviarInvitacionAria: 'Enviar la invitación',
     correoCuerpo: 'Te invito a una videollamada privada y encriptada en 1718. Ábrela aquí:\n{enlace}\n\nLa invitación caduca en 10 minutos.',
     espiaTitulo: 'Extensión del navegador detectada{n}', espiaTexto: 'Podría leer tus mensajes y ver la llamada. Para más privacidad, usa una ventana privada sin extensiones.', 
@@ -95,7 +95,7 @@
     otroSalio: 'La otra persona ha salido de 1718. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
-    h1Portada: '1718 · Private video and voice calls, end-to-end encrypted',
+    h1Portada: '1718 · Private video calls, end-to-end encrypted',
     compraTituloInvitar: 'You have used your 2 free minutes for today on this device.', compraTextoInvitar: 'To invite someone, buy time: the person who invites pays. It also works for your next conversations. If someone invites you, you can still join.',
     compraTituloInvitado: 'The person who invited you has run out of time.', compraTextoInvitado: 'The person who invites pays for the call. If you have time or buy it, invite the other person yourself and you will talk on yours.', compraNotaInvitado: 'One-time payment with Dodo Payments, no subscription. It opens in a new tab.', llSinTiempoInvitado: 'The person who invited you has run out of time. The person who invites pays: to talk on your time, invite them yourself.', sinTiempoTextoInvitado: 'The person who invites pays. To talk on your time, invite them yourself.',
     teInvitanVoz: 'POST-QUANTUM VOICE CALL', teInvitanVozTexto: 'You have been invited to a private voice call with post-quantum end-to-end encryption. When you join, your microphone will turn on.',
@@ -134,7 +134,7 @@
     tengoCodigoPC: 'Were you given a code? Enter here', correoAsunto: 'Private video call on 1718',
     correoCuerpo: 'I am inviting you to a private, encrypted video call on 1718. Open it here:\n{enlace}\n\nThe invitation expires in 10 minutes.',
     
-    cambiaVoz: 'Change voice', volverVideo: 'Back to video', enLlamada: 'On call', volverLlamada: 'Back to call', camPausa: 'Your camera is paused', otroChat: 'Switched to chat · voice only', otroChatTit: 'In the chat', otroChatTxt: 'They can still hear you · their camera is paused', cartelBorra: 'Messages are encrypted on each device and disappear when you end.', vozCambiada: 'Voice changed', ocultaCara: 'Hide face', caraOcultaTxt: 'Face hidden', otroVoz: 'Their voice is changed', otroCara: 'Their face is hidden', 
+    cambiaVoz: 'Change voice', otroSinCamara: 'Camera off', otroSinCamaraTxt: 'Still on the call, voice only.', volverVideo: 'Back to video', enLlamada: 'On call', volverLlamada: 'Back to call', camPausa: 'Your camera is paused', otroChat: 'Switched to chat · voice only', otroChatTit: 'In the chat', otroChatTxt: 'They can still hear you · their camera is paused', cartelBorra: 'Messages are encrypted on each device and disappear when you end.', vozCambiada: 'Voice changed', ocultaCara: 'Hide face', caraOcultaTxt: 'Face hidden', otroVoz: 'Their voice is changed', otroCara: 'Their face is hidden', 
     bajarAria: 'Scroll down', tresTitulo: 'Private video calls, <em class="c-ambar">end‑to‑end encrypted</em>.',
     tresQueE: 'WHAT WE DO', tresQueT: 'Encrypted video calls for executives and companies.', tresQue: 'No accounts, no phone number and no history.',
     tresPorE: 'WHY', tresPorT: 'Ordinary calls can be intercepted.', tresPor: 'They cross cell towers and carrier networks that neither of you controls.',
@@ -334,7 +334,7 @@
     e7Etiqueta: 'AGAINST THE REST', e7Titulo: 'Your apps for daily life. <em class="c-hielo">1718 for what counts.</em>', e7Texto: 'WhatsApp, Telegram and Signal are fine for everyday use. 1718 is for sensitive conversations: post-quantum encryption, no account, no phone number and no history.',
     no: 'No',
     e8Etiqueta: 'HOW IT WORKS', e8Titulo: 'As simple as <em class="c-verde">tapping a link</em>.',
-    e8P1T: 'Invite.', e8P1: 'Choose “Video call” or “Voice call” and send the invitation on WhatsApp.', e8P2T: 'Tap the link.', e8P2: 'Whoever receives it taps it and the call starts by itself.',
+    e8P1T: 'Invite.', e8P1: 'Press “Video call” and send the invitation on WhatsApp. To talk with voice only, turn off your camera.', e8P2T: 'Tap the link.', e8P2: 'Whoever receives it taps it and the call starts by itself.',
     e8P3T: 'Talk.', e8P3: 'Post-quantum end-to-end encryption. When you hang up, nothing remains.',
     e9Titulo: 'If it matters, <em class="c-ambar">talk here</em>.',
     e9Texto: 'For a board meeting, a deal, a contract or a personal conversation that must stay between you. Designed for individuals, law firms, clinics and companies.',

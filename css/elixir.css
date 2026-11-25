@@ -1827,7 +1827,7 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 
 /* ---------- llamada de voz y videollamada (dueño, 23 nov 15:47–15:51: «tres botones al empezar… en la versión PC también… y
    las llamadas en grupo») ---------- */
-@media (min-width:761px){ .portada-botones{grid-template-columns:repeat(3,minmax(0,1fr));width:min(1020px,94vw)} }
+@media (min-width:761px){ .portada-botones{grid-template-columns:repeat(2,minmax(0,1fr));width:min(724px,94vw)} }
 .cristal.grande.codigo.voz{padding:0 22px 0 66px}
 @media (max-width:760px){ .consola .cristal.grande.codigo.voz{padding:0 18px 0 62px} .portada-botones #empezar{order:-1} }
 /* la llamada de voz (dueño, 23 nov 16:27: «Esa imagen de fondo cámbiala por la roca del principio porque es más vistoso»; 16:37:
@@ -2014,11 +2014,6 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .portada-botones{grid-template-columns:minmax(0,1fr);width:min(420px,94vw)}
   .portada-botones #empezar{order:-1}
 }
-@media (min-width:761px) and (max-width:1009px) and (min-aspect-ratio:800/1000){
-  .consola .portada-botones .cristal.grande.vivo,.consola .portada-botones .cristal.grande.codigo.voz{padding:0 12px}
-  .consola .portada-botones .cristal.grande .ico-boton{position:relative;left:auto;top:auto;transform:none;width:36px;height:36px;padding:8px;flex:none}
-  .consola .portada-botones .cristal.grande>span{font-size:12px}
-}
 /* ---------- revisión como cliente (dueño, 25 nov 10:45–10:52: «una revisión a fondo en modo cliente en pc, móvil y tablet»; «que todo
    guarde orden visual profesional») ---------- */
 /* el título de la página, para buscadores y lectores de pantalla (no se ve) */
@@ -2047,3 +2042,28 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 @media (max-width:760px) and (max-height:740px){ .tarjeta-voz .tv-cristal{inset:auto;left:6%;top:3.72%;width:88%;height:88%} }
 /* la imagen de la otra persona, entera cuando su forma y la del hueco no casan (cámara vertical en pantalla apaisada o al revés) */
 .sala.suyo-encaja .video-suyo{object-fit:contain!important;background:#05070A}
+/* ---------- sin «Llamada de voz» (dueño, 25 nov 14:20: «Quita la llamada de voz porque desde videollamada se puede quitar la
+   cámara y es lo mismo») ---------- */
+/* la portada: «Videollamada» y «Tengo un código» en el ordenador, dos en fila como antes del 23 nov (con dos, el texto cabe en el
+   centro en todos los anchos, así que ya no hace falta el arreglo de 761 a 1009 px); en el móvil, solo «Videollamada» */
+/* en el móvil, la videollamada lleva también «Micro» y «Cámara», en la fila de abajo y con el mismo aspecto que los demás;
+   apagados, en blanco y tachados. Con la cámara apagada, mi imagen pequeña no se ve */
+@media (max-width:760px){
+  .sala .controles .seg#b-micro,.sala .controles .seg#b-camara{display:inline-flex!important;align-items:center;justify-content:center;position:relative;
+    width:54px;height:54px;min-width:0;margin:0;padding:0;border-radius:50%;overflow:visible!important;letter-spacing:0;text-transform:none;flex:none;
+    background:rgba(18,24,32,.62);border:1px solid rgba(255,255,255,.24);color:#F4F6F8;box-shadow:0 12px 30px -10px rgba(0,0,0,.75);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .sala .controles .seg#b-micro[aria-pressed="false"],.sala .controles .seg#b-camara[aria-pressed="false"]{background:#F4F6F8;border-color:#F4F6F8;color:#0A0E14}
+  .sala .controles .seg#b-micro svg,.sala .controles .seg#b-camara svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .sala .controles .seg#b-micro .tachado,.sala .controles .seg#b-camara .tachado{display:none}
+  .sala .controles .seg#b-micro[aria-pressed="false"] .tachado,.sala .controles .seg#b-camara[aria-pressed="false"] .tachado{display:inline}
+  .sala #b-micro{order:0}.sala #b-camara{order:1}
+  .sala.mi-sin-camara .video-mio{visibility:hidden}
+}
+@media (max-width:374px){
+  .sala .controles .seg#b-micro,.sala .controles .seg#b-camara,.sala .controles .seg#b-chat,.sala .controles .seg#b-enviar,.sala .controles .seg#b-colgar,
+  .sala .controles .seg#b-girar:not([hidden]){width:50px;height:50px}
+}
+/* la otra persona con la cámara apagada: en vez de su imagen en negro, el fondo de la escena y, en el centro, «Cámara apagada»
+   (con el mismo aspecto que «Está en el chat») */
+.sala.otro-sin-camara .video-suyo{opacity:0}
+.sala.mi-sin-camara .controles .seg#b-ocultacara{display:none!important}

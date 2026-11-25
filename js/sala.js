@@ -894,6 +894,9 @@
   function filtrosDe(e) {
     for (const [sel, , kOn, kOff, campo] of FILTROS) { const b = $(sel); if (b) pintaFiltro(b, !!(e && e[campo]), kOn, kOff); }
     $('#video-mio').classList.toggle('oculta', !!(e && e.caraOculta));
+    // (sin «Llamada de voz», dueño 25 nov 14:20: la cámara se apaga en la videollamada) con mi cámara apagada, en el móvil no se ve
+    // mi imagen pequeña, y «Ocultar cara» no hace falta
+    sala.classList.toggle('mi-sin-camara', !!(e && e.estado === 'hablando' && e.cam === false && !sala.classList.contains('solo-voz')));
     avisoOtro(e && e.estado === 'hablando' ? e.otroFiltro : null);
   }
   function avisoOtro(f) {
@@ -901,6 +904,17 @@
     if (f && f.chat && !c) { c = document.createElement('div'); c.id = 'otro-chat'; c.className = 'otro-chat'; c.setAttribute('role', 'status'); c.innerHTML = '<span class="otro-chat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M8 10h8M8 13h5"/></svg></span><b data-t="otroChatTit"></b><small data-t="otroChatTxt"></small>'; c.querySelector('b').textContent = tr('otroChatTit'); c.querySelector('small').textContent = tr('otroChatTxt'); $('#escena-video').append(c); }
     if (c) c.hidden = !(f && f.chat);
     sala.classList.toggle('otro-pantalla', !!(f && f.pantalla && !f.chat));
+    // la otra persona con la cámara apagada: en vez de la imagen en negro, el fondo de la escena y «Cámara apagada»
+    const sinCam = !!(f && f.cam === false && !f.chat && !sala.classList.contains('solo-voz'));
+    sala.classList.toggle('otro-sin-camara', sinCam);
+    let v = $('#otro-sin-cam');
+    if (sinCam && !v) {
+      v = document.createElement('div'); v.id = 'otro-sin-cam'; v.className = 'otro-chat'; v.setAttribute('role', 'status');
+      v.innerHTML = '<span class="otro-chat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15.5 10 20.5 7.5v9l-5-2.5"/><rect x="3" y="6.5" width="12.5" height="11" rx="2"/><path d="M3.5 3.5l17 17"/></svg></span><b data-t="otroSinCamara"></b><small data-t="otroSinCamaraTxt"></small>';
+      for (const el of v.querySelectorAll('[data-t]')) el.textContent = tr(el.dataset.t);
+      $('#escena-video').append(v);
+    }
+    if (v) v.hidden = !sinCam;
     let a = $('#filtro-otro'); const txt = [f && f.pantalla && !f.chat ? tr('otroPantalla') : '', f && f.voz ? tr('otroVoz') : '', f && f.cara && !f.chat && !f.pantalla ? tr('otroCara') : ''].filter(Boolean).join(' · ');
     if (!txt) { if (a) a.hidden = true; return; }
     if (!a) { a = document.createElement('p'); a.id = 'filtro-otro'; a.className = 'filtro-otro'; a.setAttribute('role', 'status'); $('#escena-video').append(a); }
