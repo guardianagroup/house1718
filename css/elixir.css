@@ -1986,3 +1986,30 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 /* el reloj de la llamada, con «Gratis» delante, en una sola línea: centrado arriba en el móvil no se parte ni se monta */
 .video-tiempo{white-space:nowrap}
 @media (max-width:760px){ .sala .video-tiempo,.sala.video-grande .video-tiempo{width:max-content;max-width:calc(100vw - 24px)} .sala .video-tiempo small,.sala .video-tiempo small.queda{margin:0} }
+/* (dueño, 25 nov 10:21: «el pie base de la holografía queda tapado»): en el móvil, la escena 3D mide lo mismo que la portada (la
+   pantalla con las barras del navegador a la vista) y no la pantalla entera, que en Safari y Chrome es más alta: así el pie del
+   holograma queda encima de los botones, como en la app de la pantalla de inicio (que ya medía igual las dos) */
+@media (max-width:760px){ .lienzo3d{height:100vh;height:100svh} }
+/* (dueño, 25 nov 10:24: «Centra todo en los botones y dentro para que sea perfecto»): en los dos botones de la portada con icono,
+   el texto queda en el centro exacto del botón (el mismo margen a los dos lados), el círculo del icono va concéntrico con la punta
+   redonda y los dos llevan el mismo círculo y la misma letra. De 761 a 1023 px de ancho, donde tres botones en fila no caben con
+   el texto en el centro: con la pantalla en vertical (una tableta), en columna como en el móvil, porque la escena 3D también se
+   encuadra como en el móvil y deja sitio abajo; con la pantalla apaisada, siguen en fila para no tapar el pie del holograma, y
+   hasta 1009 px el icono va pegado al texto y los dos, juntos, quedan en el centro */
+.consola .portada-botones .cristal.grande.vivo,.consola .portada-botones .cristal.grande.codigo.voz{padding:0 64px}
+.consola .portada-botones .cristal.grande .ico-boton{left:7px;width:44px;height:44px;padding:11px}
+.consola .portada-botones .cristal.grande>span{font-size:14px;letter-spacing:.08em}
+@media (max-width:760px){
+  .consola .portada-botones .cristal.grande.vivo,.consola .portada-botones .cristal.grande.codigo.voz{padding:0 66px}
+  .consola .portada-botones .cristal.grande .ico-boton{left:9px}
+  .consola .portada-botones .cristal.grande>span{font-size:clamp(11px,3.6vw,14px)}
+}
+@media (min-width:761px) and (max-width:1023px) and (max-aspect-ratio:799/1000){
+  .portada-botones{grid-template-columns:minmax(0,1fr);width:min(420px,94vw)}
+  .portada-botones #empezar{order:-1}
+}
+@media (min-width:761px) and (max-width:1009px) and (min-aspect-ratio:800/1000){
+  .consola .portada-botones .cristal.grande.vivo,.consola .portada-botones .cristal.grande.codigo.voz{padding:0 12px}
+  .consola .portada-botones .cristal.grande .ico-boton{position:relative;left:auto;top:auto;transform:none;width:36px;height:36px;padding:8px;flex:none}
+  .consola .portada-botones .cristal.grande>span{font-size:12px}
+}
