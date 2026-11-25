@@ -69,6 +69,8 @@ const creaMotor = (OPC) => {
     const t0 = Date.now(); const i = setInterval(() => { if (r.abierto) { clearInterval(i); res(true); } else if (Date.now() - t0 > (ms || 12000)) { clearInterval(i); res(false); } }, 120);
   });
   function prepara() { rele(); }
+  // vuelve a pedir al relé el saldo (los minutos comprados y los gratis que quedan hoy), por ejemplo al acabar una conversación
+  function refrescaSaldo() { if (R) try { R.ponCodigos(); } catch (_) {} }
 
   // ---------- la conversación (una sola por pestaña) ----------
   // S: la conversación. T: solo en el ordenador, y solo mientras se pasa la conversación al móvil, la sesión con ese móvil.
@@ -1556,7 +1558,7 @@ const creaMotor = (OPC) => {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
     reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); },
     activaVideo, retopa, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, nivelVoz, nivelDe: nivelHueco, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    refrescaSaldo, llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, nivelVoz, nivelDe: nivelHueco, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

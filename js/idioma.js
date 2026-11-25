@@ -4,6 +4,7 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    compraTituloInvitar: 'Ya has usado tus 2 minutos gratis de hoy en este aparato.', compraTextoInvitar: 'Para invitar, compra tiempo: paga quien invita. También sirve para tus próximas conversaciones. Si alguien te invita a ti, puedes entrar igual.',
     compraTituloInvitado: 'A quien te invitó se le acabó el tiempo.', compraTextoInvitado: 'Esta llamada la paga quien invita. Si tú tienes tiempo o lo compras, invita tú a la otra persona y hablaréis con el tuyo.', compraNotaInvitado: 'Pago único con Dodo Payments, sin suscripción. Se abre en otra pestaña.', llSinTiempoInvitado: 'A quien te invitó se le acabó el tiempo. Paga quien invita: para hablar con tu tiempo, invita tú.', sinTiempoTextoInvitado: 'Paga quien invita. Para hablar con tu tiempo, invita tú.',
     teInvitanVoz: 'LLAMADA DE VOZ POSCUÁNTICA', teInvitanVozTexto: 'Te han invitado a una llamada de voz privada con encriptado poscuántico de extremo a extremo. Al entrar se encenderá tu micrófono.',
     // 1718: comprar tiempo (25 nov 2026)
@@ -94,6 +95,7 @@
   };
   const EN = {
     h1Portada: '1718 · Private video and voice calls, end-to-end encrypted',
+    compraTituloInvitar: 'You have used your 2 free minutes for today on this device.', compraTextoInvitar: 'To invite someone, buy time: the person who invites pays. It also works for your next conversations. If someone invites you, you can still join.',
     compraTituloInvitado: 'The person who invited you has run out of time.', compraTextoInvitado: 'The person who invites pays for the call. If you have time or buy it, invite the other person yourself and you will talk on yours.', compraNotaInvitado: 'One-time payment with Dodo Payments, no subscription. It opens in a new tab.', llSinTiempoInvitado: 'The person who invited you has run out of time. The person who invites pays: to talk on your time, invite them yourself.', sinTiempoTextoInvitado: 'The person who invites pays. To talk on your time, invite them yourself.',
     teInvitanVoz: 'POST-QUANTUM VOICE CALL', teInvitanVozTexto: 'You have been invited to a private voice call with post-quantum end-to-end encryption. When you join, your microphone will turn on.',
     // 1718: comprar tiempo (25 nov 2026)
@@ -118,7 +120,7 @@
     faq6P: 'How much does it cost?', faq6R: '1 hour, USD 5, or 5 hours, USD 25, with one-time payments and no subscription. Every day you get 2 free minutes to try it.',
     faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is a 60-minute code tied to this browser: it only works for whoever uses it first, and to continue on your phone there is “Move to phone”. Time runs by the minute while you are both in the conversation. The person who invites always pays, with their own time: the invited person’s time is never used.',
     faq8P: 'What happens when time runs out?', faq8R: 'The call ends and the person who invited gets the option to buy more. As soon as they buy or paste a code, you can call again in the same conversation. If it is the other person who has time, they should be the one to invite.',
-    preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day', precio3: 'To try it without paying anything. Paid time is only used while you are both in the conversation, by the minute.', comprar: 'Buy',
+    preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day per device', precio3: 'To try it without paying anything. They are used by the person who invites; after that, the time is paid, and it only runs while you are both in the conversation.', comprar: 'Buy',
     preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. If you have not used a code, you can ask for a refund within 14 days of purchase: <a href="refunds.html">refunds and cancellations</a>.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with post-quantum encryption.',

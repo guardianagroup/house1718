@@ -59,9 +59,9 @@
   // invitó: paga quien invita) o 'mas' (comprar más sin que se haya acabado)
   function abre(m) {
     if (!caja) return;
-    motivo = m === 'cortesia' || m === 'tiempo' || m === 'invitado' ? m : 'mas';
-    pon($('#compra-titulo'), { cortesia: 'compraTituloCortesia', tiempo: 'compraTituloTiempo', invitado: 'compraTituloInvitado', mas: 'compraTituloMas' }[motivo]);
-    pon($('#compra-texto'), motivo === 'invitado' ? 'compraTextoInvitado' : 'compraTexto');
+    motivo = m === 'cortesia' || m === 'tiempo' || m === 'invitado' || m === 'invitar' ? m : 'mas';
+    pon($('#compra-titulo'), { cortesia: 'compraTituloCortesia', tiempo: 'compraTituloTiempo', invitado: 'compraTituloInvitado', invitar: 'compraTituloInvitar', mas: 'compraTituloMas' }[motivo]);
+    pon($('#compra-texto'), motivo === 'invitado' ? 'compraTextoInvitado' : motivo === 'invitar' ? 'compraTextoInvitar' : 'compraTexto');
     pon($('#compra-nota'), motivo === 'invitado' ? 'compraNotaInvitado' : 'compraNota');
     caja.classList.toggle('sin-tiempo', motivo !== 'mas');
     if (caja.hidden) { estadoCodigo(''); const i = $('#compra-input'); if (i) i.value = ''; }

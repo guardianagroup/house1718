@@ -103,7 +103,22 @@
   // (dueño, 23 nov 15:47–15:51: «llamada de voz y videollamada… tres botones al empezar… en la versión PC también… y las llamadas
   // en grupo»): «Llamada de voz» (sin cámara; se puede pasar a vídeo sin colgar) o «Videollamada»
   const ponTipo = (t) => { window.Elixire.tipo = t === 'voz' ? 'voz' : 'video'; if (M && M.modoVoz) M.modoVoz(t === 'voz'); };
-  const empieza = (t) => { if (!M || ocupado || abierta) return; ponTipo(t); if (enMovil()) invitaMovil(); else abre('#crear'); };
+  // (dueño, 25 nov 12:15–12:16: «cuando una persona agota los 2 minutos de prueba, que no pueda volver a generar código, porque no
+  // dejará entrar… en pc y móvil… 2 minutos gratis por dispositivo y después de pago»): sin tiempo comprado y sin minutos gratis hoy
+  // en este aparato, no se crea la invitación: sale la compra. El relé lo dice en cuanto se conecta (abajo, al cargar la página), así
+  // que se sabe en el mismo toque (en el móvil, «Compartir» tiene que abrirse en ese toque)
+  const sinTiempoParaInvitar = () => {
+    const s = M && M.saldo; if (!s || typeof s.gratis !== 'number') return false; // (sin respuesta del relé, no se bloquea)
+    if (s.minutos > 0 || s.gratis > 0) return false;
+    return !Object.values(s.estados || {}).some((v) => v === '?' || v === 'espera'); // (códigos aún por comprobar: no se bloquea)
+  };
+  const empieza = (t) => {
+    if (!M || ocupado || abierta) return;
+    if (sinTiempoParaInvitar()) { const c = window.ElixireCompra; if (c) c.abre('invitar'); return; }
+    ponTipo(t); if (enMovil()) invitaMovil(); else abre('#crear');
+  };
+  // el relé, al poco de cargar: así se sabe ya cuánto tiempo hay (y la llamada empieza antes)
+  addEventListener('load', () => setTimeout(() => { try { if (M && !document.hidden) M.prepara(); } catch (_) {} }, 1200));
   $('#empezar').addEventListener('click', () => empieza('video'));
   { const v = $('#empezar-voz'); if (v) v.addEventListener('click', () => empieza('voz')); }
   for (const b of document.querySelectorAll('[data-empezar]')) b.addEventListener('click', () => empieza('video'));

@@ -1400,6 +1400,8 @@
   function finSala(f) {
     finPendiente = null;
     { const c = Cp(); if (c) c.cierra(); } sinTiempo = false; avisado30 = false; avisado2m = false; tiempoDe = '';
+    // el saldo, otra vez (los minutos gratis de hoy pueden haberse gastado): así, sin tiempo, ya no se deja crear otra invitación
+    setTimeout(() => { try { M.refrescaSaldo(); } catch (_) {} }, 1500);
     const enSala = abierta; cierraMovil(); cierra();
     const textos = {
       mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false], // (con la lista de lo borrado)
