@@ -1,9 +1,9 @@
 # Elixire
 
-Videollamadas y conversaciones privadas con encriptado poscuántico de extremo a extremo y detección de caras falsas, en el navegador. Es el código que se sirve en www.house1718.com.
+Videollamadas y conversaciones privadas con encriptado poscuántico de extremo a extremo, en el navegador. Es el código que se sirve en www.house1718.com.
 
 - Licencia: AGPL-3.0 (archivo `LICENSE`). El servidor de enlace es también AGPL-3.0, en `guardianagroup/guardianagroup.com`.
 - Cada script de la página lleva su huella SHA-384 (SRI). Cualquiera puede comparar lo que recibe su navegador con este código.
-- Las bibliotecas de terceros incluidas tienen sus propias licencias: noble (MIT), face-api.js (MIT), Human (MIT, con los modelos de MediaPipe Face Mesh, Apache-2.0, el detector de manos HandTrack, el modelo de iris de MediaPipe, el de descripción facial FaceRes, el de cuerpo MoveNet Lightning de Google y el de objetos CenterNet, que distribuye Human; antes de vender a gran escala conviene revisar la licencia de cada modelo), three.js (MIT) y las fuentes Inter y Unbounded (OFL).
+- Las bibliotecas de terceros incluidas tienen sus propias licencias: noble (MIT), three.js (MIT) y las fuentes Inter y Unbounded (OFL).
 
-Private video calls and conversations in the browser, with post-quantum end-to-end encryption and fake-face detection. Licensed under AGPL-3.0.
+Private video calls and conversations in the browser, with post-quantum end-to-end encryption. Licensed under AGPL-3.0.

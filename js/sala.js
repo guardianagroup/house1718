@@ -211,7 +211,7 @@
     d.innerHTML = '<span class="ea-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 5 6v5.6c0 4.4 3 8.2 7 9.3 4-1.1 7-4.9 7-9.3V6l-7-2.8Z"/><path d="M12 8.2v4.6M12 15.9v.1"/></svg></span><span class="ea-txt"><b></b><small></small></span><button type="button" class="ea-cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>';
     d.querySelector('b').textContent = tr('espiaTitulo').replace('{n}', nombre ? ' (' + nombre + ')' : '');
     d.querySelector('small').textContent = tr('espiaTexto');
-    d.querySelector('.ea-cerrar').setAttribute('aria-label', tr('vg_cerrar').split(' ')[0]);
+    d.querySelector('.ea-cerrar').setAttribute('aria-label', tr('cerrar'));
     d.querySelector('.ea-cerrar').addEventListener('click', () => d.remove());
     sala.append(d);
   }
@@ -576,7 +576,7 @@
     if (vistaLl !== 'grande') return;
     reposoT = setTimeout(() => {
       const foco = document.activeElement && sala.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
-      const abierto = !$('#sala-palabras').hidden || !$('#menu-enviar').hidden || sala.classList.contains('comprobando') || [...document.querySelectorAll('.vigia-panel')].some((x) => !x.hidden);
+      const abierto = !$('#sala-palabras').hidden || !$('#menu-enviar').hidden;
       if (vistaLl === 'grande' && ultimo.estado === 'hablando' && !foco && !abierto) sala.classList.add('reposo');
     }, 3000);
   }
@@ -608,8 +608,6 @@
   function abreChat() {
     if (!movil.matches) { if (vistaLl === 'grande') ponVistaLl('mini'); return; } // en el ordenador, «Responder» enseña la conversación
     if (enChat || !abierta) return;
-    if (window.ElixireComprueba && window.ElixireComprueba.cierra) window.ElixireComprueba.cierra();
-    if (window.ElixireVigia && window.ElixireVigia.cierra) window.ElixireVigia.cierra();
     enChat = true; sinLeer = 0; pintaCuenta(); marcaLeidos(); menuEnviar.hidden = true; avisos.textContent = '';
     { const g = G(); if (g) g.modoChat(true); else if (M.modoChat) M.modoChat(true); }
     $('#chat-tiempo').textContent = ultimo.t0 ? mmss(Date.now() - ultimo.t0) : '';
@@ -847,21 +845,20 @@
     // fotograma, y la vigilancia de la cara se para (comparte hilo con el dedo); al soltar, la posición queda fija
     const vm = $('#video-mio'); let d = null, raf = 0, px = 0, py = 0;
     const ponEn = (x, y) => { vm.style.setProperty('left', x + 'px', 'important'); vm.style.setProperty('top', y + 'px', 'important'); vm.style.setProperty('right', 'auto', 'important'); vm.style.setProperty('bottom', 'auto', 'important'); };
-    const vigia = (si) => { try { if (window.ElixireVigia && window.ElixireVigia.pausa) window.ElixireVigia.pausa(si); } catch (_) {} };
     const pinta = () => { raf = 0; if (d) vm.style.setProperty('transform', 'translate3d(' + (px - d.x0) + 'px,' + (py - d.y0) + 'px,0)' + (vm.classList.contains('trasera') ? '' : ' scaleX(-1)'), 'important'); };
     vm.addEventListener('pointerdown', (e) => {
       if (!movil.matches || sala.classList.contains('en-grupo')) return;
       const r = vm.getBoundingClientRect(), x0 = Math.round(r.left), y0 = Math.round(r.top);
       ponEn(x0, y0); d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, h: r.height, x0, y0 }; px = x0; py = y0;
       try { vm.setPointerCapture(e.pointerId); } catch (_) {}
-      vm.classList.add('moviendo'); vigia(true); e.preventDefault();
+      vm.classList.add('moviendo'); e.preventDefault();
     });
     vm.addEventListener('pointermove', (e) => {
       if (!d || e.pointerId !== d.id) return;
       px = Math.round(Math.max(8, Math.min(innerWidth - d.w - 8, e.clientX - d.dx))); py = Math.round(Math.max(8, Math.min(innerHeight - d.h - 8, e.clientY - d.dy)));
       if (!raf) raf = requestAnimationFrame(pinta);
     });
-    const suelta = (e) => { if (!d || e.pointerId !== d.id) return; cancelAnimationFrame(raf); raf = 0; ponEn(px, py); vm.style.removeProperty('transform'); d = null; vm.classList.remove('moviendo'); vigia(false); };
+    const suelta = (e) => { if (!d || e.pointerId !== d.id) return; cancelAnimationFrame(raf); raf = 0; ponEn(px, py); vm.style.removeProperty('transform'); d = null; vm.classList.remove('moviendo'); };
     vm.addEventListener('pointerup', suelta); vm.addEventListener('pointercancel', suelta); vm.addEventListener('lostpointercapture', suelta);
   }
   $('#salir-llamada').addEventListener('click', () => { const g = G(); if (g) g.sal(); M.termina('mio'); });
@@ -1098,7 +1095,7 @@
   }
   $('#escena-video').addEventListener('click', (e) => {
     if (!enMarchaBotones || !movil.matches) return;
-    if (e.target.closest('#controles, #video-mio, .video-mio, .vigia-aviso, .avisos-llamada, #chat, #menu-enviar, .menu-enviar, #video-reto, button, a, input, textarea, label')) return;
+    if (e.target.closest('#controles, #video-mio, .video-mio, .avisos-llamada, #chat, #menu-enviar, .menu-enviar, button, a, input, textarea, label')) return;
     if (sala.classList.contains('sin-botones')) muestraBotones(); else escondeBotones();
   });
   $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(3000); });
@@ -1138,7 +1135,6 @@
     const vuelve = !!(window.ElixireGrupo && window.ElixireGrupo.reentra);
     if (e.estado === 'llamando' && !pas && !vuelve) tono('saliente'); else if (e.estado === 'entrante' && !pas && !e.cruzada && !G() && !(window.Elixire && window.Elixire.contestaSola)) tono('entrante'); else paraTono();
     const m = movil.matches;
-    if (e.estado !== 'hablando') $('#video-reto').hidden = true;
     if (e.local && vm.srcObject !== e.local) vm.srcObject = e.local;
     vm.classList.toggle('trasera', e.mira === 'environment');
     $('#b-girar').hidden = !(m && !pas && (e.estado === 'hablando' || e.estado === 'reconectando') && e.local && e.local.getVideoTracks().length && e.cam !== false);
@@ -1207,19 +1203,8 @@
     if (abierta && e.estado === 'entrante' && (E.contestaSola || G())) { E.contestaSola = false; M.contestar(); }
   });
   M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) toast('capa', { icono: 'candado', titulo: tr('encriptadoEstandarT'), sub: tr(k), ms: 12000 }); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
-  // la prueba de vida: el reto, grande en el centro durante 12 segundos (en los dos lados)
-  const RETOS = ['reto0', 'reto1', 'reto2', 'reto3', 'reto4', 'reto5', 'reto6'];
-  let retoT = null;
-  M.on('reto', (r) => {
-    if (!abierta) return;
-    const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
-    et.dataset.t = r.mio ? 'retoPedido' : 'retoParaTi'; et.textContent = tr(et.dataset.t);
-    tx.textContent = tr(RETOS[r.i] || 'reto0').replace('{w}', r.w || '');
-    caja.hidden = false; clearTimeout(retoT); retoT = setTimeout(() => { caja.hidden = true; }, 12000);
-    sistema(r.mio ? 'retoSistemaMio' : 'retoSistemaSuyo', '«' + tx.textContent + '»');
-  });
-  // poca luz (dueño, 21:05): si mi imagen se ve muy oscura, me aviso en mi pantalla para que la otra persona me vea bien (y para que
-  // «Comprobar» funcione). Cada 2 s, una versión diminuta de mi cámara; dos veces seguidas muy oscura: el aviso (como mucho uno por minuto).
+  // poca luz (dueño, 21:05): si mi imagen se ve muy oscura, me aviso en mi pantalla para que la otra persona me vea bien.
+  // Cada 2 s, una versión diminuta de mi cámara; dos veces seguidas muy oscura: el aviso (como mucho uno por minuto).
   const luzL = document.createElement('canvas'); luzL.width = 24; luzL.height = 18; const luzG = luzL.getContext('2d', { willReadFrequently: true });
   let luzN = 0, luzUlt = 0;
   setInterval(() => {
@@ -1231,24 +1216,6 @@
     luzN = s / (d.length / 4) < 20 ? luzN + 1 : 0; // (dueño, 23 nov 20:04: el aviso, solo cuando está muy oscuro; con poca luz, nada)
     if (luzN >= 2 && Date.now() - luzUlt > 60000) { luzUlt = Date.now(); if (movil.matches) toast('luz', { icono: 'foto', titulo: tr('pocaLuzT'), sub: tr('pocaLuz'), ms: 8000 }); else sistema('pocaLuz'); }
   }, 2000);
-  $('#b-reto').addEventListener('click', () => M.reto());
-  // la prueba del gesto: la orden llega de quien comprueba y se ve grande en el centro (sin mensajes en el chat)
-  let gestoT = null;
-  function alGestoSala(g) {
-    if (!abierta || !g || g.q === 'inicio') return;
-    const caja = $('#video-reto'), et = $('#reto-etiqueta'), tx = $('#reto-texto');
-    clearTimeout(gestoT);
-    if (g.q === 'fin') { caja.classList.remove('gesto'); caja.hidden = true; return; }
-    caja.classList.add('gesto'); caja.dataset.q = g.q;
-    // el destello de color: su luz se refleja en una cara de verdad (quien comprueba lo mide en el vídeo)
-    if (g.q === 'luz') { let fl = document.querySelector('.gesto-luz'); if (!fl) { fl = document.createElement('div'); fl.className = 'gesto-luz'; caja.parentElement.append(fl); } fl.style.setProperty('--c', g.n ? '#00FFFF' : '#FF00FF'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 800); }
-    et.dataset.t = 'gestoEtiqueta'; et.textContent = tr('gestoEtiqueta') + (g.n && g.de ? ' · ' + g.n + '/' + g.de : '');
-    const sinMic = (() => { try { const e = M.estadoLlamada(); return e && e.mic === false; } catch (_) { return false; } })();
-    tx.textContent = (g.q === 'luz' && g.w ? tr('gesto_luzVoz') + ' «' + g.w + '»' : tr('gesto_' + g.q) + (g.q === 'voz' && g.w ? ' «' + g.w + '»' : '')) + ((g.q === 'voz' || (g.q === 'luz' && g.w)) && sinMic ? ' · ' + tr('gesto_activaMic') : ''); caja.hidden = false;
-    try { if (!['frente', 'luz'].includes(g.q) && navigator.vibrate) navigator.vibrate(40); } catch (_) {}
-    gestoT = setTimeout(() => { caja.hidden = true; caja.classList.remove('gesto'); }, g.q === 'voz' || g.q === 'clave' ? 20000 : 6000);
-  }
-  M.on('gesto', alGestoSala);
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
   $('#llamar').addEventListener('click', () => {
     if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return;
@@ -1495,7 +1462,7 @@
     else if (enPC() && abierta && conImagen() && leeVista().div !== false) ponDividida(true, false);
     colocaMi(); pintaVista();
   }
-  window.ElixireSala = { engancha, aviso: avisoBreve, finGrupo, repinta, grupoCambia, gesto: alGestoSala };
+  window.ElixireSala = { engancha, aviso: avisoBreve, finGrupo, repinta, grupoCambia };
   // «Verificar esta página»: el código es público y cada script lleva su huella SHA-384 (herramientas/huellas.py)
   for (const v of document.querySelectorAll('.verificar')) v.addEventListener('click', (e) => { e.preventDefault(); aviso('verificarEtiqueta', 'verificarTitulo', 'verificarTexto', false, true); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#aviso').hidden) $('#aviso').hidden = true; });

@@ -395,12 +395,6 @@ const creaMotor = (OPC) => {
           });
         }
         if (typeof j.habla === 'string' && (j.habla === '' || /^[0-9a-f]{12}$/.test(j.habla))) g.habla = j.habla;
-        // «Comprobar» a alguien de otro tramo: el reto (lo que se le pide en pantalla) y la pregunta por su tipo de cámara, de paso
-        if (typeof j.para === 'string' && /^[0-9a-f]{12}$/.test(j.para)) g.para = j.para;
-        if (typeof j.de === 'string' && /^[0-9a-f]{12}$/.test(j.de)) g.de = j.de;
-        if (typeof j.q === 'string' && /^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(j.q)) { g.q = j.q; g.pn = Math.max(0, Math.min(9, j.pn | 0)); g.pde = Math.max(0, Math.min(9, j.pde | 0)); g.pw = String(j.pw || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60); }
-        if (j.k != null) g.k = Math.max(0, Math.min(1e9, j.k | 0));
-        if (j.f && typeof j.f === 'object') g.f = limpiaFuente(j.f);
         emite('grupo', g); return;
       }
       case 'alarma': return finaliza(s, 'alarma-suya');
@@ -831,8 +825,7 @@ const creaMotor = (OPC) => {
       if (!snd.track) continue;
       try {
         const p = snd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-        const realzada = !!(propios && !propios.has(snd) && L.realce && L.salen && L.salen.get(L.realce) && L.salen.get(L.realce).sender === snd);
-        const tg = realzada ? (TEL ? { bps: 1500000, escala: 1.5, fps: 30 } : { bps: 2500000, escala: 1, fps: 30 }) : propios && !propios.has(snd) ? topeReenvio() : topeGrupo;
+        const tg = propios && !propios.has(snd) ? topeReenvio() : topeGrupo;
         if (tg && tg !== topeGrupo && snd.track.kind === 'video' && snd.track.contentHint !== 'detail') { p.encodings[0].maxBitrate = tg.bps; p.encodings[0].maxFramerate = tg.fps; p.encodings[0].scaleResolutionDownBy = tg.escala; p.degradationPreference = 'balanced'; }
         else if (snd.track.kind === 'audio') { p.encodings[0].maxBitrate = MAX_BPS_AUDIO; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
         else if (topeGrupo && snd.track.contentHint === 'detail') { p.encodings[0].maxBitrate = Math.max(topeGrupo.bps, 1500000); p.encodings[0].maxFramerate = 15; p.encodings[0].scaleResolutionDownBy = 1; p.degradationPreference = 'maintain-resolution'; }
@@ -1074,41 +1067,8 @@ const creaMotor = (OPC) => {
       return;
     }
     if (que === 'colgar' || que === 'rechaza' || que === 'ocupado' || que === 'sin-capa') colgar(que === 'colgar' ? 'suyo' : que, true);
-    if (que === 'gesto' && L.estado === 'hablando') { const q = String(j.q || ''); if (/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) emite('gesto', { q, n: Math.max(0, Math.min(9, j.n | 0)), de: Math.max(0, Math.min(9, j.de | 0)), w: String(j.w || '').replace(/[^\p{L}, '-]/gu, '').slice(0, 60) }); }
     if (que === 'calidad' && L.estado === 'hablando') { L.ac = L.ac || { n: null, tope: 0, malos: 0, buenos: 0, tCambio: 0, tSube: 0, bloqueo: 0, remoto: 0, rMalos: 0, rBuenos: 0, pedido: 0, tPide: 0, pedidos: 0, e0: null, d0: null }; L.ac.remoto = Math.max(0, +j.alto || 0); }
     if (que === 'filtro' && L.estado === 'hablando') { L.otroFiltro = { voz: !!j.voz, cara: !!j.cara, chat: !!j.chat, pantalla: !!j.pantalla, mic: j.mic !== false, cam: j.cam !== false }; emite('filtro', L.otroFiltro); }
-    if (que === 'reto' && L.estado === 'hablando') { const i = j.i | 0, w = String(j.w || '').slice(0, 24); if (i >= 0 && i < RETOS) emite('reto', { i, w, mio: false }); }
-    // «Comprobar» (dueño, 16:56): quien comprueba pregunta de qué tipo es la cámara de este equipo; se contesta solo con el tipo
-    if (que === 'fuente?' && L.estado === 'hablando') { if (Date.now() - fuenteT > 1500) { fuenteT = Date.now(); enviaControl(s, { tipo: 'llamada', que: 'fuente', id, n: j.n | 0, f: fuenteMia() }); } return; }
-    if (que === 'fuente') { const n = j.n | 0, r = fuentes.get(n); if (r) { fuentes.delete(n); r(limpiaFuente(j.f)); } return; }
-  }
-  // De qué tipo es la cámara de este equipo, para «Comprobar» en el otro (dueño, 16:56: «detectar la estafa con la mayor tecnología
-  // posible»). Los programas que cambian la cara en directo (DeepFaceLive, Deep-Live-Cam, Avatarify…) llegan al navegador como una
-  // cámara virtual (OBS, Unity Capture…). Solo sale el tipo y, si es un programa conocido, su familia de una lista fija: nunca el
-  // nombre de la cámara, ni nada más del equipo.
-  const FAMILIAS = [['OBS', /\bobs\b/i], ['ManyCam', /manycam/i], ['Snap Camera', /snap ?camera/i], ['XSplit', /xsplit/i], ['Unity Capture', /unity ?(video ?)?capture/i], ['SplitCam', /splitcam/i], ['CamTwist', /camtwist/i], ['YouCam', /youcam/i], ['mmhmm', /mmhmm/i], ['Avatarify', /avatarify/i], ['DeepFace', /deep ?face|deep-?live|facefusion|face ?swap|swapface/i], ['Webcamoid', /webcamoid/i], ['ChromaCam', /chromacam/i], ['NVIDIA Broadcast', /nvidia broadcast/i], ['Camo', /\bcamo\b/i], ['DroidCam', /droidcam/i], ['Iriun', /iriun/i], ['EpocCam', /epoccam/i], ['iVCam', /ivcam/i], ['Elgato', /elgato|camera hub/i]];
-  const VIRTUAL = /\bobs\b|manycam|snap ?camera|xsplit|\bvcam\b|unity ?(video ?)?capture|splitcam|camtwist|youcam|mmhmm|avatarify|deep ?face|deep-?live|facefusion|face ?swap|swapface|webcamoid|chromacam|sparkocam|altercam|loopback|dummy|fake|virtual/i;
-  const INTERMEDIA = /nvidia broadcast|\bcamo\b|droidcam|iriun|epoccam|ivcam|logi capture/i;
-  const TIPOS_FUENTE = ['virtual', 'intermedia', 'movil', 'fisica', 'desconocida', 'apagada'];
-  function fuenteMia() {
-    const t = L && L.local && L.local.getVideoTracks()[0];
-    if (!t || t.readyState !== 'live' || !t.enabled) return { k: 'apagada' };
-    const et = String(t.label || ''); let a = {}; try { a = t.getSettings ? t.getSettings() : {}; } catch (_) {}
-    const n = (FAMILIAS.find(([, re]) => re.test(et)) || [''])[0];
-    if (VIRTUAL.test(et)) return { k: 'virtual', n };
-    if (INTERMEDIA.test(et)) return { k: 'intermedia', n };
-    if (a.facingMode || /front|back|frontal|trasera|delantera|facing/i.test(et)) return { k: 'movil' };
-    return { k: et ? 'fisica' : 'desconocida' };
-  }
-  function limpiaFuente(f) { if (!f || !TIPOS_FUENTE.includes(f.k)) return null; return { k: f.k, n: FAMILIAS.some(([x]) => x === f.n) ? f.n : '' }; }
-  const fuentes = new Map(); let nFuente = 0, fuenteT = 0;
-  function fuente() {
-    return new Promise((res) => {
-      if (!L || L.estado !== 'hablando' || !S) { res(null); return; }
-      const n = ++nFuente; fuentes.set(n, res);
-      enviaControl(S, { tipo: 'llamada', que: 'fuente?', id: L.id, n });
-      setTimeout(() => { if (fuentes.has(n)) { fuentes.delete(n); res(null); } }, 3500);
-    });
   }
   function colgar(motivo, suyo) {
     if (!L) return;
@@ -1121,23 +1081,6 @@ const creaMotor = (OPC) => {
     // la prueba: hasta 3 minutos hablados por conversación
     if (S && x.t0) S.usado = (S.usado || 0) + (Date.now() - x.t0);
     emite('llamada', { estado: 'fin', motivo: motivo || '', diag: x.diag || '', duro: x.t0 ? Date.now() - x.t0 : 0, prueba: restante(S) < 5000, resto: restante(S) });
-  }
-  // Prueba de vida (agencia, ronda 96, f): un reto al azar que la otra persona tiene que hacer en directo, en cámara. Va por la sesión
-  // encriptada, así que lo pide el equipo verificado con las cuatro palabras. Ayuda a detectar un vídeo grabado o una suplantación
-  // hecha con inteligencia artificial; no es una prueba infalible.
-  const RETOS = 7;
-  // La prueba del gesto de «Comprobar» (dueño, 19:56–20:07): quien comprueba pide en la pantalla de la otra persona que gire la cabeza
-  // a un lado, al otro y que se tape la cara, en orden al azar. Aquí solo viaja la orden; lo que se ve lo analiza quien comprueba.
-  function gesto(q, n, de, w) {
-    if (!L || L.estado !== 'hablando' || !S || !/^(izq|der|mano|frente|fin|inicio|luz|voz|clave)$/.test(q)) return false;
-    return enviaControl(S, { tipo: 'llamada', que: 'gesto', id: L.id, q, n: n | 0, de: de | 0, w: String(w || '').slice(0, 60) });
-  }
-  function reto() {
-    if (!L || L.estado !== 'hablando' || !S) return null;
-    const r = C.azar(4), i = r[0] % RETOS, L2 = window.GuardianaPalabras;
-    const w = Array.isArray(L2) && L2.length ? L2[((r[1] << 8) | r[2]) % L2.length] : '';
-    enviaControl(S, { tipo: 'llamada', que: 'reto', id: L.id, i, w });
-    const x = { i, w, mio: true }; emite('reto', x); return x;
   }
   function rechazar() { if (L && L.estado === 'entrante') { const id = L.id; L = null; if (S) enviaControl(S, { tipo: 'llamada', que: 'rechaza', id }); emite('llamada', { estado: 'fin', motivo: 'rechazada' }); } }
   // ---- girar la cámara: la de delante o la de atrás (dueño, 18:51: «falta el botón de girar la cámara»). La pista nueva entra en el
@@ -1224,9 +1167,11 @@ const creaMotor = (OPC) => {
     if (pista && L === x && snd.track !== pista) { try { await snd.replaceTrack(pista); } catch (_) {} }
   }
   // las voces de los demás tramos que van con la mía por esta llamada
+  // (grupo) en la primera sincronización de cada llamada se vuelven a aplicar los topes a todos los emisores, también a los de las
+  // imágenes reenviadas: así arrancan con su tope desde el principio (antes lo hacía, de paso, el realce de «Comprobar»)
+  function retopa() { const x = L; if (!x || !x.pc || x.retopado) return; x.retopado = true; topes(x.pc); }
   function mezcla(pistas, sinMia) { if (!L || !L.pc) return false; L.voces = (pistas || []).filter(Boolean); L.sinMia = !!sinMia; ponVoz(); return true; }
   // («Comprobar» en grupo) la imagen reenviada de la persona que se comprueba, a más calidad mientras dura
-  function realza(clave) { const x = L; if (!x || !x.pc) return; const c = clave || null; if (x.realce === c) return; x.realce = c; topes(x.pc); }
   // las imágenes que esta llamada reenvía: [{ clave, pista }] (clave: quién es). Usa los huecos que ya hay (una imagen que ya no se
   // manda deja el suyo) y, si faltan, añade otros y renegocia. Devuelve en qué hueco («mid») va cada una.
   async function reenvia(lista) {
@@ -1541,7 +1486,7 @@ const creaMotor = (OPC) => {
     return { ok: true };
   }
 
-  // El nivel de la voz que llega (0–1), para la vigilancia de la cara (js/vigia.js): lo da el propio receptor de audio, sin tocar
+  // El nivel de la voz que llega (0–1), para la luz de la llamada de voz y quién habla en grupo: lo da el propio receptor de audio, sin tocar
   // el sonido ni abrir otro contexto de audio. Sin paquetes en el último segundo (micro apagado, silencio): 0.
   function nivelVoz() {
     try {
@@ -1562,9 +1507,9 @@ const creaMotor = (OPC) => {
   }
   const API = {
     on, prepara, crea, entra, termina, envia, borra, leidos, escribe, giraCamara, comprobadas, enviaArchivo, cancelaArchivo, grupo: enviaGrupo, ponPistas, limita,
-    reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); }, miFuente: () => fuenteMia(),
-    activaVideo, realza, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
-    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, reto, gesto, fuente, nivelVoz, nivelDe: nivelHueco, enlace, entraSemilla, invitaSemilla, preparaMedios,
+    reenvia, mezcla, get llegan() { return (L && L.llegan) || new Map(); }, get salen() { return salen(L); },
+    activaVideo, retopa, modoVoz(si) { soloVoz = !!si; }, get enModoVoz() { return soloVoz; },
+    llamar, contestar, rechazar, colgar: () => colgar('mio'), micro, camara, cambiaVoz, caraOculta, pantalla, puedePantalla: PANTALLA, modoChat, nivelVoz, nivelDe: nivelHueco, enlace, entraSemilla, invitaSemilla, preparaMedios,
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },

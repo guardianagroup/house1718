@@ -21,9 +21,13 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # (24 nov 2026: los prototipos de diseño se quedan en el repositorio, pero no se publican en la web)
+      - run: |
+          mkdir _sitio
+          cp -a $(ls -A | grep -vE '^(\.git|\.github|_sitio|prototipos|prototipo-.*\.html)$') _sitio/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _sitio
       # (23 nov 2026: GitHub tardaba en listar el paquete recién subido y el despliegue fallaba con «Found 0 artifact(s)»)
       - run: sleep 25
       - id: deployment

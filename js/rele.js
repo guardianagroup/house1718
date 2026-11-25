@@ -5,7 +5,9 @@
 // El relé solo ve la sala y los bytes; nunca una clave ni un nombre.
 'use strict';
 (function (raiz) {
-  const MOTORES = ['wss://motor.guardianagroup.com', 'wss://motor-am.guardianagroup.com'];
+  // Elixire (dueño, 24 nov 2026, 18:40: «quiero apostar por el mercado de EE. UU.»): todas las llamadas van por el relé de Miami,
+  // con su TURN en Miami. Medido desde Colombia: 54 ms de ida y vuelta a Miami y 155 ms a Núremberg.
+  const MOTORES = ['wss://motor-am.guardianagroup.com', 'wss://motor.guardianagroup.com'];
   const q = new URLSearchParams(location.search);
   const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   // Instalación propia (dueño, 27 Oct 2026, 23:21: «mejora este modelo», Threema OnPrem): si la página no la sirve
@@ -18,6 +20,9 @@
   // son los mismos para las dos personas). Se usa si la zona horaria del equipo es rusa, o a mano con ?puente=ru (y ?puente=no
   // para quitarlo), y solo si el puente responde; si no, todo sigue como hasta ahora.
   const PUENTE_RU = 'wss://ru.guardianagroup.com';
+  // En Elixire el puente queda apagado: lleva al relé de Núremberg y las dos personas de una llamada tienen que estar en el
+  // mismo relé (Miami). Si hace falta para Rusia, se monta un puente que lleve a Miami y se vuelve a encender aquí.
+  const CON_PUENTE = false;
   const ZONAS_RU = /^(Europe\/(Moscow|Kaliningrad|Kirov|Volgograd|Astrakhan|Saratov|Ulyanovsk|Samara|Simferopol)|Asia\/(Yekaterinburg|Omsk|Novosibirsk|Barnaul|Tomsk|Novokuznetsk|Krasnoyarsk|Irkutsk|Chita|Yakutsk|Khandyga|Vladivostok|Ust-Nera|Magadan|Sakhalin|Srednekolymsk|Kamchatka|Anadyr)|W-SU)$/;
   function quierePuente() {
     let f = q.get('puente');
@@ -72,13 +77,13 @@
 
     // 27 Oct 2026, 21:25: las dos personas de una conversación tienen que estar en el mismo relé (los relés no se enlazan
     // entre sí: la sala y el código de invitación viven en uno solo). Con el relé de Miami ya en marcha, elegir «el más
-    // cercano» separaría a una persona de América de otra de Europa. Mientras los relés no se enlacen, Comunicaciones usa
-    // siempre el principal (Núremberg); el de Miami sirve a ZERO.
+    // cercano» separaría a una persona de América de otra de Europa. Mientras los relés no se enlacen, todas las llamadas de
+    // Elixire van por un solo relé: desde el 24 nov 2026, el de Miami (antes, Núremberg).
     async function elige() {
       if (q.get('rele')) return q.get('rele');
       if (LOCAL) return 'ws://127.0.0.1:8794';
       if (PROPIO) return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
-      if ((prefierePuente || quierePuente()) && await puenteVivo()) return PUENTE_RU;
+      if (CON_PUENTE && (prefierePuente || quierePuente()) && await puenteVivo()) return PUENTE_RU;
       return MOTORES[0];
     }
 
@@ -154,7 +159,7 @@
       const actual = url;
       const ok = await rutaSana(actual);
       if (ok !== false || cerrando) return;
-      if (actual !== PUENTE_RU && await puenteVivo() && (await rutaSana(PUENTE_RU)) === true) {
+      if (CON_PUENTE && actual !== PUENTE_RU && await puenteVivo() && (await rutaSana(PUENTE_RU)) === true) {
         prefierePuente = true; url = PUENTE_RU;
         try { if (ws) ws.close(); } catch (_) {}
         emite('ruta', { puente: true });

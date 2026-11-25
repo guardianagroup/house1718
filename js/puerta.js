@@ -1,7 +1,7 @@
 // Elixire · la portada y el monolito (19 nov 2026).
 // Dueño, 11:36: «debajo del monolito, solo un botón: Empezar prueba… y una vez que empiezas la prueba, ya te dice tengo un código».
 // «Empezar prueba» parte el monolito (sala3d.js) y dentro aparecen «Crear un código» y «Tengo un código»; con el código, la sala
-// (sala.js). Al bajar, la misma sala se oscurece y debajo van el riesgo, la solución, la comparación, la tecnología y el acceso.
+// (sala.js). Al bajar, la misma sala se oscurece y debajo van cómo se escuchan las llamadas, la solución, la tecnología, la comparación y el acceso.
 'use strict';
 (() => {
   const $ = (s) => document.querySelector(s);

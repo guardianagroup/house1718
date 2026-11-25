@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Elixire · genera las páginas legales (ES: terminos.html, privacidad.html; EN: terms.html, privacy.html) con la misma plantilla.
-Se ejecuta después de cambiar un texto:  python3 herramientas/legal.py  (y luego herramientas/huellas.py)."""
+Se ejecuta después de cambiar un texto:  python3 herramientas/legal.py  (y luego herramientas/huellas.py).
+OJO (24 nov 2026): desde el 24 nov las cuatro páginas se editan a mano (precios, Dodo Payments, servidor de Miami, sin
+«Comprobar»). Este generador se ha quedado atrás: no ejecutarlo sin pasarle antes esos cambios."""
 import base64, hashlib, html, pathlib
 raiz = pathlib.Path(__file__).resolve().parent.parent
 FECHA = {'es': '19 DE NOVIEMBRE DE 2026', 'en': '19 NOVEMBER 2026'}

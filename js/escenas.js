@@ -13,7 +13,7 @@
   if (quieto) { document.documentElement.classList.add('escenas-quietas'); for (const el of document.querySelectorAll('.escena [data-desde]')) el.classList.add('ya'); return; }
   document.documentElement.classList.add('escenas-vivas');
 
-  // ---- las cifras que cuentan (16.600, 25,6, 450,7…) con su formato español o inglés ----
+  // ---- las cifras que cuentan, con su formato español o inglés ----
   const ingles = () => document.documentElement.lang === 'en';
   function formatea(v, dec) { return v.toLocaleString(ingles() ? 'en-US' : 'es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }); }
   function cuenta(el) {
@@ -57,21 +57,6 @@
   addEventListener('scroll', pide, { passive: true });
   addEventListener('resize', pide);
   pinta();
-
-  // ---- la escena de «Comprobar»: una malla de 68 puntos que se dibuja sola (la misma que se ve en la llamada) ----
-  const malla = document.getElementById('malla-escena');
-  if (malla && window.ElixireComprueba && window.ElixireComprueba.delaunay) {
-    // los 68 puntos de una cara real (generada con IA, de dominio público), calculados con el mismo detector que usa «Comprobar»
-    const P = [[97.3,203],[99,232.8],[104,261.8],[109.2,287.5],[117.8,317.4],[131.7,341.1],[147.8,359.2],[169.9,380.4],[206.8,392.4],[245.2,381],[271.7,361.4],[292.6,344.5],[309.2,319.3],[320.5,289.3],[325.9,261.1],[330.3,232.3],[332.6,201],[113.4,171.7],[124.7,160.2],[141.9,156.4],[158.3,157.6],[173.4,163.5],[235.1,162.2],[250.9,156.3],[268.4,153.3],[288.7,156.8],[304,168.5],[203.2,199.9],[201.7,221.2],[200.1,239.9],[199.1,257.3],[181.4,266.7],[189.8,270.7],[202.4,272.6],[214.7,269.5],[225.3,267.3],[135.3,197],[144.3,192.4],[159.8,192.4],[173.7,199.9],[161.5,204.6],[145.6,203],[238.6,199],[252.1,190.7],[268.3,190.4],[279.7,196.7],[268.1,202.7],[251.5,202],[151.4,300.6],[166.8,292.4],[189.9,288.8],[202.3,290.6],[214.7,287.8],[241.9,293.4],[263.4,301],[240.7,326.1],[222.1,337.1],[202.6,341],[185.8,338.2],[168.5,327.7],[154,301.3],[185.3,297.8],[203.1,298.4],[220.7,299.1],[259.3,300.9],[220.9,323.2],[203.2,325.9],[186.7,324.1]];
-    const T = window.ElixireComprueba.delaunay(P), NS = 'http://www.w3.org/2000/svg';
-    const g1 = document.createElementNS(NS, 'g'); g1.setAttribute('class', 'malla-lineas');
-    let d = ''; for (const [a, b, c] of T) d += 'M' + P[a] + 'L' + P[b] + 'L' + P[c] + 'Z';
-    const camino = document.createElementNS(NS, 'path'); camino.setAttribute('d', d); g1.append(camino);
-    const g2 = document.createElementNS(NS, 'g'); g2.setAttribute('class', 'malla-puntos');
-    P.forEach(([x, y], i) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 2.3); c.style.setProperty('--i', i); g2.append(c); });
-    const g3 = document.createElementNS(NS, 'path'); g3.setAttribute('class', 'esquinas'); g3.setAttribute('d', 'M67,113V81H99 M331,81H363V113 M363,380V412H331 M99,412H67V380');
-    malla.append(g1, g2, g3);
-  }
 })();
 
 // ---- al bajar: el botón de la portada se va y la cabecera gana fondo (dueño, 23:10: el botón se montaba sobre «ELIXIRE») ----
