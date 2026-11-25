@@ -837,16 +837,17 @@
     try { const p = vs.play(); if (p && p.catch) p.catch((x) => { if (!(x && x.name === 'NotAllowedError' && abierta)) return; clearTimeout(verT); if (verN++ < 15) verT = setTimeout(intentaVer, 700); else $('#video-toca').hidden = false; }); } catch (_) {}
   }
   $('#video-suyo').addEventListener('playing', () => { $('#video-toca').hidden = true; verN = 0; clearTimeout(verT); });
-  // (dueño, 25 nov 11:48: «al pasar la llamada al teléfono se ve enorme»): la imagen de la otra persona llena su hueco recortando
-  // lo que sobra; si su cámara va en vertical (el móvil) y el hueco es apaisado (el ordenador), o al revés, el recorte se come más
-  // de un tercio y la cara sale enorme. En ese caso se ve entera, con bandas oscuras, como en WhatsApp.
+  // (dueño, 25 nov 11:48: «al pasar la llamada al teléfono se ve enorme»; 12:11: «no veo a mi amigo en grande… quiero verlo en
+  // grande»): la imagen de la otra persona llena su hueco recortando lo que sobra. Solo cuando su cámara va en vertical (un móvil) y
+  // el hueco es apaisado (un ordenador), el recorte se come más de un tercio y la cara sale enorme: entonces se ve entera, con bandas
+  // oscuras a los lados. En el móvil, la imagen apaisada del ordenador sigue en grande, a toda la pantalla.
   {
     const vs = $('#video-suyo');
     const encaja = () => {
       const w = vs.videoWidth, h = vs.videoHeight, bw = vs.clientWidth, bh = vs.clientHeight;
       if (!w || !h || !bw || !bh) { sala.classList.remove('suyo-encaja'); return; }
       const r = (w / h) / (bw / bh);
-      sala.classList.toggle('suyo-encaja', Math.min(r, 1 / r) < 0.6);
+      sala.classList.toggle('suyo-encaja', w < h && bw > bh && r < 0.6);
     };
     for (const ev of ['loadedmetadata', 'resize', 'playing', 'emptied']) vs.addEventListener(ev, encaja);
     if (window.ResizeObserver) new ResizeObserver(encaja).observe(vs); else addEventListener('resize', encaja);
