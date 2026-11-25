@@ -90,7 +90,8 @@
     pocaLuzT: 'Está muy oscuro', pocaLuz: 'Ponte frente a una luz para que te vean bien.', girarBoton: 'Girar', 
     
     
-    llamandoT: 'Llamando', conectandoT: 'Conectando',
+    llamandoT: 'Llamando', conectandoT: 'Conectando', sinTiempoT: 'Sin tiempo',
+    esperaSinTiempo: 'No te quedan minutos para empezar. Paga quien invita: compra tiempo para hablar.',
     otroSalio: 'La otra persona ha salido de 1718. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
@@ -302,7 +303,8 @@
     pocaLuzT: 'It is very dark', pocaLuz: 'Face a light so they can see you clearly.', girarBoton: 'Flip', 
     
     
-    llamandoT: 'Calling', conectandoT: 'Connecting',
+    llamandoT: 'Calling', conectandoT: 'Connecting', sinTiempoT: 'No time left',
+    esperaSinTiempo: 'You have no minutes left to start. The person who invites pays: buy time to talk.',
     
     
     

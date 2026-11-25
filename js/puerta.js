@@ -33,6 +33,7 @@
   const paneles = () => [...document.querySelectorAll('.panel')];
   function muestra(cual, focoEn) {
     for (const p of paneles()) {
+      p.classList.remove('sin-tiempo');
       if (p.id === 'panel-' + cual) { p.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { if (!p.hidden) p.classList.add('visible'); })); }
       else { p.classList.remove('visible'); p.hidden = true; }
     }
@@ -40,7 +41,7 @@
     const foco = focoEn || (cual === 'tengo' ? $('#campo-codigo') : cual === 'elige' ? $('#crear') : cual === 'movil' ? $('#movil-continuar') : $('#copiar'));
     setTimeout(() => foco && foco.focus({ preventScroll: true }), quieto ? 0 : 450);
   }
-  function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible'); p.hidden = true; } }
+  function ocultaPaneles() { for (const p of paneles()) { p.classList.remove('visible', 'sin-tiempo'); p.hidden = true; } }
   // Pantalla completa (dueño, 12:30: «cuando entro a la página web, quiero que salga ya en pantalla completa»). Los navegadores no
   // dejan que una página se ponga a pantalla completa sola al cargar: hace falta un gesto. Se pide con «Empezar prueba»,
   // antes de cualquier espera, para que cuente como gesto de la persona. Esc la quita.
@@ -109,7 +110,7 @@
   // que se sabe en el mismo toque (en el móvil, «Compartir» tiene que abrirse en ese toque)
   const sinTiempoParaInvitar = () => {
     const s = M && M.saldo; if (!s || typeof s.gratis !== 'number') return false; // (sin respuesta del relé, no se bloquea)
-    if (s.minutos > 0 || s.gratis > 0) return false;
+    if (s.minutos > 0 || s.gratis >= 1) return false;
     return !Object.values(s.estados || {}).some((v) => v === '?' || v === 'espera'); // (códigos aún por comprobar: no se bloquea)
   };
   const empieza = (t) => {
@@ -131,7 +132,7 @@
   });
 
   const ERRORES = { formato: 'faltan', 'no-vale': 'eNoVale', 'sin-rele': 'eSinRele', 'sin relé': 'eSinRele', 'sin respuesta': 'eSinRele', 'sin-pq': 'eSinPq', 'demasiados intentos': 'eDemasiados', 'sin-codigo': 'eSinCodigo' };
-  function ponError(donde, por) { const e = $(donde === 'tengo' ? '#error-codigo' : '#error-elige'); e.textContent = por ? tr(ERRORES[por] || 'eSinRele') : ''; }
+  function ponError(donde, por) { const e = $(donde === 'tengo' ? '#error-codigo' : '#error-elige'); delete e.dataset.t; e.textContent = por ? tr(ERRORES[por] || 'eSinRele') : ''; }
 
   // ---- crear un código ----
   let reloj = null;
@@ -419,7 +420,7 @@
     if (!r || !r.ok) { window.Elixire.llamaAlEntrar = false; p.classList.remove('esperando'); b.disabled = false; e.textContent = tr(ERRORES[r && r.por] || 'eSinRele'); suena(false); return; }
     codigoEnlace = null; if (semillaEnlace) { semillaEnlace.fill(0); semillaEnlace = null; }
     if (!M.conectada) { estadoInvitado('esperandoVuelva'); suena(true); }
-    clearTimeout(tardaT); tardaT = setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada) estadoInvitado('tardaVuelva'); }, 45000);
+    clearTimeout(tardaT); tardaT = setTimeout(() => { if (abierta === 'invitado' && M.activa && !M.conectada && !$('#panel-invitado').classList.contains('sin-tiempo')) estadoInvitado('tardaVuelva'); }, 45000);
   }
   $('#entrar-llamada').addEventListener('click', () => { pantallaCompleta(); entraLlamada(); });
   // «Llamando…» se oye además de verse (dueño, 17:32: «la persona que invita tiene que sentir… que se está llamando»): el tono de
@@ -456,7 +457,7 @@
     if (abierta !== 'tengo') { window.Elixire.llamaAlEntrar = false; return; }
     if (!r.ok) { window.Elixire.llamaAlEntrar = false; botonEntrar(false); ponError('tengo', r.por); return; }
     // dentro: en cuanto las claves estén acordadas, la sala (sala.js); si la otra persona ya no está, se dice
-    setTimeout(() => { if (abierta === 'tengo' && M.activa && !M.conectada) { botonEntrar(false); ponError('tengo', 'sin-rele'); } }, 30000);
+    setTimeout(() => { if (abierta === 'tengo' && M.activa && !M.conectada && !$('#panel-tengo').classList.contains('sin-tiempo')) { botonEntrar(false); ponError('tengo', 'sin-rele'); } }, 30000);
   });
 
   // lo que dice el motor mientras se espera
@@ -475,6 +476,29 @@
       sinRed = setTimeout(() => { if (crea && abierta === 'crear') ponEstado('reintentando'); if (entra && abierta === 'invitado') estadoInvitado('reintentando'); }, 6000);
     });
     M.on('fin', () => { paraReloj(); if (abierta === 'crear' || abierta === 'tengo') { botonEntrar(false); } });
+    // sin tiempo antes de empezar (dueño, 25 nov 12:22: «le llega la invitación pero no se establece la llamada»): si quien invita
+    // no tiene minutos, el relé no deja pasar nada y los dos se quedaban «Llamando» sin saber por qué. Ahora se dice en los dos
+    // lados: quien invita ve la compra (si compra y pone el código mientras la otra persona espera, se sigue) y quien está
+    // invitado, que paga quien invita. Si llega tiempo, se sigue como antes
+    M.on('tiempo', (x) => {
+      if (!x) return;
+      const crea = abierta === 'crear', inv = abierta === 'invitado', tengo = abierta === 'tengo';
+      if (!crea && !inv && !tengo) return;
+      const p = $('#panel-' + abierta), c = window.ElixireCompra, quien = x.paga === false ? 'invitado' : 'paga';
+      if (!x.agotado) {
+        if (!p.classList.contains('sin-tiempo')) return;
+        p.classList.remove('sin-tiempo'); if (c && c.abierta) c.cierra();
+        if (crea) { titulo('#panel-crear', 'conectandoT'); ponEstado('llegaOtra'); } else if (inv) { titulo('#panel-invitado', 'conectandoT'); estadoInvitado('llegaOtra'); } else ponError('tengo', '');
+        return;
+      }
+      if (p.classList.contains('sin-tiempo')) return;
+      p.classList.add('sin-tiempo'); suena(false); clearTimeout(tardaT);
+      const k = quien === 'invitado' ? 'llSinTiempoInvitado' : 'esperaSinTiempo';
+      if (crea) { titulo('#panel-crear', 'sinTiempoT'); ponEstado(k); }
+      else if (inv) { titulo('#panel-invitado', 'sinTiempoT'); estadoInvitado(k); }
+      else { const e = $('#error-codigo'); e.dataset.t = k; e.textContent = tr(k); }
+      if (c) c.abre(quien === 'invitado' ? 'invitado' : x.de === 'codigo' ? 'tiempo' : 'invitar');
+    });
   }
   // la sala terminó: el monolito se cierra y vuelve la portada
   async function vuelve() {

@@ -782,6 +782,12 @@ html:has(body.cerrado){overflow:hidden;overscroll-behavior:none}
 @keyframes llamandoPunto{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 #panel-crear.enviada .estado,#panel-invitado.esperando .estado{font-size:14px;line-height:1.5;color:#B9C7D4}
 #panel-crear.enviada .estado .punto,#panel-invitado.esperando .estado .punto{display:none}
+/* sin tiempo antes de empezar: sin los puntos de «Llamando», en ámbar */
+#panel-crear.sin-tiempo .llamando i,#panel-invitado.sin-tiempo .llamando i{display:none}
+#panel-crear.sin-tiempo .llamando span,#panel-invitado.sin-tiempo .llamando span{color:#F0C77F}
+.panel.sin-tiempo .estado .punto{background:#F0C77F;box-shadow:0 0 10px rgba(240,199,127,.9);animation:none}
+.panel.sin-tiempo .espera-llamada i{animation:none;opacity:0}
+.panel.sin-tiempo .espera-llamada b{background:#F0C77F;box-shadow:0 0 18px rgba(240,199,127,.9),0 0 44px rgba(240,199,127,.45);animation:none}
 
 /* ==========================================================================================================================
    LAS ESCENAS AL BAJAR (dueño, 17:38–17:39: «como en GUARDIANA, mucho más profesional… convincente»). Cada escena se queda fija

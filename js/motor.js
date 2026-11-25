@@ -958,7 +958,15 @@ const creaMotor = (OPC) => {
     const x = s.tiempo = { de: String(m.de || ''), hasta: (+m.hasta || 0) + dif, fin: ahora + Math.max(0, +m.resto || 0), agotado: m.agotado === 1, cortesia: +m.cortesia || 2, paga: m.paga !== 0 };
     const esperas = s.esperasTiempo || []; s.esperasTiempo = []; for (const f of esperas) f(x);
     clearTimeout(s.agotaT); s.agotaT = null;
-    if (!x.agotado) { s.sinTiempo = false; emite('tiempo', Object.assign({}, x)); return; }
+    if (!x.agotado) {
+      s.sinTiempo = false;
+      // sin tiempo, el relé no dejó pasar las presentaciones: si llega tiempo antes de acordar las claves (quien invita compra
+      // mientras la otra persona espera), se vuelven a presentar, como al entrar
+      if (s.sinPaso && !s.conectado && !s.fin && s.miembros && s.miembros.size) { s.sesion = null; enCola(s, () => presenta(s, null, true)); }
+      s.sinPaso = false;
+      emite('tiempo', Object.assign({}, x)); return;
+    }
+    s.sinPaso = true;
     s.agotaT = setTimeout(() => {
       if (S !== s || s.tiempo !== x) return;
       s.sinTiempo = true;
