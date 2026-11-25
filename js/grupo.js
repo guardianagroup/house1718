@@ -25,6 +25,9 @@
   const movil = matchMedia('(max-width: 760px)');
   // (dueño, 23 nov 13:24: «sí, para todos»): «Añadir» sale a cualquiera en la videollamada, sin enlace especial
   const PRUEBA = true;
+  // Las llamadas en grupo, apagadas para el lanzamiento (dueño, 24 nov 20:50: «de momento quítala hasta que esté bien probada…
+  // guarda la info para mañana añadirla una vez bien comprobada»). Todo el código sigue aquí: para volver a encenderlas, true.
+  const GRUPO_ACTIVO = false;
   const sala = $('#sala'), esc = $('#escena-video');
   const yo = hex(6);
   const esId = (x) => typeof x === 'string' && /^[0-9a-f]{12}$/.test(x);
@@ -264,6 +267,7 @@
 
   // ---- añadir a alguien ----
   async function anade() {
+    if (!GRUPO_ACTIVO) return;
     if (personas() >= MAX) { aviso(tr('grupoLleno')); return; }
     if (movil.matches) return anadeMovil();
     return anadePC();
@@ -409,7 +413,7 @@
     { const t = $('#video-tiempo'); if (t) { if (grupo) t.dataset.gente = tr('personasN').replace('{n}', String(lista.filter((x) => !x.conectando).length)); else delete t.dataset.gente; } }
     if (grupo !== antes) { const S = SALA(); if (S.grupoCambia) S.grupoCambia(grupo); }
     // «Añadir»: con la llamada en marcha y sitio para alguien más
-    const b = $('#b-anadir'); if (b) b.hidden = !(PRUEBA && ts.length && personas() < MAX);
+    const b = $('#b-anadir'); if (b) b.hidden = !(GRUPO_ACTIVO && PRUEBA && ts.length && personas() < MAX);
     // menos caudal por tramo cuantas más personas (3: 720p a 1,5 Mb/s; 4: 540p a 0,9 Mb/s y 24 imágenes por segundo)
     const total = personas(), tope = total >= 4 ? { bps: 900000, escala: 2, fps: 24 } : total === 3 ? { bps: 1500000, escala: 1.5, fps: 30 } : null;
     for (const q of [principal, ...pares()]) { try { q.m.limita(tope); } catch (_) {} }
