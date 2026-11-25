@@ -508,7 +508,9 @@
       mirada = Date.now();
       let v = '';
       try { const r = await fetch('/version.txt?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }); if (r.ok) v = (await r.text()).trim(); } catch (_) { return; }
-      if (!/^\d{8}-\d{2}$/.test(v) || v === VERSION || !tranquila()) return;
+      // (25 nov 11:30): antes pedía dos cifras tras el guion («-12») y las versiones «-1» a «-9» no llegaban a las pestañas abiertas;
+      // por eso las versiones van ahora con dos cifras («20261125-10») y aquí vale cualquiera
+      if (!/^\d{8}-\d{1,3}$/.test(v) || v === VERSION || !tranquila()) return;
       try { if (sessionStorage.getItem('elixire-version') === v) return; sessionStorage.setItem('elixire-version', v); } catch (_) { return; }
       const q = new URLSearchParams(location.search); q.set('v', v);
       location.replace(location.pathname + '?' + q.toString());
