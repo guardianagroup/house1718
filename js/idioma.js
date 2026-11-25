@@ -4,6 +4,7 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    teInvitanVoz: 'LLAMADA DE VOZ POSCUÁNTICA', teInvitanVozTexto: 'Te han invitado a una llamada de voz privada con encriptado poscuántico de extremo a extremo. Al entrar se encenderá tu micrófono.',
     // 1718: comprar tiempo (25 nov 2026)
     compraTituloTiempo: 'Se acabó vuestro tiempo.', compraTituloMas: 'Añade tiempo.',
     codigoFormato: 'Revisa el código: no parece completo.', codigoGuardado: 'Guardado. Se usará en tu próxima conversación.', codigoMirando: 'Comprobando el código…',
@@ -91,6 +92,8 @@
     otroSalio: 'La otra persona ha salido de 1718. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
+    h1Portada: '1718 · Private video and voice calls, end-to-end encrypted',
+    teInvitanVoz: 'POST-QUANTUM VOICE CALL', teInvitanVozTexto: 'You have been invited to a private voice call with post-quantum end-to-end encryption. When you join, your microphone will turn on.',
     // 1718: comprar tiempo (25 nov 2026)
     compraEtiqueta: 'CONVERSATION TIME', compraTituloCortesia: 'Today’s 2 free minutes are up.', compraTituloTiempo: 'Your time is up.', compraTituloMas: 'Add time.',
     compraTexto: 'To keep talking, buy time. Either of you can buy it, and it also works for your next conversations.',
@@ -114,7 +117,7 @@
     faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is a 60-minute code tied to this browser: it only works for whoever uses it first, and to continue on your phone there is “Move to phone”. Time runs by the minute while you are both in the conversation. If you both have time, the person who invited uses theirs first.',
     faq8P: 'What happens when time runs out?', faq8R: 'The call ends and you get the option to buy more. As soon as either of you buys or pastes a code, you can call again in the same conversation.',
     preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day', precio3: 'To try it without paying anything. Paid time is only used while you are both in the conversation, by the minute.', comprar: 'Buy',
-    preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. You can ask for a refund of unused time: <a href="refunds.html">refunds and cancellations</a>.',
+    preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. If you have not used a code, you can ask for a refund within 14 days of purchase: <a href="refunds.html">refunds and cancellations</a>.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with post-quantum encryption.',
     espiaTitulo: 'Browser extension detected{n}', espiaTexto: 'It could read your messages and see the call. For more privacy, use a private window without extensions.', 
@@ -325,7 +328,7 @@
     e7Etiqueta: 'AGAINST THE REST', e7Titulo: 'Your apps for daily life. <em class="c-hielo">1718 for what counts.</em>', e7Texto: 'WhatsApp, Telegram and Signal are fine for everyday use. 1718 is for sensitive conversations: post-quantum encryption, no account, no phone number and no history.',
     no: 'No',
     e8Etiqueta: 'HOW IT WORKS', e8Titulo: 'As simple as <em class="c-verde">tapping a link</em>.',
-    e8P1T: 'Invite.', e8P1: 'Tap “Invite to a call” and send it on WhatsApp.', e8P2T: 'Tap the link.', e8P2: 'Whoever receives it taps it and the call starts by itself.',
+    e8P1T: 'Invite.', e8P1: 'Choose “Video call” or “Voice call” and send the invitation on WhatsApp.', e8P2T: 'Tap the link.', e8P2: 'Whoever receives it taps it and the call starts by itself.',
     e8P3T: 'Talk.', e8P3: 'Post-quantum end-to-end encryption. When you hang up, nothing remains.',
     e9Titulo: 'If it matters, <em class="c-ambar">talk here</em>.',
     e9Texto: 'For a board meeting, a deal, a contract or a personal conversation that must stay between you. Designed for individuals, law firms, clinics and companies.',

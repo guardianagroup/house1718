@@ -2013,3 +2013,29 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .consola .portada-botones .cristal.grande .ico-boton{position:relative;left:auto;top:auto;transform:none;width:36px;height:36px;padding:8px;flex:none}
   .consola .portada-botones .cristal.grande>span{font-size:12px}
 }
+/* ---------- revisión como cliente (dueño, 25 nov 10:45–10:52: «una revisión a fondo en modo cliente en pc, móvil y tablet»; «que todo
+   guarde orden visual profesional») ---------- */
+/* el título de la página, para buscadores y lectores de pantalla (no se ve) */
+.oculto-visual{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* las preguntas, alineadas a la izquierda con su título, como el resto de secciones (antes iban centradas y el título a la izquierda) */
+.preguntas .faq{margin:28px 0 0}
+/* la cursiva de los titulares se inclina hacia la palabra siguiente: un pelo de aire para que no se pegue («overheard along») */
+.escena h2 em{padding-right:.05em}
+/* la conversación escrita empieza abajo, junto a donde se escribe, como en cualquier chat; en el ordenador, con la llamada en pequeño,
+   los mensajes propios ya no quedan tapados por la tarjeta de la llamada, arriba a la derecha */
+.mensajes>li:first-child:not(.vacio){margin-top:auto}
+/* tableta en vertical y ventanas de 761 a 980 px: la llamada en grande ocupa toda la pantalla (antes, una franja de 16:10 arriba y
+   el resto vacío) y, en pequeño, la conversación llega hasta abajo */
+@media (min-width:761px) and (max-width:980px){
+  .sala.grande:not([hidden]),.sala.mini:not([hidden]){display:grid;overflow:hidden}
+  .sala.grande>.sala-cuerpo,.sala.mini>.sala-cuerpo{display:grid;min-height:0}
+  .sala.grande .escena-video{aspect-ratio:auto;min-height:0}
+  .sala.mini .chat{height:auto;min-height:0}
+}
+/* en la tableta (táctil), «Ver el chat» también: antes solo se llegaba a la conversación cuando entraba un mensaje */
+@media (pointer:coarse) and (min-width:761px){ .sala .sala-botones #b-verchat:not([hidden]){display:inline-flex!important} }
+/* en el móvil, los enlaces del pie se tocan con más margen (la zona de toque crece; el dibujo no cambia) */
+@media (pointer:coarse){ .pie-enlaces a{position:relative} .pie-enlaces a::before{content:'';position:absolute;inset:-7px -4px} }
+/* llamada de voz en móviles de pantalla baja (Safari con sus barras): el cristal, un poco más pequeño en su sitio, para que la punta no
+   toque «Conexión excelente»; la caja se encoge alrededor del centro del cristal (50 % 31 %), así la imagen se escala sin moverse */
+@media (max-width:760px) and (max-height:740px){ .tarjeta-voz .tv-cristal{inset:auto;left:6%;top:3.72%;width:88%;height:88%} }

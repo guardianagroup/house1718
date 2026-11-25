@@ -173,8 +173,10 @@
   function textoInvitacion(sem, voz) {
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
     if (voz == null) voz = window.Elixire.tipo === 'voz';
-    // la tarjeta de WhatsApp (imagen y texto propios) está en /invitacion/ y /invitation/; al tocarla, esta página con el fragmento
-    const enlace = location.origin + (lengua === 'es' ? '/invitacion/' : '/invitation/') + '#e=' + sem + (voz ? '&voz=1' : '');
+    // la tarjeta de WhatsApp (imagen y texto propios) está en /invitacion/ y /invitation/; al tocarla, esta página con el fragmento.
+    // La de voz tiene su propia tarjeta (/invitacion/voz/, /invitation/voice/), para que WhatsApp no diga «videollamada» (25 nov)
+    const ruta = lengua === 'es' ? (voz ? '/invitacion/voz/' : '/invitacion/') : (voz ? '/invitation/voice/' : '/invitation/');
+    const enlace = location.origin + ruta + '#e=' + sem + (voz ? '&voz=1' : '');
     return tr(voz ? 'mensajeLlamadaVoz' : 'mensajeLlamada').replace('{enlace}', enlace);
   }
   function abreWhatsApp(texto) { try { const w = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); if (w) { try { w.opener = null; } catch (_) {} } return !!w; } catch (_) { return false; } }
@@ -299,7 +301,13 @@
     // (la invitación a una llamada de voz lleva «&voz=1»: quien la abre entra sin cámara)
     window.Elixire = window.Elixire || {};
     const partes = String(location.hash || '').split('&'), extra = new Set(partes.slice(1));
-    if (extra.has('voz=1')) { window.Elixire.tipo = 'voz'; window.Elixire.tipoEnlace = true; if (M && M.modoVoz) M.modoVoz(true); }
+    if (extra.has('voz=1')) {
+      window.Elixire.tipo = 'voz'; window.Elixire.tipoEnlace = true; if (M && M.modoVoz) M.modoVoz(true);
+      // la pantalla de quien recibe la invitación dice «llamada de voz» y que se enciende solo el micrófono (25 nov)
+      const et = $('#t-invitado'), tx = document.querySelector('#panel-invitado [data-t="teInvitanTexto"]');
+      if (et) { et.dataset.t = 'teInvitanVoz'; et.textContent = tr('teInvitanVoz'); }
+      if (tx) { tx.dataset.t = 'teInvitanVozTexto'; tx.textContent = tr('teInvitanVozTexto'); }
+    }
     else if (/^#[ec]=/.test(partes[0] || '')) window.Elixire.tipoEnlace = true;
     const limpio = partes[0] + [...extra].filter((x) => /^(l=(es|en)|ll=1)$/.test(x)).sort((a, b) => (a < b ? -1 : 1)).map((x) => '&' + x).join('');
     const e = /^#e=([A-Za-z0-9_-]{43})(?:&l=(?:es|en))?(&ll=1)?$/.exec(limpio);
