@@ -16,10 +16,10 @@
       textoMal: 'No se ha guardado ningún código. Puedes intentarlo de nuevo desde 1718.',
       textoEspera: 'En cuanto se confirme, Dodo Payments te manda el código por correo. Pégalo en 1718, en «¿Ya tienes un código?».',
       textoNada: (n) => (n ? 'En este navegador hay ' + (n === 1 ? '1 código guardado.' : n + ' códigos guardados.') : 'Al pagar, tu código se guarda aquí y también te llega por correo.'),
-      codigosT: (n) => (n === 1 ? 'Tu código (también te llega por correo):' : 'Tus códigos (también te llegan por correo):'),
+      codigosT: (n) => (n === 1 ? 'Tu código (también te llega por correo, como comprobante):' : 'Tus códigos (también te llegan por correo, como comprobante):'),
       copiar: 'Copiar', copiado: 'Copiado', cerrar: 'Volver a la conversación', ir: 'Ir a 1718',
       cerrarNo: 'Cierra esta pestaña y vuelve a la de 1718.',
-      nota: 'Los códigos no caducan. Guárdalos si vas a borrar los datos de este navegador o a usarlos en otro aparato.',
+      nota: 'Los códigos no caducan y quedan unidos a este navegador: no los compartas. Si vas a borrar los datos del navegador, gasta antes el tiempo o escríbenos.',
     },
     en: {
       etiqueta: 'PAYMENT', ok: 'PAYMENT COMPLETE', recibido: 'PAYMENT RECEIVED', mal: 'PAYMENT NOT COMPLETED',
@@ -30,10 +30,10 @@
       textoMal: 'No code was saved. You can try again from 1718.',
       textoEspera: 'As soon as it is confirmed, Dodo Payments will email you the code. Paste it into 1718, under “Already have a code?”.',
       textoNada: (n) => (n ? 'This browser has ' + (n === 1 ? '1 saved code.' : n + ' saved codes.') : 'When you pay, your code is saved here and also sent to you by email.'),
-      codigosT: (n) => (n === 1 ? 'Your code (also sent to you by email):' : 'Your codes (also sent to you by email):'),
+      codigosT: (n) => (n === 1 ? 'Your code (also emailed to you, as a receipt):' : 'Your codes (also emailed to you, as a receipt):'),
       copiar: 'Copy', copiado: 'Copied', cerrar: 'Back to the conversation', ir: 'Go to 1718',
       cerrarNo: 'Close this tab and go back to the 1718 one.',
-      nota: 'Codes do not expire. Keep them if you are going to clear this browser’s data or use them on another device.',
+      nota: 'Codes do not expire and are tied to this browser: do not share them. If you are going to clear this browser’s data, use your time first or write to us.',
     },
   };
   let lengua = null; try { lengua = localStorage.getItem('elixire-lengua'); } catch (_) {}

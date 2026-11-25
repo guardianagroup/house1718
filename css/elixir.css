@@ -1829,10 +1829,15 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    con su voz */
 .tarjeta-voz{position:absolute;inset:0;z-index:2;pointer-events:none}
 .tarjeta-voz[hidden]{display:none}
+/* el cristal flota (dueño, 25 nov 09:55: «déjalo que se mueva… que no vaya a tirones»): va en una capa aparte, del mismo tamaño que el
+   fondo (que ya no lo lleva), y solo cambia de posición: lo mueve la tarjeta gráfica sin tocar la página, así que no da tirones */
+.tarjeta-voz .tv-cristal{position:absolute;inset:0;background:url(../img/roca-voz-cristal.webp) 50% 34%/cover no-repeat;transform-origin:50% 31%;animation:cristal-flota 8s ease-in-out infinite;will-change:transform;backface-visibility:hidden}
+@keyframes cristal-flota{0%,100%{transform:translate3d(0,0,0) rotate(-.8deg)}50%{transform:translate3d(0,-1.8%,0) rotate(.8deg) scale(1.015)}}
+@media (prefers-reduced-motion:reduce){.tarjeta-voz .tv-cristal{animation:none}}
 .tarjeta-voz .tv-luz{position:absolute;left:50%;top:31%;width:min(62%,460px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(156,195,228,.55),rgba(156,195,228,0));
   opacity:calc(var(--nivel,0) * .9);transform:translate(-50%,-50%) scale(calc(.9 + var(--nivel,0) * .25));mix-blend-mode:screen;transition:opacity .14s linear,transform .14s linear}
 .tarjeta-voz .tv-t{position:absolute;left:0;right:0;top:66%;text-align:center;font:500 15px/1.3 var(--ui);letter-spacing:.04em;color:#F4F6F8;text-shadow:0 1px 12px rgba(0,0,0,.95)}
-.sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz.webp) 50% 34%/cover no-repeat}
+.sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz-fondo.webp) 50% 34%/cover no-repeat}
 .sala.solo-voz #otro-chat{display:none!important}
 .sala.solo-voz #video-suyo,.sala.solo-voz #video-mio,.sala.solo-voz .video-mio{visibility:hidden}
 .sala.solo-voz #video-velo{display:none!important}
@@ -1848,7 +1853,8 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    desaparecen», como en la videollamada): en el centro, la roca; abajo, los botones redondos e iguales, como en el teléfono (tres
    por fila y «Colgar» solo, en el centro) */
 @media (max-width:760px){
-  .sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz-movil2.webp) 50% calc(30% + env(safe-area-inset-top, 0px) * .55)/cover no-repeat}
+  .sala.solo-voz:not(.en-grupo) .escena-video{background:#05070A url(../img/roca-voz-movil-fondo.webp) 50% calc(30% + env(safe-area-inset-top, 0px) * .55)/cover no-repeat}
+  .tarjeta-voz .tv-cristal{background-image:url(../img/roca-voz-movil-cristal.webp);background-position:50% calc(30% + env(safe-area-inset-top, 0px) * .55);transform-origin:50% 31%}
   .tarjeta-voz .tv-luz{top:calc(32% + env(safe-area-inset-top, 0px) * .55);width:82vw}
   .tarjeta-voz .tv-t{display:none}
   .sala.solo-voz.en-llamada .escena-video::after{background:linear-gradient(180deg,rgba(6,8,12,.6) 0,transparent 150px,transparent 50%,rgba(6,8,12,.72) 72%,rgba(6,8,12,.92) 100%)}
@@ -1966,7 +1972,8 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .compra-fila .cristal{height:44px;flex:0 0 auto}
 .compra-estado{min-height:1.2em;font-size:13.5px}
 .compra-estado.bien{color:var(--verde)}
-.video-tiempo small.queda{margin:0 0 0 12px;color:#F0C77F}
+.video-tiempo small.queda{margin:0 0 0 12px;color:var(--texto-2)}
+.video-tiempo.bajo small.queda{color:#F0C77F}
 .video-tiempo.poco{color:#E07A6C;border-color:rgba(224,122,108,.55)}
 .video-tiempo.poco small{color:#E07A6C}
 @media (max-width:760px){
@@ -1976,3 +1983,6 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .compra-op b{font-size:22px}
   .compra-fila input{font-size:16px}
 }
+/* el reloj de la llamada, con «Gratis» delante, en una sola línea: centrado arriba en el móvil no se parte ni se monta */
+.video-tiempo{white-space:nowrap}
+@media (max-width:760px){ .sala .video-tiempo,.sala.video-grande .video-tiempo{width:max-content;max-width:calc(100vw - 24px)} .sala .video-tiempo small,.sala .video-tiempo small.queda{margin:0} }

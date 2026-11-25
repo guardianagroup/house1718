@@ -27,11 +27,25 @@
     avisa(); return nuevos.length;
   }
   function quita(lista) { const fuera = new Set(lista || []); const ya = codigos(); const q = ya.filter((k) => !fuera.has(k)); if (q.length !== ya.length) guarda(q); }
+  // la clave de este navegador (dueño, 25 nov 10:07: el código, «solamente para el que tiene el dinero pagado»): 32 bytes al azar que
+  // se guardan aquí y van al relé con los códigos; el relé une cada código al primer navegador que lo usa (guarda solo un resumen de
+  // la clave). Al pasar la conversación al móvil, el móvil recibe también esta clave (por la sesión encriptada) y la añade a las suyas.
+  const LLAVE = '1718-llave', LLAVES = '1718-llaves', esLlave = (l) => /^[0-9a-f]{64}$/.test(String(l || ''));
+  function miLlave() {
+    try { let l = localStorage.getItem(LLAVE); if (!esLlave(l)) { l = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem(LLAVE, l); } return l; } catch (_) { return ''; }
+  }
+  function llaves() { const v = [miLlave()]; try { const x = JSON.parse(localStorage.getItem(LLAVES) || '[]'); if (Array.isArray(x)) for (const l of x) if (esLlave(l) && !v.includes(l)) v.push(l); } catch (_) {} return v.filter(Boolean).slice(0, 6); }
+  function anadeLlaves(lista) {
+    const mia = miLlave(), v = (Array.isArray(lista) ? lista : []).filter((l) => esLlave(l) && l !== mia); if (!v.length) return;
+    let ya = []; try { const x = JSON.parse(localStorage.getItem(LLAVES) || '[]'); if (Array.isArray(x)) ya = x.filter(esLlave); } catch (_) {}
+    try { localStorage.setItem(LLAVES, JSON.stringify([...new Set(v.concat(ya))].slice(0, 5))); } catch (_) {}
+  }
   // otra pestaña (pago.html) guardó un código: el motor de esta pestaña se lo pasa al relé
   addEventListener('storage', (e) => { if (e.key === CLAVE) avisa(); });
 
   // ---------- el pago: un enlace de Dodo (en otra pestaña), con 1 o 5 horas ----------
-  const enlace = (horas) => 'https://checkout.dodopayments.com/buy/' + PRODUCTO + '?quantity=' + (horas === 5 ? 5 : 1) + '&redirect_url=' + encodeURIComponent(VUELTA);
+  // (showDiscounts=false: sin «¿Tiene un código de descuento?» en el pago; dueño, 25 nov 09:59)
+  const enlace = (horas) => 'https://checkout.dodopayments.com/buy/' + PRODUCTO + '?quantity=' + (horas === 5 ? 5 : 1) + '&redirect_url=' + encodeURIComponent(VUELTA) + '&showDiscounts=false';
   for (const a of document.querySelectorAll('a[data-horas]')) a.href = enlace(+a.dataset.horas);
 
   // ---------- la ventana de compra (en la conversación) ----------
@@ -70,10 +84,11 @@
   // lo que dice el relé de los códigos: los que ya no valen o no tienen minutos se borran de este navegador
   if (M) M.on('saldo', (s) => {
     if (!s || !s.estados) return;
-    const fuera = Object.keys(s.estados).filter((k) => s.estados[k] === 'mal' || s.estados[k] === 0); // (los que no valen o ya no tienen minutos)
+    const fuera = Object.keys(s.estados).filter((k) => s.estados[k] === 'mal' || s.estados[k] === 0 || s.estados[k] === 'otro'); // (los que no valen, son de otro navegador o ya no tienen minutos)
     if (esperando) {
       const k = esperando, x = s.estados[k];
       if (x === 'mal') { esperando = null; estadoCodigo('codigoMal'); }
+      else if (x === 'otro') { esperando = null; estadoCodigo('codigoOtro'); }
       else if (x === 0) { esperando = null; estadoCodigo('codigoGastado'); }
       else if (typeof x === 'number') { esperando = null; estadoCodigo('codigoBien', String(s.minutos || x), true); }
       else if (x === 'espera') { esperando = null; estadoCodigo('codigoEspera'); }
@@ -83,5 +98,5 @@
     if (fuera.length) quita(fuera);
   });
 
-  window.ElixireCompra = { codigos, anade, quita, enlace, abre, cierra, get abierta() { return !!(caja && !caja.hidden); }, get motivo() { return motivo; } };
+  window.ElixireCompra = { codigos, anade, quita, llaves, anadeLlaves, paraRele: () => ({ codigos: codigos().slice(-20), llaves: llaves() }), enlace, abre, cierra, get abierta() { return !!(caja && !caja.hidden); }, get motivo() { return motivo; } };
 })();

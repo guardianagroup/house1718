@@ -59,7 +59,9 @@
   }
 
   // 1718: los códigos de compra guardados en este navegador (js/compra.js los guarda; aquí solo se leen)
-  function codigosGuardados() { try { const x = JSON.parse(localStorage.getItem('1718-codigos') || '[]'); return Array.isArray(x) ? x.filter((k) => typeof k === 'string').slice(0, 20) : []; } catch (_) { return []; } }
+  function codigosGuardados() { try { const x = JSON.parse(localStorage.getItem('1718-codigos') || '[]'); return Array.isArray(x) ? x.filter((k) => typeof k === 'string').slice(-20) : []; } catch (_) { return []; } }
+  // los códigos y las claves de este navegador (js/compra.js; sin ella, solo los códigos)
+  function datosCodigos() { try { const c = window.ElixireCompra; if (c && c.paraRele) return c.paraRele(); } catch (_) {} return { codigos: codigosGuardados(), llaves: [] }; }
   function crea(o) {
     o = o || {};
     const esc = {}; const on = (t, f) => { (esc[t] = esc[t] || []).push(f); };
@@ -112,7 +114,7 @@
         if (typeof e.data === 'string') {
           let m; try { m = JSON.parse(e.data); } catch (_) { return; }
           switch (m.t) {
-            case 'hola': tiempo = m.tiempo === 1; iceSala = ''; if (tiempo) { try { ws.send(JSON.stringify({ t: 'codigos', codigos: codigosGuardados() })); } catch (_) {} } region = m.region || ''; llamadas = !!m.llamadas; ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; avisos = typeof m.avisos === 'string' ? m.avisos : ''; marca = m.marca === 1; reto = /^[0-9a-f]{32}$/.test(m.reto || '') ? m.reto : ''; conNumeros = m.num === 1; emite('hola', { region, llamadas, ice, avisos, reto, num: conNumeros });  conBuzon = m.buzon === 1; break;
+            case 'hola': tiempo = m.tiempo === 1; iceSala = ''; if (tiempo) { try { ws.send(JSON.stringify(Object.assign({ t: 'codigos' }, datosCodigos()))); } catch (_) {} } region = m.region || ''; llamadas = !!m.llamadas; ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; avisos = typeof m.avisos === 'string' ? m.avisos : ''; marca = m.marca === 1; reto = /^[0-9a-f]{32}$/.test(m.reto || '') ? m.reto : ''; conNumeros = m.num === 1; emite('hola', { region, llamadas, ice, avisos, reto, num: conNumeros });  conBuzon = m.buzon === 1; break;
             case 'ice': ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; iceSala = ice.length ? String(m.sala || '') : ''; emite('ice', ice); while (esperasIce.length) { try { esperasIce.shift()(m); } catch (_) {} } break;
             case 'tiempo': emite('tiempo', m); break;
             case 'codigos': saldo = m; emite('codigos', m); break;
@@ -224,7 +226,7 @@
         setTimeout(() => f(null), 6000);
       });
     }
-    function ponCodigos(lista) { if (abierto && tiempo) { try { ws.send(JSON.stringify({ t: 'codigos', codigos: lista || codigosGuardados() })); } catch (_) {} } }
+    function ponCodigos() { if (abierto && tiempo) { try { ws.send(JSON.stringify(Object.assign({ t: 'codigos' }, datosCodigos()))); } catch (_) {} } }
     const pregunta = (t, m) => new Promise((res) => { if (!abierto) return res({ ok: false, por: 'sin relé' }); esperas[t] = res; ws.send(JSON.stringify(Object.assign({ t }, m))); setTimeout(() => { if (esperas[t] === res) { delete esperas[t]; res({ ok: false, por: 'sin respuesta' }); } }, 8000); });
     const invita = (codigo, sobre, sal) => pregunta('invita', { codigo, sobre, sal });
     const busca = (codigo) => pregunta('busca', { codigo });

@@ -1452,8 +1452,9 @@ const creaMotor = (OPC) => {
     vueltaMia = TEL ? null : C.nuevaSemilla();
     const dest = t.vuelve ? 'pc' : 'movil';
     // (1718: con la conversación van los códigos de compra de este navegador, para que el otro aparato siga pagando con ellos)
-    const cod = window.ElixireCompra ? window.ElixireCompra.codigos() : [];
-    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: vueltaMia ? C.b64u(vueltaMia) : undefined, cod: cod.length ? cod : undefined });
+    // (y las claves de este navegador, que son las que hacen valer esos códigos: son de esta misma persona)
+    const cod = window.ElixireCompra ? window.ElixireCompra.codigos() : [], ll = cod.length && window.ElixireCompra ? window.ElixireCompra.llaves() : [];
+    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: vueltaMia ? C.b64u(vueltaMia) : undefined, cod: cod.length ? cod : undefined, ll: ll.length ? ll : undefined });
     enviaControl(s, { tipo: 'traspaso', k: C.b64u(k), llamada: enLlamada ? 1 : 0, dest });
     k.fill(0);
     s.trasp.plazo = setTimeout(() => acabaTraspaso(true), 7000);
@@ -1503,6 +1504,7 @@ const creaMotor = (OPC) => {
       s.traspasando = true;
       enviaControl(s, { tipo: 'par', que: 'ok' });
       // los códigos de compra del otro aparato: se guardan aquí y van al relé antes de entrar en la conversación nueva
+      if (Array.isArray(j.ll) && window.ElixireCompra) window.ElixireCompra.anadeLlaves(j.ll.slice(0, 6));
       if (Array.isArray(j.cod) && window.ElixireCompra) window.ElixireCompra.anade(j.cod.slice(0, 40), true);
       const usado = Math.max(0, PRUEBA_MS - Math.max(0, +j.resto || 0)), reanuda = j.llamada === 1;
       let v = null; try { v = j.v ? C.deB64u(String(j.v)) : null; } catch (_) { v = null; }

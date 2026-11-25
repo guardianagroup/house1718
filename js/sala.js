@@ -1090,7 +1090,10 @@
   // los quite tocando… si no, estoy viendo todo el tiempo los botones y eso mete mucho ruido»). Un toque en el vídeo los saca (y se
   // vuelven a esconder a los 4 s); otro toque, fuera. Mientras se usan (un botón, el menú de enviar o el chat), no se esconden.
   let tBotones = 0, enMarchaBotones = false;
-  const escondeBotones = () => { clearTimeout(tBotones); if (enMarchaBotones && movil.matches && !enChat && menuEnviar.hidden) sala.classList.add('sin-botones'); };
+  // (dueño, 25 nov 09:56: también en el ordenador: «3 segundos y se oculte, y cuando pasas por encima se vuelve a poner»; con el ratón
+  // encima de los botones no se esconden)
+  let sobreBotones = false;
+  const escondeBotones = () => { clearTimeout(tBotones); if (enMarchaBotones && !sobreBotones && !enChat && menuEnviar.hidden) sala.classList.add('sin-botones'); };
   const muestraBotones = (ms) => { sala.classList.remove('sin-botones'); clearTimeout(tBotones); if (enMarchaBotones) tBotones = setTimeout(escondeBotones, ms || 3000); }; // (3 s sin tocar nada)
   function botonesSolos(si) {
     if (si && !enMarchaBotones && !/[?&]botones=fijos\b/.test(location.search)) { enMarchaBotones = true; muestraBotones(3000); } // (fijos: solo en pruebas)
@@ -1102,6 +1105,10 @@
     if (sala.classList.contains('sin-botones')) muestraBotones(); else escondeBotones();
   });
   $('#controles').addEventListener('pointerdown', () => { if (enMarchaBotones) muestraBotones(3000); });
+  $('#escena-video').addEventListener('pointermove', (e) => { if (enMarchaBotones && e.pointerType === 'mouse') muestraBotones(3000); }, { passive: true });
+  $('#controles').addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; sobreBotones = true; if (enMarchaBotones) { clearTimeout(tBotones); sala.classList.remove('sin-botones'); } });
+  $('#controles').addEventListener('pointerleave', (e) => { if (e.pointerType !== 'mouse') return; sobreBotones = false; if (enMarchaBotones) muestraBotones(3000); });
+  addEventListener('keydown', () => { if (enMarchaBotones && !movil.matches) muestraBotones(3000); }, { passive: true });
   // ---- la llamada de voz (dueño, 23 nov 15:47–15:51): sin cámara, una tarjeta con la persona y un aro que late con su voz; el
   // botón de la cámara dice «Vídeo» y pasa a videollamada sin colgar (a la otra persona le llega tu imagen; si quiere, enciende la suya)
   let vozT = null, tarjetaVoz = null;
@@ -1117,7 +1124,7 @@
     if (!si) { if (tarjetaVoz) tarjetaVoz.hidden = true; clearInterval(vozT); vozT = null; return; }
     if (!tarjetaVoz) {
       tarjetaVoz = document.createElement('div'); tarjetaVoz.className = 'tarjeta-voz'; tarjetaVoz.setAttribute('aria-hidden', 'true');
-      tarjetaVoz.innerHTML = '<span class="tv-luz"></span><span class="tv-t"></span>';
+      tarjetaVoz.innerHTML = '<span class="tv-cristal"></span><span class="tv-luz"></span><span class="tv-t"></span>';
       $('#escena-video').append(tarjetaVoz);
     }
     tarjetaVoz.hidden = false;
@@ -1216,11 +1223,14 @@
   function abreCompra() { const c = Cp(); if (c) c.abre(tiempoDe === 'codigo' ? 'tiempo' : 'cortesia'); }
   function pintaReloj(t, lleva) {
     const x = M.tiempo, r = x && !x.agotado ? Math.max(0, x.fin - Date.now()) : null;
-    t.classList.remove('poco');
+    t.classList.remove('poco', 'bajo');
     if (x && x.de === 'cortesia' && r != null) { const s = document.createElement('small'); s.textContent = tr('gratis'); t.append(s, document.createTextNode(mmss(r))); t.classList.toggle('poco', r < 30000); return; }
     t.append(document.createTextNode(mmss(lleva)));
-    if (x && x.de === 'codigo' && r != null && r < 5 * 60000) { const s = document.createElement('small'); s.className = 'queda'; s.textContent = tr('quedan').replace('{t}', mmss(r)); t.append(s); t.classList.toggle('poco', r < 60000); }
+    // (dueño, 25 nov 10:04: «he comprado 1 hora, quiero verlo en pantalla»): con tiempo comprado, siempre lo que queda (el de los dos)
+    if (x && x.de === 'codigo' && r != null) { const s = document.createElement('small'); s.className = 'queda'; s.textContent = tr('quedan').replace('{t}', hms(r)); t.append(s); t.classList.toggle('bajo', r < 5 * 60000); t.classList.toggle('poco', r < 60000); }
+    else t.classList.remove('bajo');
   }
+  const hms = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(q / 3600), m = Math.floor((q % 3600) / 60), s = q % 60; return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') : m + ':' + String(s).padStart(2, '0'); };
   function relojChat(lleva) { const x = M.tiempo; return x && x.de === 'cortesia' && !x.agotado ? tr('gratis') + ' ' + mmss(Math.max(0, x.fin - Date.now())) : mmss(lleva); }
   M.on('tiempo', (x) => {
     if (!x) return;
@@ -1266,11 +1276,12 @@
   });
   $('#aceptar').addEventListener('click', () => M.contestar());
   $('#rechazar').addEventListener('click', () => M.rechazar());
+  // Colgar termina la conversación entera, como «Terminar» (dueño, 25 nov 10:09: «al colgar la llamada no sale terminada y se va al
+  // chat; quiero que se cierre totalmente»): se borra todo en los dos lados y sale «Conversación terminada». (Cuando se acaba el
+  // tiempo, la llamada se corta sin terminar la conversación, para poder comprar y seguir.)
   $('#b-colgar').addEventListener('click', () => {
-    const g = G(), enLaPrincipal = M.estadoLlamada().estado !== 'libre';
-    if (g) g.sal(); M.colgar();
-    // (si la persona de la conversación ya había colgado, la llamada que quedaba era la del grupo: se acaba aquí)
-    if (g && !enLaPrincipal && abierta) { if (finPendiente || !M.activa) finSala(finPendiente || { motivo: 'mio' }); else pintaLlamada({ estado: 'fin', motivo: 'mio' }); }
+    const g = G(); if (g) g.sal();
+    M.termina('mio'); if (!M.activa && abierta) finSala({ motivo: 'mio' });
   });
   $('#b-micro').addEventListener('click', (e) => (G() || M).micro(e.currentTarget.getAttribute('aria-pressed') !== 'true'));
   $('#b-camara').addEventListener('click', async (e) => {
