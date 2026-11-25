@@ -4,6 +4,15 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    // 1718: comprar tiempo (25 nov 2026)
+    compraTituloTiempo: 'Se acabó vuestro tiempo.', compraTituloMas: 'Añade tiempo.',
+    codigoFormato: 'Revisa el código: no parece completo.', codigoGuardado: 'Guardado. Se usará en tu próxima conversación.', codigoMirando: 'Comprobando el código…',
+    codigoSinRed: 'No hay respuesta del servidor. Inténtalo de nuevo.', codigoMal: 'Ese código no vale.', codigoGastado: 'Ese código ya no tiene minutos.',
+    codigoBien: 'Código aceptado: tienes {m} minutos.', codigoPendiente: 'No se ha podido comprobar ahora. Queda guardado y se comprobará al usarlo.', codigoEspera: 'Demasiados intentos. Espera un minuto y vuelve a probar.',
+    gratis: 'Gratis', quedan: 'Quedan {t}', llSinTiempo: 'Se acabó vuestro tiempo.', llSinCortesia: 'Se acabaron los 2 minutos gratis de hoy.', hayTiempo: 'Ya hay tiempo. Podéis volver a llamar.',
+    sinTiempoTexto: 'Para seguir hablando, compra tiempo.', comprarTiempo: 'Comprar tiempo',
+    avisoCortesiaT: 'Quedan 30 segundos gratis', avisoCortesia: 'Después, la llamada se corta. Para seguir, compra tiempo.',
+    avisoTiempoT: 'Quedan 2 minutos', avisoTiempo: 'Se acaba vuestro tiempo. Compra más para que no se corte.',
     enPcTexto: 'Ya puedes cerrar esta pestaña. En este móvil no queda nada de la llamada.', pcVuelveEtiqueta: 'DE VUELTA', pcVuelveTitulo: 'La llamada vuelve a este ordenador.', pcVuelveTexto: 'Conectando… En unos segundos la tienes aquí, en grande.', llamadaAqui: 'Llamada en curso · 1718',
     verElChat: 'Ver el chat', ampliarLl: 'Ampliar',
     // la llamada en grupo
@@ -82,15 +91,30 @@
     otroSalio: 'La otra persona ha salido de 1718. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
+    // 1718: comprar tiempo (25 nov 2026)
+    compraEtiqueta: 'CONVERSATION TIME', compraTituloCortesia: 'Today’s 2 free minutes are up.', compraTituloTiempo: 'Your time is up.', compraTituloMas: 'Add time.',
+    compraTexto: 'To keep talking, buy time. Either of you can buy it, and it also works for your next conversations.',
+    compra1T: '1 hour', compra1P: 'USD 5', compra5T: '5 hours', compra5P: 'USD 25',
+    compraNota: 'One-time payment with Dodo Payments, no subscription. It opens in a new tab: when you are done, come back to this one and your time will be there.',
+    compraTengo: 'Already have a code?', compraPega: 'Paste your code here', compraUsar: 'Use', ahoraNo: 'Not now',
+    codigoFormato: 'Check the code: it does not look complete.', codigoGuardado: 'Saved. It will be used in your next conversation.', codigoMirando: 'Checking the code…',
+    codigoSinRed: 'No answer from the server. Please try again.', codigoMal: 'That code is not valid.', codigoGastado: 'That code has no minutes left.',
+    codigoBien: 'Code accepted: you have {m} minutes.', codigoPendiente: 'It could not be checked right now. It is saved and will be checked when used.', codigoEspera: 'Too many attempts. Wait a minute and try again.',
+    gratis: 'Free', quedan: '{t} left', llSinTiempo: 'Your time is up.', llSinCortesia: 'Today’s 2 free minutes are up.', hayTiempo: 'Time added. You can call again.',
+    sinTiempoTexto: 'To keep talking, buy time.', comprarTiempo: 'Buy time',
+    avisoCortesiaT: '30 free seconds left', avisoCortesia: 'Then the call will end. To keep going, buy time.',
+    avisoTiempoT: '2 minutes left', avisoTiempo: 'Your time is running out. Buy more so the call is not cut.',
     faqEtiqueta: 'QUESTIONS', faqTitulo: 'What people usually ask us.', 
     faq1P: 'Do I need to install anything or create an account?', faq1R: 'No. It works in the browser on your phone or computer, with an invitation link. If you like, you can add 1718 to your home screen like an app.',
     faq2P: 'Is anything from the conversation stored?', faq2R: 'No. The conversation only exists on the screens of those taking part and is erased when you close it. The server relays encrypted data it cannot read.',
     faq3P: 'Can anyone listen in on the call?', faq3R: 'The call is end-to-end encrypted with hybrid post-quantum cryptography. Keys are created on your devices and the server only relays data it cannot read. One caveat: if a device is infected, whoever controls it sees what you see.',
     faq4P: 'What does “post-quantum” mean?', faq4R: 'That, on top of classical cryptography, we use ML-KEM, the standard designed so that what someone captures today stays protected against tomorrow\'s quantum computers.',
     faq5P: 'Does it work on iPhone and Android?', faq5R: 'Yes, in Safari and Chrome, on phones and computers.',
-    faq6P: 'How much does it cost?', faq6R: '1 hour, USD 5, or 5 hours, USD 25, with one-time payments and no subscription. Every call starts with a few free minutes. Until payments go live, it is free.',
-    preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: 'Free minutes', precio3: 'Every call starts with a few free minutes, and paid time is only used while the call is connected.',
-    preciosNota: 'Payments are processed by Dodo Payments. You can ask for a refund of unused time: <a href="refunds.html">refunds and cancellations</a>. Until payments go live, 1718 is free.',
+    faq6P: 'How much does it cost?', faq6R: '1 hour, USD 5, or 5 hours, USD 25, with one-time payments and no subscription. Every day you get 2 free minutes to try it.',
+    faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is saved in this browser as a 60-minute code; it is also sent to you by email, so you can use it on another device. Time runs by the minute while you are both in the conversation. If you both have time, the person who invited uses theirs first.',
+    faq8P: 'What happens when time runs out?', faq8R: 'The call ends and you get the option to buy more. As soon as either of you buys or pastes a code, you can call again in the same conversation.',
+    preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day', precio3: 'To try it without paying anything. Paid time is only used while you are both in the conversation, by the minute.', comprar: 'Buy',
+    preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code that stays saved in this browser and is also sent to you by email. You can ask for a refund of unused time: <a href="refunds.html">refunds and cancellations</a>.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with post-quantum encryption.',
     espiaTitulo: 'Browser extension detected{n}', espiaTexto: 'It could read your messages and see the call. For more privacy, use a private window without extensions.', 
@@ -265,7 +289,7 @@
     notaVoz: 'Voice note', notaEnviada: 'Voice note sent', enviandoNota: 'Sending the voice note…', notaRecibida: 'Voice note', recibiendoNota: 'Receiving a voice note…', escuchar: 'Listen',
     notaSinMicro: 'There is no permission to use the microphone.', notaNo: 'This browser cannot record voice notes.', girarTitulo: 'Turn your phone', girarTexto: '1718 is used in portrait.',
     
-    pieTerminos: 'Terms of use', piePrivacidad: 'Privacy', pieCookies: 'Cookies', pieContacto: 'Contact', piePrecios: 'Pricing', pieReembolsos: 'Refunds', pieCiudad: 'Cartagena de Indias, Colombia', 
+    pieTerminos: 'Terms of use', piePrivacidad: 'Privacy', pieCookies: 'Cookies', pieContacto: 'Contact', pieX: 'X · @1718calls', piePrecios: 'Pricing', pieReembolsos: 'Refunds', pieCiudad: 'Cartagena de Indias, Colombia', 
     
     
     pocaLuzT: 'It is very dark', pocaLuz: 'Face a light so they can see you clearly.', girarBoton: 'Flip', 

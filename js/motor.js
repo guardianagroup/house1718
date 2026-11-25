@@ -57,8 +57,13 @@ const creaMotor = (OPC) => {
     R.on('sala', alSala); R.on('llega', alLlega); R.on('sale', alSale);
     R.on('trama', alTrama);
     R.on('codigo-usado', (b) => { if (S && S.ucod && S.ucod.buzon === b) { S.ucod.usado = true; emite('codigo-usado'); } });
+    // 1718 (25 nov 2026): el relé cuenta el tiempo de cada conversación (cortesía y códigos de compra; ver alTiempo)
+    R.on('tiempo', alTiempo);
+    R.on('codigos', (m) => emite('saldo', m));
     return R;
   }
+  // un código nuevo en este navegador (js/compra.js, o pago.html en otra pestaña): se le pasa al relé en el acto
+  addEventListener('elixire-codigos', () => { if (R) R.ponCodigos(); });
   const conectado = (ms) => new Promise((res) => {
     const r = rele(); if (r.abierto) return res(true);
     const t0 = Date.now(); const i = setInterval(() => { if (r.abierto) { clearInterval(i); res(true); } else if (Date.now() - t0 > (ms || 12000)) { clearInterval(i); res(false); } }, 120);
@@ -85,7 +90,8 @@ const creaMotor = (OPC) => {
     };
     if (!opc.aparte && !opc.continua && T && T.esperaVuelta) finaliza(T, 'nueva', '', true);
     if (opc.aparte) T = s; else S = s;
-    rele().entra(s.id, s.yo, { b: 1 });
+    // (la sala de «Pasar al móvil» va marcada: son los dos aparatos de la misma persona y el relé no le cuenta tiempo)
+    rele().entra(s.id, s.yo, { b: 1, par: s.canal === 'par' });
     return s;
   }
   const soyInicio = (s) => !s.huella || C.hex(s.miHuella) < C.hex(s.huella);
@@ -838,7 +844,8 @@ const creaMotor = (OPC) => {
   function conexion() {
     const ice = R && R.ice && R.ice.length ? R.ice : [];
     if (!LOCAL && !ice.length) throw new Error('sin-turn');
-    const pc = new RTCPeerConnection(Object.assign({ iceServers: ice, iceTransportPolicy: LOCAL && !ice.length ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }, PQ_FLUJOS && L && !L.sinCapa ? { encodedInsertableStreams: true } : {}));
+    // (en las pruebas locales, el relé de pruebas da credenciales de mentira: se habla por la red local)
+    const pc = new RTCPeerConnection(Object.assign({ iceServers: ice, iceTransportPolicy: LOCAL ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }, PQ_FLUJOS && L && !L.sinCapa ? { encodedInsertableStreams: true } : {}));
     pc.addEventListener('track', (e) => {
       ponCapa(pc); if (!L || L.pc !== pc) return;
       const t = e.transceiver;
@@ -888,7 +895,7 @@ const creaMotor = (OPC) => {
     if (x.reofertando || !x.pc) return; x.reofertando = true;
     try {
       const pc = x.pc;
-      try { if (R && R.ice && R.ice.length) pc.setConfiguration({ iceServers: R.ice, iceTransportPolicy: 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }); } catch (_) {}
+      try { if (R && R.ice && R.ice.length) pc.setConfiguration({ iceServers: R.ice, iceTransportPolicy: LOCAL ? 'all' : 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' }); } catch (_) {}
       if (pc.signalingState === 'have-local-offer') { try { await pc.setLocalDescription({ type: 'rollback' }); } catch (_) {} }
       await describe(pc, true, { iceRestart: true });
       await reunido(pc); if (L !== x) return;
@@ -937,10 +944,46 @@ const creaMotor = (OPC) => {
     const g = (e) => { if (e.candidate && / typ relay /.test(e.candidate.candidate || '')) { pc.__relay = (pc.__relay || 0) + 1; if (!gracia) gracia = setTimeout(fin, 500); } };
     pc.addEventListener('icegatheringstatechange', f); pc.addEventListener('icecandidate', g); setTimeout(fin, 8000);
   });
+  // ---------- 1718: el tiempo de la conversación (dueño, 25 nov 2026, 08:30–08:49: 2 minutos de cortesía, luego pagar; en el PC y
+  // en el móvil; «que no haya ningún hackeo»). Lo cuenta el relé, no esta página: manda {t:'tiempo', sala, de, hasta, resto, ahora,
+  // agotado} al empezar, con cada minuto cobrado y al acabarse. Sin tiempo, el relé ya no pasa nada de la conversación ni da
+  // credenciales de llamada; aquí solo se enseña y se cuelga, para que la pantalla lo diga claro. Con 2 s de margen: si en ese rato
+  // llega tiempo (un código que entra justo, o al pasar la conversación al móvil), no se corta nada.
+  function alTiempo(m) {
+    const s = S; if (!m || !s || m.sala !== s.id) return;
+    const ahora = Date.now(), dif = ahora - (+m.ahora || ahora);
+    const x = s.tiempo = { de: String(m.de || ''), hasta: (+m.hasta || 0) + dif, fin: ahora + Math.max(0, +m.resto || 0), agotado: m.agotado === 1, cortesia: +m.cortesia || 2 };
+    const esperas = s.esperasTiempo || []; s.esperasTiempo = []; for (const f of esperas) f(x);
+    clearTimeout(s.agotaT); s.agotaT = null;
+    if (!x.agotado) { s.sinTiempo = false; emite('tiempo', Object.assign({}, x)); return; }
+    s.agotaT = setTimeout(() => {
+      if (S !== s || s.tiempo !== x) return;
+      s.sinTiempo = true;
+      if (L) colgar('tiempo');
+      emite('tiempo', Object.assign({}, x));
+    }, 2000);
+  }
+  const esperaTiempo = (s, ms) => new Promise((res) => { const t = setTimeout(() => res(null), ms); (s.esperasTiempo = s.esperasTiempo || []).push((x) => { clearTimeout(t); res(x); }); });
+  // con el relé de 1718, las credenciales de llamada se piden para esta conversación y solo llegan si tiene tiempo (caducan cuando
+  // se acabaría lo que hay). '' = listas; 'sin-tiempo'; 'sin-turn' (el servidor de llamadas no contesta)
+  async function iceLista(s) {
+    if (!R || !R.tiempo) return '';
+    for (let i = 0; i < 2; i++) {
+      const m = await R.pideIceSala(s.id);
+      if (S !== s) return 'sin-sesion';
+      if (m && Array.isArray(m.ice) && m.ice.length) return '';
+      if (LOCAL && m && !m.por) return ''; // (pruebas locales: relé sin servidor de llamadas)
+      if (!m || m.por !== 'sin-tiempo') return 'sin-turn';
+      if (s.sinTiempo) return 'sin-tiempo';
+      if (i === 0) await esperaTiempo(s, 8000); // el primer minuto aún se está cobrando
+    }
+    return 'sin-tiempo';
+  }
   function puedeLlamar() {
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return 'sin-medios';
     if (!S || !S.conectado || !enLinea(S)) return 'sin-sesion';
-    if (!LOCAL && !(R.ice && R.ice.length)) return 'sin-turn';
+    if (!LOCAL && !(R.tiempo || (R.ice && R.ice.length))) return 'sin-turn';
+    if (S.sinTiempo) return 'sin-tiempo';
     return '';
   }
   async function llamar() {
@@ -950,6 +993,7 @@ const creaMotor = (OPC) => {
     const x = L = { id: C.hex(C.azar(8)), rol: 'llama', estado: 'preparando', video: true, sid: s.sesion.sid, sinCapa: !PQM };
     emite('llamada', estadoLlamada());
     try {
+      { const p = await iceLista(s); if (L !== x) return false; if (p) throw new Error(p); }
       const st = await tomaMedios(); if (L !== x) { cede(st); return false; }
       L.local = st; L.video = st.getVideoTracks().length > 0;
       if (!L.sinCapa) await llavesLlamada(s.sesion.medios, L.id, true);
@@ -965,7 +1009,7 @@ const creaMotor = (OPC) => {
       if (L.sinCapa) emite('llamada-aviso', 'sin-capa-mia');
       clearTimeout(L.espera); L.espera = setTimeout(() => { if (L && L.estado === 'llamando') colgar('sin-respuesta'); }, 45000);
       return true;
-    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); x.diag = 'E:' + String((e && e.name) || 'Error').slice(0, 24) + (m && m !== 'undefined' ? ' ' + m.slice(0, 40) : ''); colgar(m === 'sin-turn' ? 'sin-turn' : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
+    } catch (e) { if (L !== x) return false; console.warn('llamada', e); const m = String(e && e.message); x.diag = 'E:' + String((e && e.name) || 'Error').slice(0, 24) + (m && m !== 'undefined' ? ' ' + m.slice(0, 40) : ''); colgar(m === 'sin-turn' || m === 'sin-tiempo' ? m : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
   }
   async function contestar() {
     const s = S; if (!L || L.estado !== 'entrante' || !s) return false;
@@ -976,6 +1020,7 @@ const creaMotor = (OPC) => {
       const st = await tomaMedios(!L.video || soloVoz || undefined); if (L !== x) { cede(st); return false; }
       L.local = st;
       if (!L.sinCapa) await llavesLlamada(ses.medios, L.id, false);
+      { const p = await iceLista(s); if (L !== x) return false; if (p) throw new Error(p); }
       const pc = L.pc = conexion();
       await pc.setRemoteDescription({ type: 'offer', sdp: L.oferta }); ponCapa(pc);
       for (const t of st.getTracks()) pc.addTrack(t, st);
@@ -987,7 +1032,7 @@ const creaMotor = (OPC) => {
       enviaControl(s, { tipo: 'llamada', que: 'respuesta', id: L.id, sdp: pc.localDescription.sdp, pq: L.sinCapa ? 0 : 1 });
       if (L.sinCapa) emite('llamada-aviso', L.suyaSinCapa ? 'sin-capa-suya' : 'sin-capa-mia');
       return true;
-    } catch (e) { console.warn('llamada', e); colgar(/Permission|NotAllowed/i.test(String(e && e.name) + String(e && e.message)) ? 'sin-permiso' : 'fallo'); return false; }
+    } catch (e) { console.warn('llamada', e); const m = String(e && e.message); colgar(m === 'sin-turn' || m === 'sin-tiempo' ? m : /Permission|NotAllowed/i.test(String(e && e.name) + m) ? 'sin-permiso' : 'fallo'); return false; }
   }
   // Dos llamadas que se cruzan (dueño, 16:30: «no quiero que se crucen las llamadas… si hay una llamada, luego me salía otra de
   // volver a llamar, una cosa muy rara»): si llega una llamada mientras la mía aún está sonando o preparándose, sigue solo una, la de
@@ -1406,7 +1451,9 @@ const creaMotor = (OPC) => {
     // cierre en el móvil»)
     vueltaMia = TEL ? null : C.nuevaSemilla();
     const dest = t.vuelve ? 'pc' : 'movil';
-    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: vueltaMia ? C.b64u(vueltaMia) : undefined });
+    // (1718: con la conversación van los códigos de compra de este navegador, para que el otro aparato siga pagando con ellos)
+    const cod = window.ElixireCompra ? window.ElixireCompra.codigos() : [];
+    enviaControl(t, { tipo: 'par', que: 'semilla', k: C.b64u(k), resto, llamada: enLlamada ? 1 : 0, v: vueltaMia ? C.b64u(vueltaMia) : undefined, cod: cod.length ? cod : undefined });
     enviaControl(s, { tipo: 'traspaso', k: C.b64u(k), llamada: enLlamada ? 1 : 0, dest });
     k.fill(0);
     s.trasp.plazo = setTimeout(() => acabaTraspaso(true), 7000);
@@ -1455,6 +1502,8 @@ const creaMotor = (OPC) => {
       if (k.length !== 32) return;
       s.traspasando = true;
       enviaControl(s, { tipo: 'par', que: 'ok' });
+      // los códigos de compra del otro aparato: se guardan aquí y van al relé antes de entrar en la conversación nueva
+      if (Array.isArray(j.cod) && window.ElixireCompra) window.ElixireCompra.anade(j.cod.slice(0, 40), true);
       const usado = Math.max(0, PRUEBA_MS - Math.max(0, +j.resto || 0)), reanuda = j.llamada === 1;
       let v = null; try { v = j.v ? C.deB64u(String(j.v)) : null; } catch (_) { v = null; }
       setTimeout(async () => { finaliza(s, 'traspaso', '', true); emite('par-hecho', { reanuda }); if (v && v.length === 32) { if (vuelta) vuelta.fill(0); vuelta = v; } await continuaEn(k, { papel: 'movil', usado, reanuda }); }, 700);
@@ -1513,6 +1562,8 @@ const creaMotor = (OPC) => {
     pasaMovil, confirmaMovil, cancelaMovil, entraMovil, devuelve, get puedeVolver() { return !!(vuelta && S && !S.canal && S.conectado); }, get esperando() { return !!(T && T.esperaVuelta && !T.fin); }, dejaEspera: () => { if (T && T.esperaVuelta) finaliza(T, 'cancela', '', true); },
     puedeLlamar, estadoLlamada, get activa() { return !!S; }, get otroEsta() { return !!(S && S.suId && S.miembros && S.miembros.has(S.suId)); }, get conectada() { return !!(S && S.conectado && !S.canal); }, get terminada() { return !S || !!S.fin; }, get propias() { return (L && L.local) || null; }, get pistaPantalla() { return pantallaP; },
     get palabras() { return S && S.palabras ? S.palabras.slice() : null; }, get red() { return !!(R && R.abierto); },
+    // 1718: el tiempo de esta conversación (de: 'cortesia' | 'codigo'; fin: cuándo se acabaría con lo que hay), si el relé lo cuenta
+    get tiempo() { return S && S.tiempo ? Object.assign({}, S.tiempo, { agotado: !!S.sinTiempo }) : null; }, get conTiempo() { return !!(R && R.tiempo); }, get saldo() { return R ? R.saldo : null; },
     PRUEBA_MS, sinLimite, LIMITE, capaMedios: PQM, disponible: () => B.hayBlindada(),
   };
   // solo en pruebas locales: en qué punto está el acuerdo (sin ninguna clave)

@@ -58,6 +58,8 @@
     }).filter((sv) => sv.urls.length);
   }
 
+  // 1718: los códigos de compra guardados en este navegador (js/compra.js los guarda; aquí solo se leen)
+  function codigosGuardados() { try { const x = JSON.parse(localStorage.getItem('1718-codigos') || '[]'); return Array.isArray(x) ? x.filter((k) => typeof k === 'string').slice(0, 20) : []; } catch (_) { return []; } }
   function crea(o) {
     o = o || {};
     const esc = {}; const on = (t, f) => { (esc[t] = esc[t] || []).push(f); };
@@ -65,6 +67,9 @@
     let ws = null, url = null, abierto = false, intentos = 0, ping = null, cerrando = false;
     const salas = new Map(); // sala → { yo, b } (b: sala de una sesión blindada)
     let ice = [], caduca = 0, region = '', llamadas = false, ultimoPong = 0, pingEn = 0, latencia = null, avisos = '', marca = false; const hist = [];
+    // 1718 (25 nov 2026): el relé cuenta el tiempo de cada conversación (cortesía y códigos de compra); las credenciales de
+    // llamada se piden por conversación ({t:'ice', sala}) y solo llegan con tiempo
+    let tiempo = false, iceSala = '', saldo = null; const esperasIce = [];
     const esperas = {}; // respuestas pendientes (invita, busca)
     // Número GUARDIANA (29 Oct 2026): preguntas con número («q») para casar cada respuesta; el reto de esta conexión lo firma la app
     const esperasQ = new Map(); let qn = 0, reto = '', conNumeros = false;
@@ -96,7 +101,7 @@
         abierto = true; intentos = 0;
         // «marca: 1»: esta página marca las tramas que merecen aviso, así que el relé no tiene que avisar por todas
         ws.send(JSON.stringify({ t: 'hola', marca: 1 }));
-        for (const [sala, x] of salas) ws.send(JSON.stringify({ t: 'entra', sala, yo: x.yo, b: x.b || undefined }));
+        for (const [sala, x] of salas) ws.send(JSON.stringify({ t: 'entra', sala, yo: x.yo, b: x.b || undefined, par: x.par || undefined }));
         if (subUlt) { try { ws.send(JSON.stringify({ t: 'avisos', sub: subUlt, salas: salasUlt })); } catch (_) {} }
         if (fueraAhora) { try { ws.send(JSON.stringify({ t: 'presencia', fuera: 1 })); } catch (_) {} }
         clearInterval(ping); pingEn = 0; ping = setInterval(mide, 10000); setTimeout(mide, 300);
@@ -107,8 +112,10 @@
         if (typeof e.data === 'string') {
           let m; try { m = JSON.parse(e.data); } catch (_) { return; }
           switch (m.t) {
-            case 'hola': region = m.region || ''; llamadas = !!m.llamadas; ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; avisos = typeof m.avisos === 'string' ? m.avisos : ''; marca = m.marca === 1; reto = /^[0-9a-f]{32}$/.test(m.reto || '') ? m.reto : ''; conNumeros = m.num === 1; emite('hola', { region, llamadas, ice, avisos, reto, num: conNumeros });  conBuzon = m.buzon === 1; break;
-            case 'ice': ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; emite('ice', ice); break;
+            case 'hola': tiempo = m.tiempo === 1; iceSala = ''; if (tiempo) { try { ws.send(JSON.stringify({ t: 'codigos', codigos: codigosGuardados() })); } catch (_) {} } region = m.region || ''; llamadas = !!m.llamadas; ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; avisos = typeof m.avisos === 'string' ? m.avisos : ''; marca = m.marca === 1; reto = /^[0-9a-f]{32}$/.test(m.reto || '') ? m.reto : ''; conNumeros = m.num === 1; emite('hola', { region, llamadas, ice, avisos, reto, num: conNumeros });  conBuzon = m.buzon === 1; break;
+            case 'ice': ice = url === PUENTE_RU ? icePorPuente(m.ice) : m.ice || []; caduca = m.caduca || 0; iceSala = ice.length ? String(m.sala || '') : ''; emite('ice', ice); while (esperasIce.length) { try { esperasIce.shift()(m); } catch (_) {} } break;
+            case 'tiempo': emite('tiempo', m); break;
+            case 'codigos': saldo = m; emite('codigos', m); break;
             case 'sala': emite('sala', m.sala, m.miembros || []); break;
             case 'llega': emite('llega', m.sala, m.quien); break;
             case 'sale': emite('sale', m.sala, m.quien); break;
@@ -194,7 +201,8 @@
       if (!abierto || !ws || (pingEn && Date.now() - pingEn < 4000)) return false;
       try { pingEn = Date.now(); ws.send(JSON.stringify({ t: 'ping' })); return true; } catch (_) { return false; }
     }
-    function entra(sala, yo, opc) { const b = opc && opc.b ? 1 : 0; salas.set(sala, { yo, b }); if (abierto) ws.send(JSON.stringify({ t: 'entra', sala, yo, b: b || undefined })); }
+    // par: la sala de «Pasar al teléfono» (los dos aparatos de la misma persona); el relé de 1718 no le cuenta tiempo
+    function entra(sala, yo, opc) { const b = opc && opc.b ? 1 : 0, par = opc && opc.par ? 1 : 0; salas.set(sala, { yo, b, par }); if (abierto) ws.send(JSON.stringify({ t: 'entra', sala, yo, b: b || undefined, par: par || undefined })); }
     function sale(sala) { salas.delete(sala); if (abierto) ws.send(JSON.stringify({ t: 'sale', sala })); }
     // avisa: esta trama es un mensaje o un archivo y merece aviso en el teléfono de la otra persona si la tiene cerrada (0x11).
     // Las demás (acuses, «leído», «escribiendo…», presentaciones, señalización de llamada) van como siempre (0x01) y no avisan.
@@ -207,6 +215,16 @@
       try { ws.send(b); return true; } catch (_) { return false; }
     }
     function pideIce() { if (abierto) ws.send(JSON.stringify({ t: 'ice' })); }
+    // 1718: credenciales para una conversación (solo con tiempo); contesta con el mensaje del relé o, a los 6 s, con nada
+    function pideIceSala(sala) {
+      return new Promise((res) => {
+        if (!abierto) return res({ ice: [], por: 'sin relé' });
+        let hecho = false; const f = (m) => { if (hecho) return; hecho = true; res(m || { ice: [] }); };
+        esperasIce.push(f); try { ws.send(JSON.stringify({ t: 'ice', sala })); } catch (_) { f(null); }
+        setTimeout(() => f(null), 6000);
+      });
+    }
+    function ponCodigos(lista) { if (abierto && tiempo) { try { ws.send(JSON.stringify({ t: 'codigos', codigos: lista || codigosGuardados() })); } catch (_) {} } }
     const pregunta = (t, m) => new Promise((res) => { if (!abierto) return res({ ok: false, por: 'sin relé' }); esperas[t] = res; ws.send(JSON.stringify(Object.assign({ t }, m))); setTimeout(() => { if (esperas[t] === res) { delete esperas[t]; res({ ok: false, por: 'sin respuesta' }); } }, 8000); });
     const invita = (codigo, sobre, sal) => pregunta('invita', { codigo, sobre, sal });
     const busca = (codigo) => pregunta('busca', { codigo });
@@ -260,7 +278,7 @@
     conecta();
     // para las pruebas: un corte de la conexión como los del teléfono (se vuelve a conectar sola)
     const corta = () => { try { if (ws) ws.close(); } catch (_) {} };
-    return { on, entra, sale, manda, pideIce, cierra, invita, busca, retira, mide, despierta, suscribe, despiertaA, presencia, corta, num, cita, citas, citaFin, buzonDeja, buzonBorra, get conBuzon() { return conBuzon && abierto; }, get reto() { return reto; }, get conNumeros() { return conNumeros; }, get avisos() { return avisos; }, get abierto() { return abierto; }, get atraso() { return ws ? ws.bufferedAmount : 0; }, get region() { return region; }, get llamadas() { return llamadas; }, get ice() { return ice; }, get caduca() { return caduca; }, get url() { return url; }, get limitada() { return limitada; }, get latencia() { return latencia; }, get latenciaMin() { return hist.length ? Math.min(...hist) : null; }, get ultimoPong() { return ultimoPong; } };
+    return { on, entra, sale, manda, pideIce, pideIceSala, ponCodigos, get tiempo() { return tiempo && abierto; }, get iceSala() { return iceSala; }, get saldo() { return saldo; }, cierra, invita, busca, retira, mide, despierta, suscribe, despiertaA, presencia, corta, num, cita, citas, citaFin, buzonDeja, buzonBorra, get conBuzon() { return conBuzon && abierto; }, get reto() { return reto; }, get conNumeros() { return conNumeros; }, get avisos() { return avisos; }, get abierto() { return abierto; }, get atraso() { return ws ? ws.bufferedAmount : 0; }, get region() { return region; }, get llamadas() { return llamadas; }, get ice() { return ice; }, get caduca() { return caduca; }, get url() { return url; }, get limitada() { return limitada; }, get latencia() { return latencia; }, get latenciaMin() { return hist.length ? Math.min(...hist) : null; }, get ultimoPong() { return ultimoPong; } };
   }
   // Otro servidor de llamadas (dueño, 28 Oct 2026, 14:17: «que las llamadas sean todas buenas, independientemente de si la
   // persona está en Sudamérica, en Europa…»): una conexión corta para medir su tiempo de ida y vuelta y pedirle sus
@@ -275,7 +293,7 @@
       ws.onmessage = (e) => {
         if (typeof e.data !== 'string') return;
         let m; try { m = JSON.parse(e.data); } catch (_) { return; }
-        if (m.t === 'hola') { if (!m.llamadas || !Array.isArray(m.ice) || !m.ice.length) { acaba(null); return; } ice = m.ice; caduca = +m.caduca || 0; region = m.region || ''; t0 = performance.now(); try { ws.send(JSON.stringify({ t: 'ping' })); } catch (_) { acaba(null); } }
+        if (m.t === 'hola') { if (!m.llamadas || (m.tiempo !== 1 && (!Array.isArray(m.ice) || !m.ice.length))) { acaba(null); return; } ice = m.ice; caduca = +m.caduca || 0; region = m.region || ''; t0 = performance.now(); try { ws.send(JSON.stringify({ t: 'ping' })); } catch (_) { acaba(null); } }
         else if (m.t === 'pong' && ice) {
           // cuatro medidas seguidas y la mejor: una sola puede dar un pico (desde Barranquilla, Miami dio 156 ms una vez y 47 ms después)
           ms.push(performance.now() - t0);

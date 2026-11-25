@@ -1946,3 +1946,33 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .vs-et{display:block;margin-bottom:5px;font:500 10.5px/1.2 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:#7F8C99}
   .vs-1718 .vs-et{color:#8FE0AE}
 }
+
+/* 1718 · comprar tiempo (25 nov 2026): los botones de precios, la ventana de compra y el reloj de la cortesía */
+.pasos.precios .comprar{margin-top:18px}
+.compra-caja{gap:14px}
+.compra-caja h2{font-size:26px}
+.compra-opciones{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:4px}
+.compra-op{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px 18px 16px;border:1px solid var(--hilo-2);border-radius:3px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));color:var(--texto);text-decoration:none;transition:border-color .25s,background .25s,transform .15s}
+.compra-op b{font:300 26px/1.1 var(--display);letter-spacing:.01em}
+.compra-op span{font:500 13px/1 var(--ui);letter-spacing:.14em;color:#5CC98A}
+.compra-op:hover,.compra-op:focus-visible{border-color:rgba(255,255,255,.5);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));outline:none}
+.compra-op:active{transform:translateY(1px)}
+.compra-nota{font-size:13.5px !important;line-height:1.55 !important;color:var(--texto-3) !important;margin:0 !important}
+.compra-form{width:100%;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--hilo)}
+.compra-label{font:500 10.5px/1.2 var(--ui);letter-spacing:.24em;text-transform:uppercase;color:var(--texto-3)}
+.compra-fila{display:flex;gap:10px;width:100%}
+.compra-fila input{flex:1;min-width:0;height:44px;padding:0 14px;border:1px solid var(--hilo-2);border-radius:2px;background:rgba(0,0,0,.35);color:var(--texto);font:400 15px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.compra-fila input:focus{outline:none;border-color:rgba(156,195,228,.7)}
+.compra-fila .cristal{height:44px;flex:0 0 auto}
+.compra-estado{min-height:1.2em;font-size:13.5px}
+.compra-estado.bien{color:var(--verde)}
+.video-tiempo small.queda{margin:0 0 0 12px;color:#F0C77F}
+.video-tiempo.poco{color:#E07A6C;border-color:rgba(224,122,108,.55)}
+.video-tiempo.poco small{color:#E07A6C}
+@media (max-width:760px){
+  .compra .aviso-caja{max-height:calc(100svh - 24px);overflow:auto}
+  .compra-caja h2{font-size:23px}
+  .compra-op{padding:16px 14px 14px}
+  .compra-op b{font-size:22px}
+  .compra-fila input{font-size:16px}
+}

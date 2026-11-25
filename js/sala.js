@@ -7,6 +7,9 @@
   const $ = (s) => document.querySelector(s);
   const M = window.ElixireMotor; if (!M) return;
   const tr = (k) => (window.ElixireIdioma ? window.ElixireIdioma.t(k) : k);
+  // 1718: el tiempo de la conversación (ver «1718: el tiempo» más abajo)
+  let sinTiempo = false, avisado30 = false, avisado2m = false, tiempoDe = '';
+  const Cp = () => window.ElixireCompra || null;
   const sala = $('#sala'), lista = $('#mensajes'), texto = $('#texto');
   // solo en vertical (dueño, 17:09): donde el navegador deja fijar la orientación, se fija; si no, en horizontal sale «Gira el móvil»
   try { if (screen.orientation && screen.orientation.lock && matchMedia('(pointer: coarse)').matches) screen.orientation.lock('portrait').catch(() => {}); } catch (_) {}
@@ -185,7 +188,7 @@
   // JPEG): con la llamada en marcha, una foto del móvil de 8 MB tardaba en llegar; reducida, son segundos.
   const avisos = $('#avisos-llamada'), previas = new Map();
   const NS = 'http://www.w3.org/2000/svg';
-  const ICONOS = { pin: ['M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z', 'M12 7.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z'], doc: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5'], foto: ['M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z', 'M12 8.6a3.4 3.4 0 1 0 0 6.8a3.4 3.4 0 1 0 0-6.8z'], ok: ['M5 12.5l4.2 4.2L19 7'], msj: ['M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z'], mic: ['M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0z', 'M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21'], play: ['M8 5.5v13l10.5-6.5z'], pausa: ['M8 5.5v13M16 5.5v13'], candado: ['M5.5 11h13v9.5h-13z', 'M8 11V7.5a4 4 0 0 1 8 0V11'] };
+  const ICONOS = { pin: ['M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z', 'M12 7.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z'], doc: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5'], foto: ['M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z', 'M12 8.6a3.4 3.4 0 1 0 0 6.8a3.4 3.4 0 1 0 0-6.8z'], ok: ['M5 12.5l4.2 4.2L19 7'], msj: ['M20 12.2c0 4.1-3.6 7.3-8 7.3-1.2 0-2.3-.2-3.3-.6L4.5 20l1.2-3.4C4.6 15.4 4 13.9 4 12.2 4 8.1 7.6 4.8 12 4.8s8 3.3 8 7.4z'], mic: ['M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0z', 'M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21'], play: ['M8 5.5v13l10.5-6.5z'], pausa: ['M8 5.5v13M16 5.5v13'], candado: ['M5.5 11h13v9.5h-13z', 'M8 11V7.5a4 4 0 0 1 8 0V11'], reloj: ['M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17z', 'M12 7.5V12l3 2'] };
   const icono = (k) => { const v = document.createElementNS(NS, 'svg'); v.setAttribute('viewBox', '0 0 24 24'); v.setAttribute('aria-hidden', 'true'); for (const d of ICONOS[k] || ICONOS.doc) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); v.append(p); } return v; };
   const esFoto = (m) => /^image\/(png|jpe?g|gif|webp|heic|heif|avif)$/i.test(m || '');
   const esAudio = (m, n) => /^audio\//i.test(m || '') || /^nota-de-voz/i.test(n || '');
@@ -1170,7 +1173,7 @@
     else if (e.estado === 'conectando') pon('llConectando');
     else if (hablando) {
       // sin límite (dueño, 16:11), el tiempo que lleva la llamada; con límite, el que queda de prueba
-      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; if (calidadUlt) { const q = document.createElement('span'); q.className = 'calidad ' + calidadUlt.nivel; q.title = tr('calidad_' + calidadUlt.nivel); const b = document.createElement('i'); for (let n = 0; n < 4; n++) b.append(document.createElement('i')); const qt = document.createElement('span'); qt.className = 'cal-t'; qt.textContent = tr('calidad_' + calidadUlt.nivel); q.append(b, qt); t.append(q); } if (enChat) $('#chat-tiempo').textContent = mmss(Date.now() - e.t0); if (M.sinLimite) { t.append(document.createTextNode(mmss(Date.now() - e.t0))); return; } const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
+      const pinta = () => { const t = $('#video-tiempo'); t.hidden = false; t.textContent = ''; if (calidadUlt) { const q = document.createElement('span'); q.className = 'calidad ' + calidadUlt.nivel; q.title = tr('calidad_' + calidadUlt.nivel); const b = document.createElement('i'); for (let n = 0; n < 4; n++) b.append(document.createElement('i')); const qt = document.createElement('span'); qt.className = 'cal-t'; qt.textContent = tr('calidad_' + calidadUlt.nivel); q.append(b, qt); t.append(q); } if (enChat) $('#chat-tiempo').textContent = relojChat(Date.now() - e.t0); if (M.sinLimite) { pintaReloj(t, Date.now() - e.t0); return; } const s = document.createElement('small'); s.textContent = tr('prueba'); t.append(s, document.createTextNode(mmss(e.limite - (Date.now() - e.t0)))); };
       pinta(); tiempo = setInterval(pinta, 250);
       $('#b-micro').setAttribute('aria-pressed', String(e.mic)); $('#b-camara').setAttribute('aria-pressed', String(e.cam));
     } else if (e.estado === 'fin') {
@@ -1186,6 +1189,8 @@
       // el código técnico del fallo, pequeño, para saber la causa (red, servidor de llamadas o teléfono)
       if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
     }
+    // 1718: sin tiempo, el botón verde abre la compra
+    if (sinTiempo && !pas && (e.estado === 'libre' || e.estado === 'fin')) { pon('sinTiempoTexto'); rotuloLlamar('comprarTiempo'); boton.hidden = false; boton.disabled = false; }
     if (fuera && !pas) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
     // fuera de la llamada en grupo: «Volver a la llamada» (un toque, sin tono); al volver, «Volviendo a la llamada…»
     if (vuelve && !pas && !fuera && !e.prueba) {
@@ -1202,7 +1207,43 @@
     // (con el grupo en marcha, si la persona de la conversación vuelve a llamar, entra sin más)
     if (abierta && e.estado === 'entrante' && (E.contestaSola || G())) { E.contestaSola = false; M.contestar(); }
   });
-  M.on('llamada-aviso', (por) => { if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) toast('capa', { icono: 'candado', titulo: tr('encriptadoEstandarT'), sub: tr(k), ms: 12000 }); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  M.on('llamada-aviso', (por) => { if (por === 'sin-tiempo') { sinTiempo = true; if (abierta) { abreCompra(); pintaLlamada(ultimo); } return; } if (por === 'sin-capa-mia' || por === 'sin-capa-suya') { if (abierta) { const k = por === 'sin-capa-mia' ? 'llSinCapaMiaNormal' : 'llSinCapaSuyaNormal'; if (movil.matches) toast('capa', { icono: 'candado', titulo: tr('encriptadoEstandarT'), sub: tr(k), ms: 12000 }); else sistema(k); } return; } if (abierta && movil.matches && ultimo.estado !== 'hablando') { const k = { 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'; const t = $('#video-texto'); t.dataset.t = k; t.textContent = tr(k); } if (abierta) sistema({ 'sin-capa': 'llSinCapa', 'sin-medios': 'llSinMedios', 'sin-sesion': 'llSinSesion', 'sin-turn': 'llSinTurn', 'prueba-usada': 'llFinPrueba', descifra: 'llDescifra' }[por] || 'llFallo'); });
+  // ---------- 1718: el tiempo de la conversación (dueño, 25 nov 2026: 2 minutos de cortesía y luego pagar, en el PC y en el móvil) ----------
+  // Lo cuenta el relé (motor.js: «tiempo»); aquí solo se enseña. Durante la llamada, con la cortesía: «Gratis 1:42», lo que queda; con
+  // tiempo comprado: lo que lleva la llamada y, en los últimos 5 minutos, lo que queda. Avisos a los 30 s del final de la cortesía y a
+  // los 2 minutos del final de lo comprado. Al acabarse: se cuelga, sale la ventana de compra (js/compra.js) y el botón verde pasa a
+  // «Comprar tiempo». En cuanto cualquiera de los dos compra o pega un código, la ventana se cierra sola y se puede volver a llamar.
+  function abreCompra() { const c = Cp(); if (c) c.abre(tiempoDe === 'codigo' ? 'tiempo' : 'cortesia'); }
+  function pintaReloj(t, lleva) {
+    const x = M.tiempo, r = x && !x.agotado ? Math.max(0, x.fin - Date.now()) : null;
+    t.classList.remove('poco');
+    if (x && x.de === 'cortesia' && r != null) { const s = document.createElement('small'); s.textContent = tr('gratis'); t.append(s, document.createTextNode(mmss(r))); t.classList.toggle('poco', r < 30000); return; }
+    t.append(document.createTextNode(mmss(lleva)));
+    if (x && x.de === 'codigo' && r != null && r < 5 * 60000) { const s = document.createElement('small'); s.className = 'queda'; s.textContent = tr('quedan').replace('{t}', mmss(r)); t.append(s); t.classList.toggle('poco', r < 60000); }
+  }
+  function relojChat(lleva) { const x = M.tiempo; return x && x.de === 'cortesia' && !x.agotado ? tr('gratis') + ' ' + mmss(Math.max(0, x.fin - Date.now())) : mmss(lleva); }
+  M.on('tiempo', (x) => {
+    if (!x) return;
+    if (x.de) tiempoDe = x.de;
+    if (x.agotado) {
+      if (sinTiempo) return;
+      sinTiempo = true;
+      if (abierta) { sistema(tiempoDe === 'codigo' ? 'llSinTiempo' : 'llSinCortesia'); abreCompra(); }
+    } else if (sinTiempo) {
+      sinTiempo = false; avisado30 = false; avisado2m = false;
+      { const c = Cp(); if (c && c.abierta) c.cierra(); }
+      if (abierta) { sistema('hayTiempo'); toast('tiempo', { ok: true, titulo: tr('hayTiempo'), ms: 6000 }); }
+    } else return;
+    if (abierta && (ultimo.estado === 'libre' || ultimo.estado === 'fin')) pintaLlamada(ultimo);
+  });
+  setInterval(() => {
+    if (!abierta || sinTiempo) return;
+    const x = M.tiempo; if (!x || x.agotado) return;
+    const r = x.fin - Date.now(); if (r <= 0) return;
+    const di = (k) => { if (movil.matches) toast('tiempo', { icono: 'reloj', titulo: tr(k + 'T'), sub: tr(k), ms: 9000 }); sistema(k); };
+    if (x.de === 'cortesia' && r <= 30000 && !avisado30) { avisado30 = true; di('avisoCortesia'); }
+    if (x.de === 'codigo' && r <= 120000 && !avisado2m) { avisado2m = true; di('avisoTiempo'); }
+  }, 1000);
   // poca luz (dueño, 21:05): si mi imagen se ve muy oscura, me aviso en mi pantalla para que la otra persona me vea bien.
   // Cada 2 s, una versión diminuta de mi cámara; dos veces seguidas muy oscura: el aviso (como mucho uno por minuto).
   const luzL = document.createElement('canvas'); luzL.width = 24; luzL.height = 18; const luzG = luzL.getContext('2d', { willReadFrequently: true });
@@ -1218,6 +1259,7 @@
   }, 2000);
   // un solo toque: con una llamada ya en marcha (o llegando), «Volver a llamar» no hace nada (dueño, 16:30)
   $('#llamar').addEventListener('click', () => {
+    if (sinTiempo) { abreCompra(); return; }
     if (ultimo.estado !== 'libre' && ultimo.estado !== 'fin') return; if (M.estadoLlamada().estado !== 'libre') return;
     if (movil.matches && (otroFuera || M.otroEsta === false)) { if (otroFuera && window.Elixire && window.Elixire.reinvita) { window.Elixire.reinvita(); return; } otroFuera = true; pintaLlamada(ultimo); return; }
     $('#llamar').hidden = true; M.llamar();
@@ -1328,6 +1370,7 @@
   });
   function finSala(f) {
     finPendiente = null;
+    { const c = Cp(); if (c) c.cierra(); } sinTiempo = false; avisado30 = false; avisado2m = false; tiempoDe = '';
     const enSala = abierta; cierraMovil(); cierra();
     const textos = {
       mio: ['finEtiqueta', 'finTitulo', 'finTexto', false], suyo: ['finEtiqueta', 'finSuyoTitulo', 'finTexto', false], // (con la lista de lo borrado)
