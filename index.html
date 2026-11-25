@@ -28,8 +28,8 @@
 <link rel="apple-touch-icon" href="img/app/icono-180.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/elixir.css?v=20261124-7" integrity="sha384-W7/kNxjmfGt1Xr+xi0sCUkWGQ7yB8b8pqcZUX/Tp1LPOojGwdmDE0HXZt8x+roSB">
-<script src="js/idioma-inicio.js?v=20261124-7" integrity="sha384-MmkfKIBZvm1JcWI8nQr+H35xHebZTFtRt3NnwqRjS9BszpgOids132FMhnMj1WTW"></script>
+<link rel="stylesheet" href="css/elixir.css?v=20261124-8" integrity="sha384-VWHK6WtVenlIXVf5mY4mi4xjfS2E+xD6F63ZLfTS2cmMssWep2EHICPuITYw/uCV">
+<script src="js/idioma-inicio.js?v=20261124-8" integrity="sha384-MmkfKIBZvm1JcWI8nQr+H35xHebZTFtRt3NnwqRjS9BszpgOids132FMhnMj1WTW"></script>
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
@@ -205,6 +205,28 @@
 <p class="pie-tabla" data-t="pieTabla">Datos públicos de cada servicio a noviembre de 2026.</p>
 </section>
 
+<!-- App descargada o navegador (dueño, 24 nov 23:39: «Añade la diferencia de app nativa descargada y cómo hacemos nosotros desde
+     navegador… Tenemos que destacar lo que tenemos»). Lo que el navegador da de verdad: nada que instalar para ninguno de los dos, sin
+     número ni cuenta, aislado del resto del móvil, solo cámara y micrófono, ninguna app que quede y siempre al día. -->
+<section class="seccion escena-libre" id="navegador" aria-labelledby="h-navegador">
+<span class="etiqueta" data-t="vsEtiqueta">APP O NAVEGADOR</span>
+<h2 id="h-navegador" data-t="vsTitulo">Sin descargas. <em class="c-verde">Solo un enlace.</em></h2>
+<p class="intro" data-t="vsTexto">Una app hay que buscarla, instalarla y darle permisos, y la otra persona también. 1718 funciona en el navegador que ya tenéis, aislado del resto del móvil y con encriptado poscuántico desde el primer segundo.</p>
+<div class="versus-caja">
+<table class="versus">
+<thead><tr><th scope="col"><span class="oculto" data-t="vsAspecto">Qué cambia</span></th><th scope="col" class="vs-app" data-t="vsApp">Una app descargada</th><th scope="col" class="vs-1718" data-t="vs1718">1718, en tu navegador</th></tr></thead>
+<tbody>
+<tr><th scope="row" data-t="vs1T">Para empezar</th><td class="vs-app"><span class="vs-et" data-t="vsAppCorto">Una app</span><span data-t="vs1A">Las dos personas tienen que descargarla e instalarla.</span></td><td class="vs-1718"><span class="vs-et">1718</span><span data-t="vs1W">Envías un enlace, la otra persona lo toca y empezáis a hablar.</span></td></tr>
+<tr><th scope="row" data-t="vs2T">Tu identidad</th><td class="vs-app"><span class="vs-et" data-t="vsAppCorto">Una app</span><span data-t="vs2A">Suele pedir tu número de teléfono o que crees una cuenta.</span></td><td class="vs-1718"><span class="vs-et">1718</span><span data-t="vs2W">Ni número ni cuenta: nada que te identifique.</span></td></tr>
+<tr><th scope="row" data-t="vs3T">Permisos</th><td class="vs-app"><span class="vs-et" data-t="vsAppCorto">Una app</span><span data-t="vs3A">Puede pedir tus contactos o tu ubicación y seguir activa en segundo plano.</span></td><td class="vs-1718"><span class="vs-et">1718</span><span data-t="vs3W">Solo cámara y micrófono, para la llamada. No ve tus contactos ni tus fotos: solo lo que tú decidas compartir.</span></td></tr>
+<tr><th scope="row" data-t="vs4T">Lo que queda</th><td class="vs-app"><span class="vs-et" data-t="vsAppCorto">Una app</span><span data-t="vs4A">Queda instalada en el móvil y en el historial de tu tienda de apps.</span></td><td class="vs-1718"><span class="vs-et">1718</span><span data-t="vs4W">Ninguna app instalada, y la conversación se borra al colgar.</span></td></tr>
+<tr><th scope="row" data-t="vs5T">Siempre al día</th><td class="vs-app"><span class="vs-et" data-t="vsAppCorto">Una app</span><span data-t="vs5A">Hay que actualizarla, y cada sistema tiene su versión.</span></td><td class="vs-1718"><span class="vs-et">1718</span><span data-t="vs5W">La última versión cada vez que la abres, con el mismo enlace en iPhone, Android y ordenador.</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="nota-final vs-nota" data-t="vsNota">¿La usas a menudo? Añade 1718 a la pantalla de inicio y se abrirá como una app, sin pasar por ninguna tienda.</p>
+</section>
+
 <section class="seccion escena-libre" id="pasos" aria-labelledby="h-pasos">
 <span class="etiqueta" data-t="e8Etiqueta">CÓMO FUNCIONA</span>
 <h2 id="h-pasos" data-t="e8Titulo">Tan sencillo como <em class="c-verde">tocar un enlace</em>.</h2>
@@ -355,20 +377,20 @@
 </div>
 </div>
 
-<script src="js/luz.js?v=20261124-7" integrity="sha384-ePehkNlTRXgzxDyViqxQ15CNX/4wyaCG9bDeLWLHR+ayEo4Sf/zL5cqqwSQSiICM" defer></script>
-<script src="js/idioma.js?v=20261124-7" integrity="sha384-WYbX6GQ9SMM2rg8rE5b6eDs09RR+XZ0P9Uptxj0hih7phS/slKA7jvC8cufiWdM1"></script>
-<script src="js/pq-cnsa.js?v=20261124-7" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="js/palabras.js?v=20261124-7" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="js/cripto.js?v=20261124-7" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="js/rele.js?v=20261124-7" integrity="sha384-l8yZ0bUAXBIIJPrChxhv+NiiCAXhhj034h5N4PHHCl0Q1QEEjKEwgqT70vuC63wo"></script>
-<script src="js/qr.js?v=20261124-7" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="js/motor.js?v=20261124-7" integrity="sha384-PQlKC0qPTuXrPAJxdrNlsWWyfQU4C+nn436GSsCqKH7eSzxEeAkcHDMLATcN1NqQ"></script>
-<script type="module" src="js/sala3d.js?v=20261124-7" integrity="sha384-FFRIsDc5mdT+s83fPJmXi2xkkassPwXlApKpTMIH6jjozETGdEDlWeDrTS0ZHeWF"></script>
-<script src="js/holo.js?v=20261124-7" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
-<script src="js/puerta.js?v=20261124-7" integrity="sha384-Y//8E1lDGQ2zpGWkGN0gk0A/QR3mPB1FLzH/xWngI5O6L660W+75kxAuU9nX3Aio"></script>
-<script src="js/escenas.js?v=20261124-7" integrity="sha384-WJL0sDxxU+ki/LWSKoOd+liriMP1Hry4gWljibpzheRQYgxA2gOyLwI36bZgqRhz"></script>
-<script src="js/sala.js?v=20261124-7" integrity="sha384-GPTitOaXYd9AcAck9Jag13j835TAM5NSKV6iTQxgis96ZnxW9+gA2nFLxWd/H5TS"></script>
-<script src="js/grupo.js?v=20261124-7" integrity="sha384-uTSJUwxUMPcea64a7FfioUiNQnfDA9EVRV82IKP5znTYGI5p2/yXiQ88cClGb1k7"></script>
+<script src="js/luz.js?v=20261124-8" integrity="sha384-lEc4a1ES1DT+bPI+VEbJ2dtdodmN/B1nFOKSkvV5/LJ8bct2bRHA9QSd7IZ9rsuw" defer></script>
+<script src="js/idioma.js?v=20261124-8" integrity="sha384-zKHSZGLRp+rEBfqISMukuInEsmbAqCOSxrhVtJbPZQHQ4l/9f9ygrhIkiOV52mC8"></script>
+<script src="js/pq-cnsa.js?v=20261124-8" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="js/palabras.js?v=20261124-8" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="js/cripto.js?v=20261124-8" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="js/rele.js?v=20261124-8" integrity="sha384-l8yZ0bUAXBIIJPrChxhv+NiiCAXhhj034h5N4PHHCl0Q1QEEjKEwgqT70vuC63wo"></script>
+<script src="js/qr.js?v=20261124-8" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="js/motor.js?v=20261124-8" integrity="sha384-PQlKC0qPTuXrPAJxdrNlsWWyfQU4C+nn436GSsCqKH7eSzxEeAkcHDMLATcN1NqQ"></script>
+<script type="module" src="js/sala3d.js?v=20261124-8" integrity="sha384-FFRIsDc5mdT+s83fPJmXi2xkkassPwXlApKpTMIH6jjozETGdEDlWeDrTS0ZHeWF"></script>
+<script src="js/holo.js?v=20261124-8" integrity="sha384-XHxgaA5dygVoX9z10QvIGr7enP20X8VyDl4i9CsCGp6idbBzsEQijHjRG2TLg3dj"></script>
+<script src="js/puerta.js?v=20261124-8" integrity="sha384-Y//8E1lDGQ2zpGWkGN0gk0A/QR3mPB1FLzH/xWngI5O6L660W+75kxAuU9nX3Aio"></script>
+<script src="js/escenas.js?v=20261124-8" integrity="sha384-WJL0sDxxU+ki/LWSKoOd+liriMP1Hry4gWljibpzheRQYgxA2gOyLwI36bZgqRhz"></script>
+<script src="js/sala.js?v=20261124-8" integrity="sha384-GPTitOaXYd9AcAck9Jag13j835TAM5NSKV6iTQxgis96ZnxW9+gA2nFLxWd/H5TS"></script>
+<script src="js/grupo.js?v=20261124-8" integrity="sha384-uTSJUwxUMPcea64a7FfioUiNQnfDA9EVRV82IKP5znTYGI5p2/yXiQ88cClGb1k7"></script>
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Gira el móvil</b><span data-t="girarTexto">1718 se usa en vertical.</span></div>
 </body>
 </html>
