@@ -1,14 +1,14 @@
-// Elixire · idioma: español (el de la página) e inglés (dueño, 19 nov 2026: «solamente en inglés y en español, me parece perfecto»).
+// 1718 · idioma: español (el de la página) e inglés (dueño, 19 nov 2026: «solamente en inglés y en español, me parece perfecto»).
 // Cada texto lleva data-t; el español sale del propio HTML (y de ES_MAS, lo que solo se dice desde el código) y el inglés de aquí.
 // La elección se recuerda en este navegador.
 'use strict';
 (() => {
   const ES_MAS = {
-    enPcTexto: 'Ya puedes cerrar esta pestaña. En este móvil no queda nada de la llamada.', pcVuelveEtiqueta: 'DE VUELTA', pcVuelveTitulo: 'La llamada vuelve a este ordenador.', pcVuelveTexto: 'Conectando… En unos segundos la tienes aquí, en grande.', llamadaAqui: 'Llamada en curso · Elixire',
+    enPcTexto: 'Ya puedes cerrar esta pestaña. En este móvil no queda nada de la llamada.', pcVuelveEtiqueta: 'DE VUELTA', pcVuelveTitulo: 'La llamada vuelve a este ordenador.', pcVuelveTexto: 'Conectando… En unos segundos la tienes aquí, en grande.', llamadaAqui: 'Llamada en curso · 1718',
     verElChat: 'Ver el chat', ampliarLl: 'Ampliar',
     // la llamada en grupo
     anadirEntra: 'Entrando en la llamada…', anadirError: 'No se ha podido crear la invitación. Inténtalo de nuevo.', anadirCaduca: 'La invitación ha caducado. Toca «Añadir» para crear otra.',
-    mensajeGrupo: '*Te han invitado a una videollamada poscuántica en Elixire*\n{enlace}\nCódigo: {codigo}', grupoEntra: '{p} ha entrado en la llamada', grupoSale: '{p} ha salido de la llamada', grupoLleno: 'La llamada ya tiene 4 personas, el máximo.',
+    mensajeGrupo: '*Te han invitado a una videollamada poscuántica en 1718*\n{enlace}\nCódigo: {codigo}', grupoEntra: '{p} ha entrado en la llamada', grupoSale: '{p} ha salido de la llamada', grupoLleno: 'La llamada ya tiene 4 personas, el máximo.',
     grupoInvitado: 'Invitación enviada. Entrará en la llamada en cuanto la abra.', persona: 'Persona', tu: 'Tú', cerrar: 'Cerrar',
     etVoz: 'voz cambiada', etCara: 'cara oculta', etPantalla: 'compartiendo pantalla', etChat: 'en el chat', guardarFotos: 'Guardar en Fotos', grupoConectando: 'Conectando…', grupoNoConecta: 'No se ha podido conectar con {p}', camaraApagada: 'Cámara apagada', etChatLargo: 'En el chat', personasN: '{n} personas', grupoViejo: '{p} tiene la web sin actualizar y no puede ver ni oír a los demás. Pídele que recargue la página (F5) y vuelve a añadirle.',
     cambiarVista: 'Cambiar vista',
@@ -19,8 +19,8 @@
     pantallaDividida: 'Pantalla dividida', hacerPequena: 'Hacer pequeña tu imagen', moverDivision: 'Mover la división',
     escribiendo: 'Escribiendo…',
     estadoMas: '· Imagen, sonido y chat', compartirPantalla: 'Compartir pantalla', dejarPantalla: 'Dejar de compartir', ampliar: 'Ampliar', verChat: 'Ver chat', otroPantalla: 'Está compartiendo su pantalla',
-    mensajeWa: '*Te han invitado a una conversación poscuántica en Elixire*\n{enlace}\nCódigo: {codigo}',
-    volverLlamar: 'Volver a llamar', volverGrupo: 'Volver a la llamada', grupoFuera: 'Has salido de la llamada en grupo. Puedes volver cuando quieras.', grupoVuelve: 'Volviendo a la llamada…', botonVoz: 'Llamada de voz', botonVideo: 'Videollamada', llamadaVozEnCurso: 'Llamada de voz', pasarVideo: 'Vídeo', enVoz: 'Solo voz', mensajeLlamadaVoz: '*Te han invitado a una llamada de voz poscuántica*\n{enlace}', mensajeWaVoz: '*Te han invitado a una llamada de voz poscuántica en Elixire*\n{enlace}\nCódigo: {codigo}', correoAsuntoVoz: 'Llamada de voz privada en Elixire', correoCuerpoVoz: 'Te invito a una llamada de voz privada y encriptada en Elixire. Ábrela aquí:\n{enlace}\n\nLa invitación caduca en 10 minutos.', irAbajo: 'Ir a lo último', grupoCortada: 'La llamada en grupo se ha cortado para ti. Puedes volver cuando quieras.', llCaida: 'La llamada se ha cortado. Puedes volver a llamar.', pruebaQueda: 'Quedan {t} de prueba',
+    mensajeWa: '*Te han invitado a una conversación poscuántica en 1718*\n{enlace}\nCódigo: {codigo}',
+    volverLlamar: 'Volver a llamar', volverGrupo: 'Volver a la llamada', grupoFuera: 'Has salido de la llamada en grupo. Puedes volver cuando quieras.', grupoVuelve: 'Volviendo a la llamada…', botonVoz: 'Llamada de voz', botonVideo: 'Videollamada', llamadaVozEnCurso: 'Llamada de voz', pasarVideo: 'Vídeo', enVoz: 'Solo voz', mensajeLlamadaVoz: '*Te han invitado a una llamada de voz poscuántica*\n{enlace}', mensajeWaVoz: '*Te han invitado a una llamada de voz poscuántica en 1718*\n{enlace}\nCódigo: {codigo}', correoAsuntoVoz: 'Llamada de voz privada en 1718', correoCuerpoVoz: 'Te invito a una llamada de voz privada y encriptada en 1718. Ábrela aquí:\n{enlace}\n\nLa invitación caduca en 10 minutos.', irAbajo: 'Ir a lo último', grupoCortada: 'La llamada en grupo se ha cortado para ti. Puedes volver cuando quieras.', llCaida: 'La llamada se ha cortado. Puedes volver a llamar.', pruebaQueda: 'Quedan {t} de prueba',
     movilConectando: 'Conectando con tu ordenador…', movilCompruebaPc: 'Comprueba que en tu ordenador salen estas mismas palabras y pulsa allí «Sí, es mi móvil».',
     movilPasando: 'Pasando la conversación…', pasandoLlamada: 'Pasando la llamada…', movilUsado: 'Este código ya se ha usado o ha caducado. Genera otro en el ordenador.', movilCancelado: 'Se ha cancelado desde el ordenador.',
     movilCaducado: 'El código ha caducado. Ciérralo y vuelve a pulsar «Pasar al móvil».', movilNo: 'No coinciden',
@@ -28,7 +28,7 @@
     traspasoEspera: 'La otra persona está pasando la conversación a su móvil…', continuaSuMovil: 'La conversación continúa en su móvil · claves nuevas', continuaAqui: 'La conversación continúa en este móvil · claves nuevas',
     ampliar: 'Ampliar',
     esperandoLlamada: 'Esperando a que la otra persona abra la invitación', mensajeLlamada: '*Te han invitado a una videollamada poscuántica*\n{enlace}',
-    esperandoInicio: 'En cuanto abra la invitación, empezáis a hablar.', esperandoVuelva: 'En cuanto la otra persona esté en Elixire, empezáis a hablar.', tardaVuelva: 'Si tarda, pídele que vuelva a abrir Elixire. La llamada empezará sola.', reintentando: 'Sin conexión. Reintentando…', invitacionCaducada: 'La invitación ha caducado. Vuelve y envía otra.',
+    esperandoInicio: 'En cuanto abra la invitación, empezáis a hablar.', esperandoVuelva: 'En cuanto la otra persona esté en 1718, empezáis a hablar.', tardaVuelva: 'Si tarda, pídele que vuelva a abrir 1718. La llamada empezará sola.', reintentando: 'Sin conexión. Reintentando…', invitacionCaducada: 'La invitación ha caducado. Vuelve y envía otra.',
     copiado: 'Copiado', faltan: 'Faltan símbolos: el código tiene 16.', creando: 'Creando el código…', caducado: 'El código ha caducado. Vuelve y crea otro.',
     alguienEntra: 'Alguien ha escrito el código: conectando…', llegaOtra: 'La otra persona ha entrado. Acordando las claves…', conectando: 'Conectando…',
     eNoVale: 'Ese código no existe, ya se usó o ha caducado.', eSinRele: 'Sin conexión con el servidor. Inténtalo de nuevo.',
@@ -57,8 +57,8 @@
     bajarAria: 'Desliza hacia abajo',
     
     cambiaVoz: 'Cambiar voz', volverVideo: 'Volver al vídeo', enLlamada: 'En llamada', volverLlamada: 'Volver a la llamada', camPausa: 'Tu cámara, en pausa', otroChat: 'Ha pasado al chat · solo voz', otroChatTit: 'Está en el chat', otroChatTxt: 'Te sigue oyendo · su cámara está en pausa', cartelBorra: 'Los mensajes se encriptan en cada equipo y desaparecen al terminar.', vozCambiada: 'Voz cambiada', ocultaCara: 'Ocultar cara', caraOcultaTxt: 'Cara oculta', otroVoz: 'Su voz está cambiada', otroCara: 'Su cara está oculta', 
-    enlaceCopiado: 'Enlace copiado', correoAsunto: 'Videollamada privada en Elixire', enviarInvitacionAria: 'Enviar la invitación',
-    correoCuerpo: 'Te invito a una videollamada privada y encriptada en Elixire. Ábrela aquí:\n{enlace}\n\nLa invitación caduca en 10 minutos.',
+    enlaceCopiado: 'Enlace copiado', correoAsunto: 'Videollamada privada en 1718', enviarInvitacionAria: 'Enviar la invitación',
+    correoCuerpo: 'Te invito a una videollamada privada y encriptada en 1718. Ábrela aquí:\n{enlace}\n\nLa invitación caduca en 10 minutos.',
     espiaTitulo: 'Extensión del navegador detectada{n}', espiaTexto: 'Podría leer tus mensajes y ver la llamada. Para más privacidad, usa una ventana privada sin extensiones.', 
     
     
@@ -70,7 +70,7 @@
     verificarTexto: 'Esta página se publica tal cual desde un repositorio público. Cada script y la hoja de estilo llevan aquí su huella SHA-384, y tu navegador no carga ninguno que no coincida. Puedes comparar esas huellas con las del repositorio.',
     video: 'Vídeo', chatCifrado: 'Encriptado poscuántico', chatCifradoEstandar: 'Encriptado estándar', responder: 'Responder',
     notaVoz: 'Nota de voz', notaEnviada: 'Nota de voz enviada', enviandoNota: 'Enviando la nota de voz…', notaRecibida: 'Nota de voz', recibiendoNota: 'Recibiendo una nota de voz…', escuchar: 'Escuchar',
-    notaSinMicro: 'No hay permiso para usar el micrófono.', notaNo: 'Este navegador no puede grabar notas de voz.', girarTitulo: 'Gira el móvil', girarTexto: 'Elixire se usa en vertical.',
+    notaSinMicro: 'No hay permiso para usar el micrófono.', notaNo: 'Este navegador no puede grabar notas de voz.', girarTitulo: 'Gira el móvil', girarTexto: '1718 se usa en vertical.',
     
     
     
@@ -79,18 +79,18 @@
     
     
     llamandoT: 'Llamando', conectandoT: 'Conectando',
-    otroSalio: 'La otra persona ha salido de Elixire. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
+    otroSalio: 'La otra persona ha salido de 1718. Para volver a hablar, invítala de nuevo.', invitarDeNuevo: 'Invitar de nuevo', previaFoto: 'Enviar foto', previaFotos: 'Enviar fotos', previaArchivo: 'Enviar archivo', previaArchivos: 'Enviar archivos', quitar: 'Quitar', parar: 'Parar', borrarTodos: 'Borrar para todos', borrarMi: 'Borrar para mí', copiarMsg: 'Copiar', copiadoMsg: 'Copiado', mensajeBorrado: 'Eliminaste este mensaje', mensajeBorradoSuyo: 'Se eliminó este mensaje', girarCamara: 'Girar la cámara',
   };
   const EN = {
-    faqEtiqueta: 'QUESTIONS', faqTitulo: 'What people usually ask us.', ventasTexto: 'For your company or firm?', ventasEnlace: 'Talk to sales',
-    faq1P: 'Do I need to install anything or create an account?', faq1R: 'No. It works in the browser on your phone or computer, with an invitation link. If you like, you can add Elixire to your home screen like an app.',
+    faqEtiqueta: 'QUESTIONS', faqTitulo: 'What people usually ask us.', 
+    faq1P: 'Do I need to install anything or create an account?', faq1R: 'No. It works in the browser on your phone or computer, with an invitation link. If you like, you can add 1718 to your home screen like an app.',
     faq2P: 'Is anything from the conversation stored?', faq2R: 'No. The conversation only exists on the screens of those taking part and is erased when you close it. The server relays encrypted data it cannot read.',
     faq3P: 'Can anyone listen in on the call?', faq3R: 'The call is end-to-end encrypted with hybrid post-quantum cryptography. Keys are created on your devices and the server only relays data it cannot read. One caveat: if a device is infected, whoever controls it sees what you see.',
     faq4P: 'What does “post-quantum” mean?', faq4R: 'That, on top of classical cryptography, we use ML-KEM, the standard designed so that what someone captures today stays protected against tomorrow\'s quantum computers.',
     faq5P: 'Does it work on iPhone and Android?', faq5R: 'Yes, in Safari and Chrome, on phones and computers.',
     faq6P: 'How much does it cost?', faq6R: '1 hour, USD 5, or 5 hours, USD 25, with one-time payments and no subscription. Every call starts with a few free minutes. Until payments go live, it is free.',
     preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: 'Free minutes', precio3: 'Every call starts with a few free minutes, and paid time is only used while the call is connected.',
-    preciosNota: 'Payments are processed by Dodo Payments. You can ask for a refund of unused time: <a href="refunds.html">refunds and cancellations</a>. Until payments go live, Elixire is free.',
+    preciosNota: 'Payments are processed by Dodo Payments. You can ask for a refund of unused time: <a href="refunds.html">refunds and cancellations</a>. Until payments go live, 1718 is free.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with post-quantum encryption.',
     espiaTitulo: 'Browser extension detected{n}', espiaTexto: 'It could read your messages and see the call. For more privacy, use a private window without extensions.', 
@@ -99,8 +99,8 @@
     
     cpWhatsApp: 'WhatsApp', cpCorreo: 'Email', cpCopiar: 'Copy link', enlaceCopiado: 'Link copied', enviarInvitacionAria: 'Send the invitation',
     invitacionTextoPC: 'Send it by WhatsApp or email, or copy the link. When the other person opens it, the video call will start by itself. It expires in 10 minutes.',
-    tengoCodigoPC: 'Were you given a code? Enter here', correoAsunto: 'Private video call on Elixire',
-    correoCuerpo: 'I am inviting you to a private, encrypted video call on Elixire. Open it here:\n{enlace}\n\nThe invitation expires in 10 minutes.',
+    tengoCodigoPC: 'Were you given a code? Enter here', correoAsunto: 'Private video call on 1718',
+    correoCuerpo: 'I am inviting you to a private, encrypted video call on 1718. Open it here:\n{enlace}\n\nThe invitation expires in 10 minutes.',
     
     cambiaVoz: 'Change voice', volverVideo: 'Back to video', enLlamada: 'On call', volverLlamada: 'Back to call', camPausa: 'Your camera is paused', otroChat: 'Switched to chat · voice only', otroChatTit: 'In the chat', otroChatTxt: 'They can still hear you · their camera is paused', cartelBorra: 'Messages are encrypted on each device and disappear when you end.', vozCambiada: 'Voice changed', ocultaCara: 'Hide face', caraOcultaTxt: 'Face hidden', otroVoz: 'Their voice is changed', otroCara: 'Their face is hidden', 
     bajarAria: 'Scroll down', tresTitulo: 'Private video calls, <em class="c-ambar">end‑to‑end encrypted</em>.',
@@ -112,7 +112,7 @@
     
     eligeTitulo: 'FREE TRIAL', eligeTexto: 'One person invites and gives the code to the other. When they type it, the video call starts by itself.',
     crear: 'Create a code', tengo: 'I have a code', invitarVideollamada: 'Invite to a video call', volver: 'Back', cancelar: 'Cancel', entrar: 'Enter',
-    reconectando: 'Reconnecting the call…', volverLlamar: 'Call again', volverGrupo: 'Rejoin the call', grupoFuera: 'You left the group call. You can rejoin whenever you like.', grupoVuelve: 'Rejoining the call…', botonVoz: 'Voice call', botonVideo: 'Video call', llamadaVozEnCurso: 'Voice call', pasarVideo: 'Video', enVoz: 'Voice only', mensajeLlamadaVoz: '*You are invited to a post-quantum voice call*\n{enlace}', mensajeWaVoz: '*You are invited to a post-quantum voice call on Elixire*\n{enlace}\nCode: {codigo}', correoAsuntoVoz: 'Private voice call on Elixire', correoCuerpoVoz: 'I am inviting you to a private, encrypted voice call on Elixire. Open it here:\n{enlace}\n\nThe invitation expires in 10 minutes.', irAbajo: 'Go to latest', grupoCortada: 'The group call was cut off for you. You can rejoin whenever you like.', llCaida: 'The call was cut off. You can call again.', pruebaQueda: '{t} of trial left',
+    reconectando: 'Reconnecting the call…', volverLlamar: 'Call again', volverGrupo: 'Rejoin the call', grupoFuera: 'You left the group call. You can rejoin whenever you like.', grupoVuelve: 'Rejoining the call…', botonVoz: 'Voice call', botonVideo: 'Video call', llamadaVozEnCurso: 'Voice call', pasarVideo: 'Video', enVoz: 'Voice only', mensajeLlamadaVoz: '*You are invited to a post-quantum voice call*\n{enlace}', mensajeWaVoz: '*You are invited to a post-quantum voice call on 1718*\n{enlace}\nCode: {codigo}', correoAsuntoVoz: 'Private voice call on 1718', correoCuerpoVoz: 'I am inviting you to a private, encrypted voice call on 1718. Open it here:\n{enlace}\n\nThe invitation expires in 10 minutes.', irAbajo: 'Go to latest', grupoCortada: 'The group call was cut off for you. You can rejoin whenever you like.', llCaida: 'The call was cut off. You can call again.', pruebaQueda: '{t} of trial left',
     pasarMovil: 'Move to phone', movilEtiqueta: 'MOVE TO PHONE', movilTitulo: 'Continue on your phone',
     movilTexto: 'Point your phone camera at this code. It works once, expires in 2 minutes and never passes through any server.',
     movilCompara: 'Your phone has connected. Check that its screen shows these same words:', movilSi: 'Yes, it is my phone', cancelar: 'Cancel', movilNo: 'They do not match',
@@ -123,11 +123,11 @@
     movilHechoEtiqueta: 'ON YOUR PHONE', movilHechoTitulo: 'The conversation continues on your phone.', movilHechoTexto: 'Everything has been erased on this computer. The other person moved to the new session automatically, with new keys.',
     traspasoEspera: 'The other person is moving the conversation to their phone…', continuaSuMovil: 'The conversation continues on their phone · new keys', continuaAqui: 'The conversation continues on this phone · new keys',
     chat: 'Chat', ampliar: 'Enlarge',
-    invitar: 'Invite to a call', invitacionEnviada: 'INVITATION SENT', esperandoInicio: 'As soon as they open the invitation, you start talking.', esperandoVuelva: 'As soon as the other person is on Elixire, you start talking.', tardaVuelva: 'If it takes long, ask them to open Elixire again. The call will start by itself.', reintentando: 'No connection. Retrying…', invitacionCaducada: 'The invitation has expired. Go back and send another.', invitacionLista: 'YOUR INVITATION', invitacionTexto: 'Send it via WhatsApp. When the other person opens it, the video call will start by itself. It expires in 10 minutes.', eligeTextoMovil: 'Send the invitation via WhatsApp: when the other person opens it, the video call will start by itself. Up to 3 minutes of trial.',
+    invitar: 'Invite to a call', invitacionEnviada: 'INVITATION SENT', esperandoInicio: 'As soon as they open the invitation, you start talking.', esperandoVuelva: 'As soon as the other person is on 1718, you start talking.', tardaVuelva: 'If it takes long, ask them to open 1718 again. The call will start by itself.', reintentando: 'No connection. Retrying…', invitacionCaducada: 'The invitation has expired. Go back and send another.', invitacionLista: 'YOUR INVITATION', invitacionTexto: 'Send it via WhatsApp. When the other person opens it, the video call will start by itself. It expires in 10 minutes.', eligeTextoMovil: 'Send the invitation via WhatsApp: when the other person opens it, the video call will start by itself. Up to 3 minutes of trial.',
     enviarInvitacion: 'Send the invitation', teInvitan: 'POST-QUANTUM VIDEO CALL', teInvitanTexto: 'You have been invited to a private video call with post-quantum end-to-end encryption. When you join, your camera and microphone will turn on.', entrarLlamada: 'Join the call',
     esperandoLlamada: 'Waiting for the other person to open the invitation', mensajeLlamada: '*You are invited to a post-quantum video call*\n{enlace}',
     tuCodigo: 'YOUR CODE', daselo: 'Send it to the other person. When they type it in «I have a code», the video call starts by itself. It expires in 10 minutes and works only once.', whatsapp: 'Send via WhatsApp',
-    mensajeWa: '*You are invited to a post-quantum conversation on Elixire*\n{enlace}\nCode: {codigo}',
+    mensajeWa: '*You are invited to a post-quantum conversation on 1718*\n{enlace}\nCode: {codigo}',
     esperando: 'Waiting for the other person', copiar: 'Copy the code', copiado: 'Copied',
     tengoTitulo: 'I HAVE A CODE', tengoTexto: 'The 16 characters you were given. Once you enter, the video call starts by itself.',
     faltan: 'Characters missing: the code has 16.', creando: 'Creating the code…', caducado: 'The code has expired. Go back and create another.',
@@ -148,7 +148,7 @@
     r2: '<b>2 · Inside the carrier.</b> Lawful-interception systems can be attacked. In 2024 it emerged that they had been.',
     r3: '<b>3 · Between carriers.</b> SS7 and Diameter can divert calls and texts without properly checking who is asking.',
     r4: '<b>4 · On the phone.</b> Spyware such as Pegasus sees everything before it is encrypted.',
-    enElixire: 'IN ELIXIRE', tuEquipo: 'Your device', rele: 'Relay · sees only bytes', suEquipo: 'Their device',
+    enElixire: 'IN 1718', tuEquipo: 'Your device', rele: 'Relay · sees only bytes', suEquipo: 'Their device',
     enElixireTexto: 'What you write is encrypted on your device and only the other device holds the key to open it. If your device is infected, whoever controls it sees your screen: no tool can fix that.',
     solucionEtiqueta: 'THE SOLUTION', solucionTitulo: '<em class="c-verde">Only the two of you</em> can read it.',
     s1t: 'Identity by key', porEso1: 'Who is on the other side is not decided by a voice, a face or an email: it is checked with a key.',
@@ -156,7 +156,7 @@
     s3t: 'Encrypted on your device', porEso2: 'What you write and send is encrypted on your device, and only the other device can open it.',
     s4t: 'Instant warning', porEso3: 'If someone steps in the middle or changes keys, the session is cut and you are warned.',
     p5t: 'Nothing stored', p5p: 'No account, no phone number. The conversation lives only in the memory of the two tabs: close them and it is gone.',
-    porEso4: 'No tool can stop someone paying outside the agreed channel. The rule is simple: no important payment without confirming it in Elixire.',
+    porEso4: 'No tool can stop someone paying outside the agreed channel. The rule is simple: no important payment without confirming it in 1718.',
     frenteEtiqueta: 'COMPARED', frenteTitulo: 'No phone number, no trace, and <em class="c-hielo">post-quantum encryption</em>.',
     f1: 'Always end-to-end encrypted', si: 'Yes', no: 'No', soloSecretos: 'Only in secret chats',
     f2: 'Asks for your phone number', f3: 'Where the conversation stays', f3wa: 'On the phone and in backups', f3tg: 'On their servers', f3sg: 'On the phone', f3el: 'Nowhere once closed',
@@ -170,16 +170,16 @@
     p6t: 'Coming soon', p6p: 'Signed delivery records. Transfers of up to 1 TB. The trust closure for payment orders.',
     limite: 'What no tool can promise, neither can we: if a device is infected, whoever controls it sees what you see.',
     accesoEtiqueta: 'ACCESS', accesoTitulo: '<em class="c-ambar">Private</em> access',
-    accesoTexto: 'Elixire is a paid service. It is offered privately to individuals, law firms, clinics and companies that need the highest level of protection for what they say and send.',
+    accesoTexto: '1718 is a paid service. It is offered privately to individuals, law firms, clinics and companies that need the highest level of protection for what they say and send.',
     pruebaTitulo: 'FREE TRIAL', pruebaTexto: 'A video call of up to 3 minutes, with the same encryption as the full service.',
     pruebasTexto: 'During the testing phase, chat and file transfers are unlimited.',
     verificar: 'Verify this page',
     anadirPersona: 'Add', anadirTitulo: 'ADD TO THE CALL', anadirTexto: 'Send them this code or the link. As soon as they open it, they will join the call, from a computer, phone or tablet. It expires in 10 minutes and works only once.',
     copiarCodigo: 'Copy code', anadirEsperando: 'Waiting for them to join…', anadirEntra: 'Joining the call…', anadirError: 'The invitation could not be created. Please try again.',
-    anadirCaduca: 'The invitation has expired. Tap “Add” to create another one.', mensajeGrupo: '*You are invited to a post-quantum video call on Elixire*\n{enlace}\nCode: {codigo}', grupoEntra: '{p} joined the call', grupoSale: '{p} left the call', grupoLleno: 'The call already has 4 people, the maximum.',
+    anadirCaduca: 'The invitation has expired. Tap “Add” to create another one.', mensajeGrupo: '*You are invited to a post-quantum video call on 1718*\n{enlace}\nCode: {codigo}', grupoEntra: '{p} joined the call', grupoSale: '{p} left the call', grupoLleno: 'The call already has 4 people, the maximum.',
     grupoInvitado: 'Invitation sent. They will join the call as soon as they open it.', persona: 'Person', tu: 'You', cerrar: 'Close',
     etVoz: 'voice changed', etCara: 'face hidden', etPantalla: 'sharing screen', etChat: 'in the chat', guardarFotos: 'Save to Photos', grupoConectando: 'Connecting…', grupoNoConecta: 'Could not connect with {p}', camaraApagada: 'Camera off', etChatLargo: 'In the chat', personasN: '{n} people', grupoViejo: '{p} has an outdated version of the site and cannot see or hear the others. Ask them to reload the page (F5) and add them again.',
-    salaEstado: 'Post-quantum encrypted', enPcTexto: 'You can close this tab now. Nothing of the call remains on this phone.', pcVuelveEtiqueta: 'COMING BACK', pcVuelveTitulo: 'The call is coming back to this computer.', pcVuelveTexto: 'Connecting… In a few seconds you will have it here, full size.', llamadaAqui: 'Call in progress · Elixire', verElChat: 'Show chat', ampliarLl: 'Enlarge', cambiarVista: 'Change view', movilConectadoPasando: 'Your phone has connected. Moving the call…', vueltaNoEspera: 'The other device is no longer waiting. If you want, move it again with the QR code.', volviendoPc: 'Going back to the computer…', pcHechoEtiqueta: 'ON YOUR COMPUTER', pcHechoTitulo: 'The call is back on your computer.', pcHechoTexto: 'To move it to this phone again, press “Move to phone” on the computer. Keep this page open.', movilHechoVuelta: 'To bring it back, press “Back to computer” on your phone. Keep this page open.', traspasoEsperaPc: 'The other person is moving the conversation to their computer…', continuaAquiPc: 'The conversation continues on this computer · new keys', continuaSuPc: 'The conversation continues on their computer · new keys', volverPc: 'Back to computer', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
+    salaEstado: 'Post-quantum encrypted', enPcTexto: 'You can close this tab now. Nothing of the call remains on this phone.', pcVuelveEtiqueta: 'COMING BACK', pcVuelveTitulo: 'The call is coming back to this computer.', pcVuelveTexto: 'Connecting… In a few seconds you will have it here, full size.', llamadaAqui: 'Call in progress · 1718', verElChat: 'Show chat', ampliarLl: 'Enlarge', cambiarVista: 'Change view', movilConectadoPasando: 'Your phone has connected. Moving the call…', vueltaNoEspera: 'The other device is no longer waiting. If you want, move it again with the QR code.', volviendoPc: 'Going back to the computer…', pcHechoEtiqueta: 'ON YOUR COMPUTER', pcHechoTitulo: 'The call is back on your computer.', pcHechoTexto: 'To move it to this phone again, press “Move to phone” on the computer. Keep this page open.', movilHechoVuelta: 'To bring it back, press “Back to computer” on your phone. Keep this page open.', traspasoEsperaPc: 'The other person is moving the conversation to their computer…', continuaAquiPc: 'The conversation continues on this computer · new keys', continuaSuPc: 'The conversation continues on their computer · new keys', volverPc: 'Back to computer', pantallaDividida: 'Split screen', hacerPequena: 'Make your image small', moverDivision: 'Move the divider', estadoMas: '· Picture, sound and chat', compartirPantalla: 'Share screen', dejarPantalla: 'Stop sharing', ampliar: 'Enlarge', verChat: 'Show chat', otroPantalla: 'Sharing their screen', terminar: 'End', palabrasEtiqueta: 'VERIFICATION WORDS', palabrasAyuda: 'Read them aloud. If they don’t match, someone is in the middle.',
     coinciden: 'They match', noCoinciden: 'No match', palabrasHechas: 'Verified by you. The other person must verify them too.', suComprobacion: 'The other person verified the words',
     videoEtiqueta: 'VIDEO CALL', pruebaLimite: 'Trial: up to 3 minutes', videollamada: 'Start video call', aceptar: 'Accept', rechazar: 'Decline',
     capaActiva: 'Picture and sound with post-quantum layer', micro: 'Mic', camara: 'Camera', colgar: 'Hang up',
@@ -211,7 +211,7 @@
     verificarTexto: 'This page is published as-is from a public repository. Every script and the stylesheet carry their SHA-384 fingerprint here, and your browser will not load any that does not match. You can compare those fingerprints with the repository.',
     video: 'Video', chatCifrado: 'Post-quantum encrypted', chatCifradoEstandar: 'Standard encryption', responder: 'Reply',
     notaVoz: 'Voice note', notaEnviada: 'Voice note sent', enviandoNota: 'Sending the voice note…', notaRecibida: 'Voice note', recibiendoNota: 'Receiving a voice note…', escuchar: 'Listen',
-    notaSinMicro: 'There is no permission to use the microphone.', notaNo: 'This browser cannot record voice notes.', girarTitulo: 'Turn your phone', girarTexto: 'Elixire is used in portrait.',
+    notaSinMicro: 'There is no permission to use the microphone.', notaNo: 'This browser cannot record voice notes.', girarTitulo: 'Turn your phone', girarTexto: '1718 is used in portrait.',
     
     pieTerminos: 'Terms of use', piePrivacidad: 'Privacy', pieCookies: 'Cookies', pieContacto: 'Contact', piePrecios: 'Pricing', pieReembolsos: 'Refunds', pieCiudad: 'Cartagena de Indias, Colombia', 
     
@@ -246,7 +246,7 @@
     e6F7T: 'Up to 4K', e6F7: '1080p on phones and 4K on computers, adapting to the connection on its own.',
     e6F8T: 'Open source', e6F8: 'Published under the AGPL-3.0 license: anyone can review it and check there are no backdoors. Every script carries its SHA-384 fingerprint.',
     e6Limite: 'What no tool can promise, neither can we: if a device is infected, whoever controls it sees what you see.',
-    e7Etiqueta: 'AGAINST THE REST', e7Titulo: 'Your apps for daily life. <em class="c-hielo">Elixire for what counts.</em>', e7Texto: 'WhatsApp, Telegram and Signal are fine for everyday use. Elixire is for sensitive conversations: post-quantum encryption, no account, no phone number and no history.',
+    e7Etiqueta: 'AGAINST THE REST', e7Titulo: 'Your apps for daily life. <em class="c-hielo">1718 for what counts.</em>', e7Texto: 'WhatsApp, Telegram and Signal are fine for everyday use. 1718 is for sensitive conversations: post-quantum encryption, no account, no phone number and no history.',
     no: 'No',
     e8Etiqueta: 'HOW IT WORKS', e8Titulo: 'As simple as <em class="c-verde">tapping a link</em>.',
     e8P1T: 'Invite.', e8P1: 'Tap “Invite to a call” and send it on WhatsApp.', e8P2T: 'Tap the link.', e8P2: 'Whoever receives it taps it and the call starts by itself.',
@@ -254,9 +254,9 @@
     e9Titulo: 'If it matters, <em class="c-ambar">talk here</em>.',
     e9Texto: 'For a board meeting, a deal, a contract or a personal conversation that must stay between you. Designed for individuals, law firms, clinics and companies.',
     
-    otroSalio: 'The other person has left Elixire. To talk again, send them a new invitation.', invitarDeNuevo: 'Invite again', previaFoto: 'Send photo', previaFotos: 'Send photos', previaArchivo: 'Send file', previaArchivos: 'Send files', quitar: 'Remove', parar: 'Stop', borrarTodos: 'Delete for everyone', borrarMi: 'Delete for me', copiarMsg: 'Copy', copiadoMsg: 'Copied', mensajeBorrado: 'You deleted this message', mensajeBorradoSuyo: 'This message was deleted', girarCamara: 'Flip camera',
+    otroSalio: 'The other person has left 1718. To talk again, send them a new invitation.', invitarDeNuevo: 'Invite again', previaFoto: 'Send photo', previaFotos: 'Send photos', previaArchivo: 'Send file', previaArchivos: 'Send files', quitar: 'Remove', parar: 'Stop', borrarTodos: 'Delete for everyone', borrarMi: 'Delete for me', copiarMsg: 'Copy', copiadoMsg: 'Copied', mensajeBorrado: 'You deleted this message', mensajeBorradoSuyo: 'This message was deleted', girarCamara: 'Flip camera',
   };
-  const TITULO = { es: 'Elixire · Conversaciones privadas poscuánticas', en: 'Elixire · Private post-quantum conversations' };
+  const TITULO = { es: '1718 · Conversaciones privadas poscuánticas', en: '1718 · Private post-quantum conversations' };
   const ES = {}; // lo original de la página, para volver al español
   let actual = 'es';
   for (const el of document.querySelectorAll('[data-t]')) { const k = el.dataset.t; if (!(k in ES)) ES[k] = el.innerHTML; }
