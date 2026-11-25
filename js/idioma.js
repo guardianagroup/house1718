@@ -4,13 +4,14 @@
 'use strict';
 (() => {
   const ES_MAS = {
+    compraTituloInvitado: 'A quien te invitó se le acabó el tiempo.', compraTextoInvitado: 'Esta llamada la paga quien invita. Si tú tienes tiempo o lo compras, invita tú a la otra persona y hablaréis con el tuyo.', compraNotaInvitado: 'Pago único con Dodo Payments, sin suscripción. Se abre en otra pestaña.', llSinTiempoInvitado: 'A quien te invitó se le acabó el tiempo. Paga quien invita: para hablar con tu tiempo, invita tú.', sinTiempoTextoInvitado: 'Paga quien invita. Para hablar con tu tiempo, invita tú.',
     teInvitanVoz: 'LLAMADA DE VOZ POSCUÁNTICA', teInvitanVozTexto: 'Te han invitado a una llamada de voz privada con encriptado poscuántico de extremo a extremo. Al entrar se encenderá tu micrófono.',
     // 1718: comprar tiempo (25 nov 2026)
-    compraTituloTiempo: 'Se acabó vuestro tiempo.', compraTituloMas: 'Añade tiempo.',
+    compraTituloTiempo: 'Se acabó tu tiempo.', compraTituloMas: 'Añade tiempo.',
     codigoFormato: 'Revisa el código: no parece completo.', codigoGuardado: 'Guardado. Se usará en tu próxima conversación.', codigoMirando: 'Comprobando el código…',
     codigoSinRed: 'No hay respuesta del servidor. Inténtalo de nuevo.', codigoMal: 'Ese código no vale.', codigoGastado: 'Ese código ya no tiene minutos.',
     codigoBien: 'Código aceptado: tienes {m} minutos.', codigoOtro: 'Ese código ya se usa en otro aparato. Cada código solo sirve a quien lo usa primero.', codigoPendiente: 'No se ha podido comprobar ahora. Queda guardado y se comprobará al usarlo.', codigoEspera: 'Demasiados intentos. Espera un minuto y vuelve a probar.',
-    gratis: 'Gratis', quedan: 'Quedan {t}', llSinTiempo: 'Se acabó vuestro tiempo.', llSinCortesia: 'Se acabaron los 2 minutos gratis de hoy.', hayTiempo: 'Ya hay tiempo. Podéis volver a llamar.',
+    gratis: 'Gratis', quedan: 'Quedan {t}', llSinTiempo: 'Se acabó tu tiempo.', llSinCortesia: 'Se acabaron los 2 minutos gratis de hoy.', hayTiempo: 'Ya hay tiempo. Podéis volver a llamar.',
     sinTiempoTexto: 'Para seguir hablando, compra tiempo.', comprarTiempo: 'Comprar tiempo',
     avisoCortesiaT: 'Quedan 30 segundos gratis', avisoCortesia: 'Después, la llamada se corta. Para seguir, compra tiempo.',
     avisoTiempoT: 'Quedan 2 minutos', avisoTiempo: 'Se acaba vuestro tiempo. Compra más para que no se corte.',
@@ -93,10 +94,11 @@
   };
   const EN = {
     h1Portada: '1718 · Private video and voice calls, end-to-end encrypted',
+    compraTituloInvitado: 'The person who invited you has run out of time.', compraTextoInvitado: 'The person who invites pays for the call. If you have time or buy it, invite the other person yourself and you will talk on yours.', compraNotaInvitado: 'One-time payment with Dodo Payments, no subscription. It opens in a new tab.', llSinTiempoInvitado: 'The person who invited you has run out of time. The person who invites pays: to talk on your time, invite them yourself.', sinTiempoTextoInvitado: 'The person who invites pays. To talk on your time, invite them yourself.',
     teInvitanVoz: 'POST-QUANTUM VOICE CALL', teInvitanVozTexto: 'You have been invited to a private voice call with post-quantum end-to-end encryption. When you join, your microphone will turn on.',
     // 1718: comprar tiempo (25 nov 2026)
     compraEtiqueta: 'CONVERSATION TIME', compraTituloCortesia: 'Today’s 2 free minutes are up.', compraTituloTiempo: 'Your time is up.', compraTituloMas: 'Add time.',
-    compraTexto: 'To keep talking, buy time. Either of you can buy it, and it also works for your next conversations.',
+    compraTexto: 'To keep talking, buy time. It also works for your next conversations.',
     compra1T: '1 hour', compra1P: 'USD 5', compra5T: '5 hours', compra5P: 'USD 25',
     compraNota: 'One-time payment with Dodo Payments, no subscription. It opens in a new tab: when you are done, come back to this one and your time will be there.',
     compraTengo: 'Already have a code?', compraPega: 'Paste your code here', compraUsar: 'Use', ahoraNo: 'Not now',
@@ -114,8 +116,8 @@
     faq4P: 'What does “post-quantum” mean?', faq4R: 'That, on top of classical cryptography, we use ML-KEM, the standard designed so that what someone captures today stays protected against tomorrow\'s quantum computers.',
     faq5P: 'Does it work on iPhone and Android?', faq5R: 'Yes, in Safari and Chrome, on phones and computers.',
     faq6P: 'How much does it cost?', faq6R: '1 hour, USD 5, or 5 hours, USD 25, with one-time payments and no subscription. Every day you get 2 free minutes to try it.',
-    faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is a 60-minute code tied to this browser: it only works for whoever uses it first, and to continue on your phone there is “Move to phone”. Time runs by the minute while you are both in the conversation. If you both have time, the person who invited uses theirs first.',
-    faq8P: 'What happens when time runs out?', faq8R: 'The call ends and you get the option to buy more. As soon as either of you buys or pastes a code, you can call again in the same conversation.',
+    faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is a 60-minute code tied to this browser: it only works for whoever uses it first, and to continue on your phone there is “Move to phone”. Time runs by the minute while you are both in the conversation. The person who invites always pays, with their own time: the invited person’s time is never used.',
+    faq8P: 'What happens when time runs out?', faq8R: 'The call ends and the person who invited gets the option to buy more. As soon as they buy or paste a code, you can call again in the same conversation. If it is the other person who has time, they should be the one to invite.',
     preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day', precio3: 'To try it without paying anything. Paid time is only used while you are both in the conversation, by the minute.', comprar: 'Buy',
     preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. If you have not used a code, you can ask for a refund within 14 days of purchase: <a href="refunds.html">refunds and cancellations</a>.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',

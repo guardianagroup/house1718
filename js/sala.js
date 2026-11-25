@@ -837,6 +837,20 @@
     try { const p = vs.play(); if (p && p.catch) p.catch((x) => { if (!(x && x.name === 'NotAllowedError' && abierta)) return; clearTimeout(verT); if (verN++ < 15) verT = setTimeout(intentaVer, 700); else $('#video-toca').hidden = false; }); } catch (_) {}
   }
   $('#video-suyo').addEventListener('playing', () => { $('#video-toca').hidden = true; verN = 0; clearTimeout(verT); });
+  // (dueño, 25 nov 11:48: «al pasar la llamada al teléfono se ve enorme»): la imagen de la otra persona llena su hueco recortando
+  // lo que sobra; si su cámara va en vertical (el móvil) y el hueco es apaisado (el ordenador), o al revés, el recorte se come más
+  // de un tercio y la cara sale enorme. En ese caso se ve entera, con bandas oscuras, como en WhatsApp.
+  {
+    const vs = $('#video-suyo');
+    const encaja = () => {
+      const w = vs.videoWidth, h = vs.videoHeight, bw = vs.clientWidth, bh = vs.clientHeight;
+      if (!w || !h || !bw || !bh) { sala.classList.remove('suyo-encaja'); return; }
+      const r = (w / h) / (bw / bh);
+      sala.classList.toggle('suyo-encaja', Math.min(r, 1 / r) < 0.6);
+    };
+    for (const ev of ['loadedmetadata', 'resize', 'playing', 'emptied']) vs.addEventListener(ev, encaja);
+    if (window.ResizeObserver) new ResizeObserver(encaja).observe(vs); else addEventListener('resize', encaja);
+  }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && abierta && ultimo.estado === 'hablando') { verN = 0; intentaVer(); } });
   $('#video-toca').addEventListener('click', () => {
     $('#video-toca').hidden = true;
@@ -1197,7 +1211,7 @@
       if (e.motivo === 'fallo' && e.diag && txt.dataset.t === 'llFallo') txt.textContent = tr('llFallo') + ' (' + e.diag + ')';
     }
     // 1718: sin tiempo, el botón verde abre la compra
-    if (sinTiempo && !pas && (e.estado === 'libre' || e.estado === 'fin')) { pon('sinTiempoTexto'); rotuloLlamar('comprarTiempo'); boton.hidden = false; boton.disabled = false; }
+    if (sinTiempo && !pas && (e.estado === 'libre' || e.estado === 'fin')) { pon(noPago() ? 'sinTiempoTextoInvitado' : 'sinTiempoTexto'); rotuloLlamar('comprarTiempo'); boton.hidden = false; boton.disabled = false; }
     if (fuera && !pas) { pon('otroSalio'); rotuloLlamar('invitarDeNuevo'); }
     // fuera de la llamada en grupo: «Volver a la llamada» (un toque, sin tono); al volver, «Volviendo a la llamada…»
     if (vuelve && !pas && !fuera && !e.prueba) {
@@ -1220,14 +1234,17 @@
   // tiempo comprado: lo que lleva la llamada y, en los últimos 5 minutos, lo que queda. Avisos a los 30 s del final de la cortesía y a
   // los 2 minutos del final de lo comprado. Al acabarse: se cuelga, sale la ventana de compra (js/compra.js) y el botón verde pasa a
   // «Comprar tiempo». En cuanto cualquiera de los dos compra o pega un código, la ventana se cierra sola y se puede volver a llamar.
-  function abreCompra() { const c = Cp(); if (c) c.abre(tiempoDe === 'codigo' ? 'tiempo' : 'cortesia'); }
+  // a quien no paga (le invitaron), la ventana le explica que paga quien invita y que, para usar su tiempo, invite él
+  const noPago = () => !!(M.tiempo && M.tiempo.paga === false);
+  function abreCompra() { const c = Cp(); if (c) c.abre(noPago() ? 'invitado' : tiempoDe === 'codigo' ? 'tiempo' : 'cortesia'); }
   function pintaReloj(t, lleva) {
     const x = M.tiempo, r = x && !x.agotado ? Math.max(0, x.fin - Date.now()) : null;
     t.classList.remove('poco', 'bajo');
     if (x && x.de === 'cortesia' && r != null) { const s = document.createElement('small'); s.textContent = tr('gratis'); t.append(s, document.createTextNode(mmss(r))); t.classList.toggle('poco', r < 30000); return; }
     t.append(document.createTextNode(mmss(lleva)));
     // (dueño, 25 nov 10:04: «he comprado 1 hora, quiero verlo en pantalla»): con tiempo comprado, siempre lo que queda (el de los dos)
-    if (x && x.de === 'codigo' && r != null) { const s = document.createElement('small'); s.className = 'queda'; s.textContent = tr('quedan').replace('{t}', hms(r)); t.append(s); t.classList.toggle('bajo', r < 5 * 60000); t.classList.toggle('poco', r < 60000); }
+    // (dueño, 25 nov 11:41: «el que paga tiene los minutos; el otro, el que no paga, no tiene minutos»): «Quedan» solo a quien paga
+    if (x && x.de === 'codigo' && r != null && x.paga !== false) { const s = document.createElement('small'); s.className = 'queda'; s.textContent = tr('quedan').replace('{t}', hms(r)); t.append(s); t.classList.toggle('bajo', r < 5 * 60000); t.classList.toggle('poco', r < 60000); }
     else t.classList.remove('bajo');
   }
   const hms = (ms) => { const q = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(q / 3600), m = Math.floor((q % 3600) / 60), s = q % 60; return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') : m + ':' + String(s).padStart(2, '0'); };
@@ -1238,7 +1255,7 @@
     if (x.agotado) {
       if (sinTiempo) return;
       sinTiempo = true;
-      if (abierta) { sistema(tiempoDe === 'codigo' ? 'llSinTiempo' : 'llSinCortesia'); abreCompra(); }
+      if (abierta) { sistema(noPago() ? 'llSinTiempoInvitado' : tiempoDe === 'codigo' ? 'llSinTiempo' : 'llSinCortesia'); abreCompra(); }
     } else if (sinTiempo) {
       sinTiempo = false; avisado30 = false; avisado2m = false;
       { const c = Cp(); if (c && c.abierta) c.cierra(); }
@@ -1252,7 +1269,7 @@
     const r = x.fin - Date.now(); if (r <= 0) return;
     const di = (k) => { if (movil.matches) toast('tiempo', { icono: 'reloj', titulo: tr(k + 'T'), sub: tr(k), ms: 9000 }); sistema(k); };
     if (x.de === 'cortesia' && r <= 30000 && !avisado30) { avisado30 = true; di('avisoCortesia'); }
-    if (x.de === 'codigo' && r <= 120000 && !avisado2m) { avisado2m = true; di('avisoTiempo'); }
+    if (x.de === 'codigo' && x.paga !== false && r <= 120000 && !avisado2m) { avisado2m = true; di('avisoTiempo'); }
   }, 1000);
   // poca luz (dueño, 21:05): si mi imagen se ve muy oscura, me aviso en mi pantalla para que la otra persona me vea bien.
   // Cada 2 s, una versión diminuta de mi cámara; dos veces seguidas muy oscura: el aviso (como mucho uno por minuto).

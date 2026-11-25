@@ -103,7 +103,7 @@
         abierto = true; intentos = 0;
         // «marca: 1»: esta página marca las tramas que merecen aviso, así que el relé no tiene que avisar por todas
         ws.send(JSON.stringify({ t: 'hola', marca: 1 }));
-        for (const [sala, x] of salas) ws.send(JSON.stringify({ t: 'entra', sala, yo: x.yo, b: x.b || undefined, par: x.par || undefined }));
+        for (const [sala, x] of salas) ws.send(JSON.stringify({ t: 'entra', sala, yo: x.yo, b: x.b || undefined, par: x.par || undefined, inv: x.inv || undefined }));
         if (subUlt) { try { ws.send(JSON.stringify({ t: 'avisos', sub: subUlt, salas: salasUlt })); } catch (_) {} }
         if (fueraAhora) { try { ws.send(JSON.stringify({ t: 'presencia', fuera: 1 })); } catch (_) {} }
         clearInterval(ping); pingEn = 0; ping = setInterval(mide, 10000); setTimeout(mide, 300);
@@ -204,7 +204,8 @@
       try { pingEn = Date.now(); ws.send(JSON.stringify({ t: 'ping' })); return true; } catch (_) { return false; }
     }
     // par: la sala de «Pasar al teléfono» (los dos aparatos de la misma persona); el relé de 1718 no le cuenta tiempo
-    function entra(sala, yo, opc) { const b = opc && opc.b ? 1 : 0, par = opc && opc.par ? 1 : 0; salas.set(sala, { yo, b, par }); if (abierto) ws.send(JSON.stringify({ t: 'entra', sala, yo, b: b || undefined, par: par || undefined })); }
+    // inv: esta persona es quien invitó (en 1718 paga quien invita; dueño, 25 nov 11:41)
+    function entra(sala, yo, opc) { const b = opc && opc.b ? 1 : 0, par = opc && opc.par ? 1 : 0, inv = opc && opc.inv ? 1 : 0; salas.set(sala, { yo, b, par, inv }); if (abierto) ws.send(JSON.stringify({ t: 'entra', sala, yo, b: b || undefined, par: par || undefined, inv: inv || undefined })); }
     function sale(sala) { salas.delete(sala); if (abierto) ws.send(JSON.stringify({ t: 'sale', sala })); }
     // avisa: esta trama es un mensaje o un archivo y merece aviso en el teléfono de la otra persona si la tiene cerrada (0x11).
     // Las demás (acuses, «leído», «escribiendo…», presentaciones, señalización de llamada) van como siempre (0x01) y no avisan.

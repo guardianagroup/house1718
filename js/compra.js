@@ -55,11 +55,14 @@
   // (con un dato dentro, sin data-t: al cambiar de idioma no se pierde el dato)
   const pon = (el, k, extra) => { if (!el) return; if (extra) { delete el.dataset.t; el.textContent = tr(k).replace('{m}', extra); } else { el.dataset.t = k; el.textContent = tr(k); } };
   function estadoCodigo(k, extra, bien) { const e = $('#compra-estado'); if (!e) return; e.classList.toggle('bien', !!bien); if (!k) { e.textContent = ''; delete e.dataset.t; return; } pon(e, k, extra); }
-  // motivo: 'cortesia' (se acabaron los minutos gratis), 'tiempo' (se acabó lo comprado) o 'mas' (comprar más sin que se haya acabado)
+  // motivo: 'cortesia' (se acabaron los minutos gratis), 'tiempo' (se acabó lo comprado), 'invitado' (se acabó el tiempo de quien
+  // invitó: paga quien invita) o 'mas' (comprar más sin que se haya acabado)
   function abre(m) {
     if (!caja) return;
-    motivo = m === 'cortesia' || m === 'tiempo' ? m : 'mas';
-    pon($('#compra-titulo'), { cortesia: 'compraTituloCortesia', tiempo: 'compraTituloTiempo', mas: 'compraTituloMas' }[motivo]);
+    motivo = m === 'cortesia' || m === 'tiempo' || m === 'invitado' ? m : 'mas';
+    pon($('#compra-titulo'), { cortesia: 'compraTituloCortesia', tiempo: 'compraTituloTiempo', invitado: 'compraTituloInvitado', mas: 'compraTituloMas' }[motivo]);
+    pon($('#compra-texto'), motivo === 'invitado' ? 'compraTextoInvitado' : 'compraTexto');
+    pon($('#compra-nota'), motivo === 'invitado' ? 'compraNotaInvitado' : 'compraNota');
     caja.classList.toggle('sin-tiempo', motivo !== 'mas');
     if (caja.hidden) { estadoCodigo(''); const i = $('#compra-input'); if (i) i.value = ''; }
     caja.hidden = false;

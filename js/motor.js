@@ -91,7 +91,7 @@ const creaMotor = (OPC) => {
     if (!opc.aparte && !opc.continua && T && T.esperaVuelta) finaliza(T, 'nueva', '', true);
     if (opc.aparte) T = s; else S = s;
     // (la sala de «Pasar al móvil» va marcada: son los dos aparatos de la misma persona y el relé no le cuenta tiempo)
-    rele().entra(s.id, s.yo, { b: 1, par: s.canal === 'par' });
+    rele().entra(s.id, s.yo, { b: 1, par: s.canal === 'par', inv: rol === 'crea' && s.canal !== 'par' });
     return s;
   }
   const soyInicio = (s) => !s.huella || C.hex(s.miHuella) < C.hex(s.huella);
@@ -952,7 +952,8 @@ const creaMotor = (OPC) => {
   function alTiempo(m) {
     const s = S; if (!m || !s || m.sala !== s.id) return;
     const ahora = Date.now(), dif = ahora - (+m.ahora || ahora);
-    const x = s.tiempo = { de: String(m.de || ''), hasta: (+m.hasta || 0) + dif, fin: ahora + Math.max(0, +m.resto || 0), agotado: m.agotado === 1, cortesia: +m.cortesia || 2 };
+    // paga: si esta persona es quien paga (quien invitó); quien no paga no ve el saldo de la otra (dueño, 25 nov 11:41)
+    const x = s.tiempo = { de: String(m.de || ''), hasta: (+m.hasta || 0) + dif, fin: ahora + Math.max(0, +m.resto || 0), agotado: m.agotado === 1, cortesia: +m.cortesia || 2, paga: m.paga !== 0 };
     const esperas = s.esperasTiempo || []; s.esperasTiempo = []; for (const f of esperas) f(x);
     clearTimeout(s.agotaT); s.agotaT = null;
     if (!x.agotado) { s.sinTiempo = false; emite('tiempo', Object.assign({}, x)); return; }

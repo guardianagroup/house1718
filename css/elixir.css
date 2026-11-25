@@ -2039,3 +2039,5 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 /* llamada de voz en móviles de pantalla baja (Safari con sus barras): el cristal, un poco más pequeño en su sitio, para que la punta no
    toque «Conexión excelente»; la caja se encoge alrededor del centro del cristal (50 % 31 %), así la imagen se escala sin moverse */
 @media (max-width:760px) and (max-height:740px){ .tarjeta-voz .tv-cristal{inset:auto;left:6%;top:3.72%;width:88%;height:88%} }
+/* la imagen de la otra persona, entera cuando su forma y la del hueco no casan (cámara vertical en pantalla apaisada o al revés) */
+.sala.suyo-encaja .video-suyo{object-fit:contain!important;background:#05070A}
