@@ -1891,3 +1891,29 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
 .precios-nota{grid-column:1/-1;margin:26px 0 0;font:400 15px/1.6 var(--ui);color:var(--texto-2)}
 .precios-nota a{color:#9CC3E4;text-underline-offset:3px}
 @media (max-width:760px){ .pasos.precios li{padding-left:0} }
+/* ---------- ¿Sabías que…? (dueño, 24 nov 23:16–23:23: «ponlo en la web en sitio visible… aplica heurística de la mayor calidad»):
+   seis datos con su fuente, como un informe anual. La cifra cuenta al llegar (js/escenas.js); la raya de arriba lleva el color de lo
+   que dice: coral, un riesgo; ámbar, la pregunta; verde, el consejo ---------- */
+.cifras-grandes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(30px,4vw,80px)}
+.cifras-grandes>li{position:relative;display:flex;flex-direction:column;gap:12px;padding:32px 0 38px;border-top:1px solid var(--hilo)}
+.cifras-grandes>li::before{content:'';position:absolute;top:-1px;left:0;width:56px;height:1px;background:var(--acento);box-shadow:0 0 10px var(--acento)}
+.cifras-grandes>li.d-riesgo{--acento:#E07A6C}
+.cifras-grandes>li.d-aviso{--acento:#F0C77F}
+.cifras-grandes>li.d-bien{--acento:#5CC98A}
+.dato-cifra{display:block;font:200 clamp(52px,5.2vw,92px)/.95 var(--display);letter-spacing:-.04em;font-feature-settings:'tnum','lnum';color:#F4F6F8;white-space:nowrap}
+.dato-cifra small{font-size:.42em;letter-spacing:-.01em;color:#C9D4DF}
+.dato-que{display:block;font:500 clamp(16px,1.2vw,19px)/1.35 var(--ui);color:#F4F6F8;text-wrap:balance}
+.dato-texto{display:block;max-width:46ch;font:400 clamp(15.5px,1.08vw,17.5px)/1.6 var(--ui);color:#D3DCE5;text-wrap:pretty}
+.dato-fuente{display:block;margin-top:auto;padding-top:4px;font:500 12px/1.5 var(--ui);letter-spacing:.02em;color:#A9B8C7}
+.dato-fuente a{color:#B7D3EC;text-decoration:underline;text-decoration-color:rgba(156,195,228,.45);text-underline-offset:3px;transition:color .2s}
+.dato-fuente a:hover,.dato-fuente a:focus-visible{color:#F4F6F8;text-decoration-color:currentColor}
+.sabias-cierre{margin:44px 0 0;max-width:66ch;font:400 clamp(17px,1.3vw,21px)/1.6 var(--ui);color:#D3DCE5;text-wrap:pretty}
+.sabias-cierre b{font-weight:500;color:#F4F6F8}
+.sabias .pie-tabla{margin-top:22px}
+@media (max-width:1100px){.cifras-grandes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .cifras-grandes{grid-template-columns:1fr}
+  .cifras-grandes>li{padding:28px 0 30px;gap:10px}
+  .dato-cifra{font-size:clamp(58px,17vw,84px)}
+  .dato-texto{font-size:16.5px}
+}

@@ -10,12 +10,18 @@
   const escenas = [...document.querySelectorAll('.escena')];
   if (!escenas.length) return;
   const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (quieto) { document.documentElement.classList.add('escenas-quietas'); for (const el of document.querySelectorAll('.escena [data-desde]')) el.classList.add('ya'); return; }
-  document.documentElement.classList.add('escenas-vivas');
 
-  // ---- las cifras que cuentan, con su formato español o inglés ----
+  // ---- las cifras que cuentan, con su formato español o inglés (3.100 / 3,100) ----
   const ingles = () => document.documentElement.lang === 'en';
   function formatea(v, dec) { return v.toLocaleString(ingles() ? 'en-US' : 'es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }); }
+  if (quieto) {
+    document.documentElement.classList.add('escenas-quietas'); for (const el of document.querySelectorAll('.escena [data-desde]')) el.classList.add('ya');
+    // quietas, pero con el formato de cada idioma
+    const fija = () => { for (const el of document.querySelectorAll('[data-cuenta]')) el.textContent = formatea(parseFloat(el.dataset.cuenta), (el.dataset.cuenta.split('.')[1] || '').length); };
+    fija(); document.addEventListener('elixire-idioma', fija);
+    return;
+  }
+  document.documentElement.classList.add('escenas-vivas');
   function cuenta(el) {
     if (el._contada) return; el._contada = true;
     const fin = parseFloat(el.dataset.cuenta), dec = (el.dataset.cuenta.split('.')[1] || '').length, t0 = performance.now(), dur = 1400;
