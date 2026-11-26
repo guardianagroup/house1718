@@ -1282,7 +1282,10 @@
     if (!abierta || sinTiempo) return;
     const x = M.tiempo; if (!x || x.agotado) return;
     const r = x.fin - Date.now(); if (r <= 0) return;
-    const di = (k) => { if (movil.matches) toast('tiempo', { icono: 'reloj', titulo: tr(k + 'T'), sub: tr(k), ms: 9000 }); sistema(k); };
+    // (revisión del 25 nov, 22:40): en el ordenador, con el vídeo en grande, el aviso no salía (solo iba al chat, que está oculto) y la
+    // llamada se cortaba sin avisar; ahora sale también allí (toast() ya decide dónde se ve). En el chat va con su título delante: antes
+    // quedaba «Después, la llamada se corta…» sin decir cuánto quedaba
+    const di = (k) => { toast('tiempo', { icono: 'reloj', titulo: tr(k + 'T'), sub: tr(k), ms: 9000 }); sistema(k + 'T', '· ' + tr(k)); };
     if (x.de === 'cortesia' && r <= 30000 && !avisado30) { avisado30 = true; di('avisoCortesia'); }
     if (x.de === 'codigo' && x.paga !== false && r <= 120000 && !avisado2m) { avisado2m = true; di('avisoTiempo'); }
   }, 1000);

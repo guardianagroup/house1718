@@ -2067,3 +2067,45 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
    (con el mismo aspecto que «Está en el chat») */
 .sala.otro-sin-camara .video-suyo{opacity:0}
 .sala.mi-sin-camara .controles .seg#b-ocultacara{display:none!important}
+/* ---------- revisión completa del 25 nov, 22:40 (dueño: «repasa toda la web al milímetro… versión pc, tablet y móvil… modo cliente»)
+   ---------- */
+/* la barra de arriba de la llamada en tabletas y ventanas estrechas: el tiempo, en el centro, pisaba «Encriptado poscuántico · Imagen,
+   sonido y chat» por debajo de unos 1180 px y, por debajo de 1000 px, también los botones («Terminar» llegaba a salirse por la derecha).
+   Ahora, por debajo de 1240 px el estado dice solo «Encriptado poscuántico» y, por debajo de 1000 px, el tiempo baja justo debajo de la
+   barra (con lo que sale debajo de él: los avisos y «Su voz está cambiada») */
+@media (min-width:761px) and (max-width:1240px){ .sala-cab .sala-estado .sala-estado-mas{display:none!important} }
+@media (min-width:761px) and (max-width:1000px){
+  .sala.grande .video-tiempo{top:94px}
+  .sala.grande .filtro-otro{top:140px}
+  .sala.grande .avisos-llamada{top:144px}
+}
+/* en el ordenador, con tu cámara apagada, tu imagen pequeña tampoco se ve (quedaba un recuadro negro), como en el móvil */
+@media (min-width:761px){ .sala.mi-sin-camara:not(.en-grupo) .video-mio{visibility:hidden} }
+/* en el móvil, «Cámara apagada» y «Está en el chat» un poco más arriba, para que tu imagen pequeña no los tape */
+@media (max-width:760px){ .sala .otro-chat{top:calc(50% - 80px)} }
+/* «Cómo funciona» y los precios en móviles de 320 px: cada columna medía al menos 300 px y la página se movía de lado */
+.pasos{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+/* las fuentes de «¿Sabías que…?», más fáciles de tocar con el dedo (la zona de toque crece; el aspecto no cambia) */
+@media (pointer:coarse){ .dato-fuente a{position:relative} .dato-fuente a::before{content:'';position:absolute;inset:-10px -3px} }
+/* la ventana de compra en móviles de pantalla baja: cabía justa y «¿Ya tienes un código?» quedaba por debajo; ahora entra entera */
+@media (max-width:760px) and (max-height:720px){
+  .compra .aviso-caja{gap:11px;padding:24px 20px 18px}
+  .compra .aviso-caja .etiqueta{font-size:11px}
+  .compra-caja h2{font-size:21px;line-height:1.15}
+  .compra .aviso-caja p{font-size:15.5px;line-height:1.45}
+  .compra-op{padding:12px 12px 11px;gap:4px}
+  .compra-op b{font-size:20px}
+  .compra-nota{font-size:12.5px!important;line-height:1.45!important}
+  .compra-form{padding-top:10px;gap:6px}
+  .compra .aviso-botones{margin-top:0}
+  .compra .aviso-botones .cristal{height:48px}
+}
+@media (max-width:760px) and (max-height:600px){
+  .compra .aviso-caja{gap:9px;padding:20px 18px 16px}
+  .compra-caja h2{font-size:19px}
+  .compra .aviso-caja p{font-size:14.5px;line-height:1.4}
+  .compra-op{padding:10px 11px 9px}
+  .compra-op b{font-size:18px}
+  .compra .aviso-botones .cristal{height:44px}
+}
+@media (max-width:760px) and (max-height:600px){ .sala .otro-chat{top:calc(50% - 100px)} }
