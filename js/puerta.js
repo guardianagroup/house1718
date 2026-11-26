@@ -562,7 +562,16 @@
     setInterval(miraVersion, 5 * 60 * 1000);
   }
 
-  for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => e.preventDefault());
+  // Zoom con dos dedos (dueño, 26 nov 2026, 01:15: «sí» a activarlo; la prueba de accesibilidad de Google penaliza quitarlo): en la
+  // portada, los paneles y las páginas se puede ampliar; en la llamada no, que es una pantalla fija y un pellizco sin querer la
+  // descoloca. Al entrar, la vista vuelve a su tamaño y se fija; al salir, se suelta.
+  {
+    const vista = document.querySelector('meta[name="viewport"]'), VISTA = vista ? vista.getAttribute('content') : '', raiz = document.documentElement;
+    const fija = (si) => { raiz.classList.toggle('zoom-fijo', si); if (vista) vista.setAttribute('content', si ? VISTA + ', maximum-scale=1, user-scalable=no' : VISTA); };
+    new MutationObserver(() => { const si = document.body.classList.contains('en-sala'); if (si !== raiz.classList.contains('zoom-fijo')) fija(si); })
+      .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, (e) => { if (raiz.classList.contains('zoom-fijo')) e.preventDefault(); });
+  }
   // en el móvil, con el teclado abierto, lo de abajo (la hoja del panel, el redactor del chat) sube con él (iPhone: visualViewport)
   if (window.visualViewport) {
     const vv = window.visualViewport;

@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <!-- seo:inicio -->
 <title>1718 · Private video calls with post-quantum encryption</title>
 <meta name="description" content="Private video calls in your browser, end-to-end encrypted with post-quantum cryptography. No downloads, no account, no phone number: just send a link.">
@@ -40,14 +40,14 @@
 <link rel="apple-touch-icon" href="/img/app/icono-180.png?v=3">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preload" href="/fuentes/Inter-400.woff" as="font" type="font/woff" crossorigin>
-<script src="/js/idioma-inicio.js?v=20261126-01" integrity="sha384-MBfEB3OWx04SvJwha97v7iN6xQnr0LbWkDJmTYqBjRKK7U5JYcHvA7jcX8TmxA9p"></script>
-<link rel="stylesheet" href="/css/elixir.css?v=20261126-01" integrity="sha384-dPb8wO0Sx3bWFd7qrMgbQTkJZ39CjH50mHSUdMG4Ag8YuRyhxmKOr3Z8M6lKPkGo">
+<script src="/js/idioma-inicio.js?v=20261126-02" integrity="sha384-MBfEB3OWx04SvJwha97v7iN6xQnr0LbWkDJmTYqBjRKK7U5JYcHvA7jcX8TmxA9p"></script>
+<link rel="stylesheet" href="/css/elixir.css?v=20261126-02" integrity="sha384-WkusXymmpZLShDEm4XC5REkLN4wbjQCLmFEDbcPeYVpym741UZKmhUtCG8gT8nBq">
 </head>
 <body>
 <canvas id="lienzo3d" class="lienzo3d" aria-hidden="true"></canvas>
 <!-- la escena 3D: js/3d.js la pide solo si el aparato la puede dibujar con tarjeta gráfica (si no, la puerta en CSS) -->
-<template id="carga-3d"><script type="module" src="/js/sala3d.js?v=20261126-01" integrity="sha384-FFRIsDc5mdT+s83fPJmXi2xkkassPwXlApKpTMIH6jjozETGdEDlWeDrTS0ZHeWF"></script></template>
-<script src="/js/3d.js?v=20261126-01" integrity="sha384-wq1MkgDasnaIlgghJ7UB6+xE5PBhkqk7ViqP6esc5P2ZN8dU63U2n3sY0Jn7iTOK"></script>
+<template id="carga-3d"><script type="module" src="/js/sala3d.js?v=20261126-02" integrity="sha384-FFRIsDc5mdT+s83fPJmXi2xkkassPwXlApKpTMIH6jjozETGdEDlWeDrTS0ZHeWF"></script></template>
+<script src="/js/3d.js?v=20261126-02" integrity="sha384-wq1MkgDasnaIlgghJ7UB6+xE5PBhkqk7ViqP6esc5P2ZN8dU63U2n3sY0Jn7iTOK"></script>
 <div class="velo-sala" aria-hidden="true"></div>
 
 <header class="cabecera">
@@ -410,19 +410,19 @@
 
 <!-- «Gira el móvil», antes de los scripts: si va detrás, idioma.js no lo traduce y en inglés salía en español (25 nov) -->
 <div class="girar" id="girar" aria-hidden="true"><span class="girar-icono"><svg class="girar-flecha" viewBox="0 0 64 64"><path d="M14 22a21 21 0 0 1 30-9"/><path d="M45 6.5l-.6 7.4-7.3-1"/><path d="M50 42a21 21 0 0 1-30 9"/><path d="M19 57.5l.6-7.4 7.3 1"/></svg><svg class="girar-movil" viewBox="0 0 64 64"><rect x="22" y="12" width="20" height="40" rx="4.5"/><path d="M29.5 16.5h5M30 47.5h4"/></svg></span><b data-t="girarTitulo">Turn your phone</b><span data-t="girarTexto">1718 works in portrait mode.</span></div>
-<script src="/js/luz.js?v=20261126-01" integrity="sha384-lEc4a1ES1DT+bPI+VEbJ2dtdodmN/B1nFOKSkvV5/LJ8bct2bRHA9QSd7IZ9rsuw" defer></script>
-<script src="/js/idioma.js?v=20261126-01" integrity="sha384-WqST+DXzoRLeFQxF/b7AgZLn3y6SU9mrVXUsw0iDGuT8fnKo9lHsKVLkK6TcwZf/"></script>
-<script src="/js/pq-cnsa.js?v=20261126-01" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
-<script src="/js/palabras.js?v=20261126-01" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
-<script src="/js/cripto.js?v=20261126-01" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
-<script src="/js/rele.js?v=20261126-01" integrity="sha384-V4J07ESiD1E9+xwpMBeT9bFcArrDbAMfzNmZo5xe2Xv5ZEbMeTCeUUWKQzbiBZyN"></script>
-<script src="/js/qr.js?v=20261126-01" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
-<script src="/js/motor.js?v=20261126-01" integrity="sha384-fBlz819n5qYJwzpqxFVzKaCwBCUxCVKbqJvk2o9ZE4ZU74Zcppk7LGZVLLA9XlUy"></script>
-<script src="/js/compra.js?v=20261126-01" integrity="sha384-AVd8Pqc5DP3ZfNz5tmqbtWKBDTYe4RlKw6UgCFXEx1uA+LNKcq+BTlt6GjdLj+k8"></script>
-<script src="/js/holo.js?v=20261126-01" integrity="sha384-cqzuUUCU1r65az0gThO1B+pXFzsYZGWpf8B757ABEjbkPep4CTQqUGLYx5K4t6iW"></script>
-<script src="/js/puerta.js?v=20261126-01" integrity="sha384-f0oVrphDIZtk7jL9YXS3vJ1y1JgHaWQkMWuesHRyCkcyuivAUqOVmZDyTP8uRZXu"></script>
-<script src="/js/escenas.js?v=20261126-01" integrity="sha384-WJL0sDxxU+ki/LWSKoOd+liriMP1Hry4gWljibpzheRQYgxA2gOyLwI36bZgqRhz"></script>
-<script src="/js/sala.js?v=20261126-01" integrity="sha384-nineHtRfbNwbrChejGiFwVeZoUmzLntXpFurfcNVMIYeGDmX2BRzDm90ntoFpKu7"></script>
-<script src="/js/grupo.js?v=20261126-01" integrity="sha384-d33dF1/duvk04VJCp4uQXf1i0A94ZDk5QlWnUT6KXV2S2efHwAZpbVfo0jQoLE6O"></script>
+<script src="/js/luz.js?v=20261126-02" integrity="sha384-lEc4a1ES1DT+bPI+VEbJ2dtdodmN/B1nFOKSkvV5/LJ8bct2bRHA9QSd7IZ9rsuw" defer></script>
+<script src="/js/idioma.js?v=20261126-02" integrity="sha384-WqST+DXzoRLeFQxF/b7AgZLn3y6SU9mrVXUsw0iDGuT8fnKo9lHsKVLkK6TcwZf/"></script>
+<script src="/js/pq-cnsa.js?v=20261126-02" integrity="sha384-0EQgDFltnWj4a6p0SwC15ZjlPDSdgANgg9gIIr4jipegvGSQgJDczXiamHOIFadB"></script>
+<script src="/js/palabras.js?v=20261126-02" integrity="sha384-y1qUn0IICuhA2njevuW+3yYN79okYFYmnfrxee4PtRHHJPA2MjPH26QJIOC9N1oa"></script>
+<script src="/js/cripto.js?v=20261126-02" integrity="sha384-aXBEv8TDOFRwOMpwUEdSgLnhrsID6YsgibrWRWK1Zkq3kEAInp2g5xxHAnsLZAbP"></script>
+<script src="/js/rele.js?v=20261126-02" integrity="sha384-V4J07ESiD1E9+xwpMBeT9bFcArrDbAMfzNmZo5xe2Xv5ZEbMeTCeUUWKQzbiBZyN"></script>
+<script src="/js/qr.js?v=20261126-02" integrity="sha384-A2A2rMBrjosttAapw9d7JyQV/HS7/XjbM4FTDr6UJjcOvRcsIro1hMduojij6ZR9"></script>
+<script src="/js/motor.js?v=20261126-02" integrity="sha384-fBlz819n5qYJwzpqxFVzKaCwBCUxCVKbqJvk2o9ZE4ZU74Zcppk7LGZVLLA9XlUy"></script>
+<script src="/js/compra.js?v=20261126-02" integrity="sha384-AVd8Pqc5DP3ZfNz5tmqbtWKBDTYe4RlKw6UgCFXEx1uA+LNKcq+BTlt6GjdLj+k8"></script>
+<script src="/js/holo.js?v=20261126-02" integrity="sha384-cqzuUUCU1r65az0gThO1B+pXFzsYZGWpf8B757ABEjbkPep4CTQqUGLYx5K4t6iW"></script>
+<script src="/js/puerta.js?v=20261126-02" integrity="sha384-0+Z9FTyF8seBYvMc8iFmSsorYiKvg0m5rU9nRwWFXAEln11YElzWJd1ss+JdceNn"></script>
+<script src="/js/escenas.js?v=20261126-02" integrity="sha384-WJL0sDxxU+ki/LWSKoOd+liriMP1Hry4gWljibpzheRQYgxA2gOyLwI36bZgqRhz"></script>
+<script src="/js/sala.js?v=20261126-02" integrity="sha384-nineHtRfbNwbrChejGiFwVeZoUmzLntXpFurfcNVMIYeGDmX2BRzDm90ntoFpKu7"></script>
+<script src="/js/grupo.js?v=20261126-02" integrity="sha384-d33dF1/duvk04VJCp4uQXf1i0A94ZDk5QlWnUT6KXV2S2efHwAZpbVfo0jQoLE6O"></script>
 </body>
 </html>

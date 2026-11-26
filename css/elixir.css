@@ -442,10 +442,11 @@ table.comparacion td.nuestro,table.comparacion th.el{background:linear-gradient(
   /* en el móvil no se «crea un código»: se invita a una llamada (dueño, 14:35) */
   .t-pc{display:none}
   .t-movil{display:inline}
-  /* en el móvil la página ni se amplía ni se mueve de lado (dueño, 14:37) */
+  /* en el móvil la página no se mueve de lado (dueño, 14:37); se amplía con dos dedos salvo en la llamada (26 nov: js/puerta.js) */
   /* (22 nov 18:06) sin overflow-x:clip en html/body: en Safari recorta también en vertical y deja las escenas sin fijar
      (el titular se iba y quedaba un hueco negro); solo se recorta lo que sobresalía (los pasos, en pantallas de 320 px) */
-  html{touch-action:pan-y;overscroll-behavior-x:none}
+  html{overscroll-behavior-x:none}
+  html.zoom-fijo{touch-action:pan-y}
   #pasos{overflow-x:clip}
   /* con el vídeo en grande, las cuatro palabras salen encima hasta que se comprueban */
   .sala.video-grande.por-comprobar .sala-palabras{position:fixed;left:0;right:0;top:0;z-index:45;padding-top:calc(env(safe-area-inset-top) + 12px);background:rgba(5,7,10,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--hilo-2)}
@@ -2149,3 +2150,7 @@ body.cerrado .flecha-bajar .fb-gota,body.cerrado .flecha-bajar .fb-punta,
 body.cerrado .cristal.grande.vivo .destello::after,.bajado .cristal.grande.vivo::before,.bajado .cristal.grande.vivo .destello::after{animation-play-state:paused}
 /* (26 nov 2026) la página que se va en el acto a la dirección de su idioma (js/idioma-inicio.js) no llega a pintarse */
 html.saltando body{visibility:hidden}
+/* (26 nov 2026) zoom con dos dedos: sin el doble toque que amplía (la web se usa como una app) y, en pantallas táctiles, los campos a
+   16 px como mínimo, para que el iPhone y el iPad no amplíen solos al escribir */
+html{touch-action:manipulation}
+@media (pointer:coarse){ .compra-fila input{font-size:16px} }
