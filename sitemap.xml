@@ -1,10 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.house1718.com/</loc></url>
-  <url><loc>https://www.house1718.com/terminos.html</loc></url>
-  <url><loc>https://www.house1718.com/reembolsos.html</loc></url>
-  <url><loc>https://www.house1718.com/refunds.html</loc></url>
-  <url><loc>https://www.house1718.com/privacidad.html</loc></url>
-  <url><loc>https://www.house1718.com/terms.html</loc></url>
-  <url><loc>https://www.house1718.com/privacy.html</loc></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url><loc>https://www.house1718.com/</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/es/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/"/></url>
+  <url><loc>https://www.house1718.com/es/</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/es/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/"/></url>
+  <url><loc>https://www.house1718.com/terms.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/terms.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/terminos.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/terms.html"/></url>
+  <url><loc>https://www.house1718.com/terminos.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/terms.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/terminos.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/terms.html"/></url>
+  <url><loc>https://www.house1718.com/privacy.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/privacidad.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/privacy.html"/></url>
+  <url><loc>https://www.house1718.com/privacidad.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/privacidad.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/privacy.html"/></url>
+  <url><loc>https://www.house1718.com/refunds.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/refunds.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/reembolsos.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/refunds.html"/></url>
+  <url><loc>https://www.house1718.com/reembolsos.html</loc><lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.house1718.com/refunds.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.house1718.com/reembolsos.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.house1718.com/refunds.html"/></url>
 </urlset>

@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Elixire · pone en index.html la huella SHA-384 (Subresource Integrity) de cada script y hoja de estilo propios.
+"""Elixire · pone en las páginas la huella SHA-384 (Subresource Integrity) de cada script y hoja de estilo propios.
 El navegador no ejecuta ninguno que no coincida con su huella. Se ejecuta antes de cada publicación:
     python3 herramientas/huellas.py
+Desde el 26 nov 2026 la portada se edita en es/index.html (la española); al final, herramientas/seo.py saca de ella index.html
+(la inglesa, la de https://www.house1718.com/), con las mismas huellas.
 """
 import base64, hashlib, pathlib, re, sys
+sys.dont_write_bytecode = True  # (que no deje __pycache__ en la web)
 raiz = pathlib.Path(__file__).resolve().parent.parent
 def pon(m):
     etiqueta, atributo, url = m.group(0), m.group(1), m.group(2)
     ruta = url.split('?')[0]
-    if ruta.startswith(('http:', 'https:', '//')) or not (raiz / ruta).is_file():
+    if ruta.startswith(('http:', 'https:', '//')):
+        return etiqueta
+    ruta = ruta.lstrip('/')  # (26 nov 2026: la portada usa rutas absolutas, «/js/…», para servir igual en / y en /es/)
+    if not (raiz / ruta).is_file():
         return etiqueta
     etiqueta = re.sub(r'\s+integrity="[^"]*"', '', etiqueta)
     return etiqueta.replace(f'{atributo}="{url}"', f'{atributo}="{url}" integrity="{huella(ruta)}"', 1)
 def huella(ruta):
     datos = (raiz / ruta).read_bytes()
     return 'sha384-' + base64.b64encode(hashlib.sha384(datos).digest()).decode()
-# index.html y pago.html (la vuelta del pago, 25 nov 2026)
-for pagina in ('index.html', 'pago.html'):
+# la portada (es/index.html), pago.html (la vuelta del pago, 25 nov 2026) y las tarjetas de las invitaciones (26 nov: js/ir.js)
+for pagina in ('es/index.html', 'pago.html', 'invitacion/index.html', 'invitacion/voz/index.html', 'invitation/index.html',
+               'invitation/voice/index.html'):
     f = raiz / pagina
     if not f.is_file():
         continue
@@ -25,11 +32,15 @@ for pagina in ('index.html', 'pago.html'):
     nuevo = re.sub(r'<link[^>]*rel="stylesheet"[^>]*\b(href)="([^"]+)"[^>]*>', pon, nuevo)
     if nuevo != html:
         f.write_text(nuevo, encoding='utf-8')
-    # /version.txt: la versión publicada (la de las hojas y los scripts de index.html). Las páginas abiertas la miran al cargar y al
+    # /version.txt: la versión publicada (la de las hojas y los scripts de la portada). Las páginas abiertas la miran al cargar y al
     # volver a la pestaña; si es otra, se cargan de nuevo (js/puerta.js), para que nadie se quede con una versión vieja
-    if pagina == 'index.html':
+    if pagina == 'es/index.html':
         v = re.search(r'css/elixir\.css\?v=([\w-]+)', nuevo)
         if v:
             (raiz / 'version.txt').write_text(v.group(1) + '\n', encoding='utf-8')
     print(pagina + ':')
     print('\n'.join(f'  {a}  {b}' for a, b in re.findall(r'(?:src|href)="([^"]+)" integrity="(sha384-[^"]+)"', nuevo)))
+# la portada en inglés (index.html), las cabeceras para Google y el mapa del sitio (26 nov 2026): herramientas/seo.py
+sys.path.insert(0, str(raiz / 'herramientas'))
+import seo
+seo.genera()

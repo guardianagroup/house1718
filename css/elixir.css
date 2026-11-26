@@ -2109,3 +2109,43 @@ html[lang="es"] .cabecera .idiomas:not([data-pedido]) [data-idioma="es"],html[la
   .compra .aviso-botones .cristal{height:44px}
 }
 @media (max-width:760px) and (max-height:600px){ .sala .otro-chat{top:calc(50% - 100px)} }
+/* ---------- velocidad y fluidez (25 nov 2026, 23:45; dueño: «que pase las pruebas de velocidad… que la web sea muy fluida») ---------- */
+/* el botón principal, igual a la vista, pero sin repintar en cada fotograma: antes el halo que respira animaba la sombra y el destello
+   animaba su posición, y el móvil tenía que recalcular y volver a pintar el botón 60 veces por segundo, siempre. Ahora el halo de más es
+   una capa aparte que solo cambia de opacidad y el destello se desliza con una transformación: los dos los mueve la tarjeta gráfica */
+.cristal.grande.vivo{overflow:visible;isolation:isolate;animation:none}
+.cristal.grande.vivo::after{display:none}
+.cristal.grande.vivo::before{display:block;content:'';position:absolute;inset:0;width:auto;height:auto;z-index:-1;border-radius:inherit;pointer-events:none;background:none;transition:none;
+  box-shadow:0 0 0 1px rgba(156,195,228,.28),0 20px 50px -16px rgba(156,195,228,.6),0 0 84px rgba(156,195,228,.2);opacity:0;will-change:opacity;
+  animation:respiraHalo 3.6s ease-in-out infinite}
+@keyframes respiraHalo{50%{opacity:1}}
+.cristal.grande.vivo .destello{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.cristal.grande.vivo .destello::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:38%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translateX(0) skewX(-18deg);will-change:transform;
+  animation:barreDestello 4s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes barreDestello{0%,62%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(500%) skewX(-18deg)}}
+/* el mismo destello en los demás botones vivos («Invitar de nuevo»), con transformación en vez de posición */
+@keyframes barreBoton{0%,62%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(500%) skewX(-18deg)}}
+.cristal.vivo::after{left:-60%;will-change:transform}
+@media (prefers-reduced-motion:reduce){ .cristal.grande.vivo::before,.cristal.grande.vivo .destello::after{animation:none} }
+/* la flecha de «desliza hacia abajo», rehecha con piezas que mueve la tarjeta gráfica: antes el SVG animaba su trazo y eso hacía repintar
+   la página entera (también las secciones de abajo) 60 veces por segundo, sin parar. Ahora el hilo queda quieto, la gota es una pieza que
+   baja por su carril y la punta, otra que late. El mismo dibujo y los mismos tiempos */
+.flecha-bajar>svg{grid-area:1/1}
+.flecha-bajar svg.fb-punta{will-change:transform,opacity;animation:latePunta 2.4s cubic-bezier(.55,0,.35,1) infinite}
+@keyframes latePunta{0%,58%{transform:translateY(0);opacity:.85}72%{transform:translateY(7.3%);opacity:1}100%{transform:translateY(0);opacity:.85}}
+.flecha-bajar:hover .fb-linea,.flecha-bajar:focus-visible .fb-linea{stroke:rgba(207,226,243,.6)}
+.flecha-bajar .fb-carril{position:absolute;left:calc(50% - 10px);top:9px;width:20px;height:29px;overflow:hidden;pointer-events:none}
+.flecha-bajar .fb-gota{position:absolute;left:9.2px;top:0;width:1.6px;height:7px;border-radius:1px;background:#F4F6F8;box-shadow:0 0 6px rgba(156,195,228,.55);
+  opacity:0;transform:translateY(-100%);will-change:transform,opacity;animation:caeGota 2.4s cubic-bezier(.55,0,.35,1) infinite}
+@keyframes caeGota{0%{transform:translateY(-100%);opacity:0}12%{opacity:1}70%{transform:translateY(371.43%);opacity:1}100%{transform:translateY(371.43%);opacity:0}}
+@media (max-width:760px){ .flecha-bajar .fb-carril{top:8.4px;height:23.2px} .flecha-bajar .fb-gota{left:9.36px;width:1.28px;height:5.6px} }
+@media (prefers-reduced-motion:reduce){ .flecha-bajar svg.fb-punta,.flecha-bajar .fb-gota{animation:none} }
+/* y nada se anima cuando no se ve: al bajar, con la puerta abierta o en la llamada, la flecha y el botón principal se paran (antes seguían,
+   invisibles, gastando batería durante toda la videollamada) */
+.bajado .flecha-bajar .fb-gota,.bajado .flecha-bajar .fb-punta,.en-sala .flecha-bajar .fb-gota,.en-sala .flecha-bajar .fb-punta,
+body.cerrado .flecha-bajar .fb-gota,body.cerrado .flecha-bajar .fb-punta,
+.en-sala .cristal.grande.vivo::before,.en-sala .cristal.grande.vivo .destello::after,body.cerrado .cristal.grande.vivo::before,
+body.cerrado .cristal.grande.vivo .destello::after,.bajado .cristal.grande.vivo::before,.bajado .cristal.grande.vivo .destello::after{animation-play-state:paused}
+/* (26 nov 2026) la página que se va en el acto a la dirección de su idioma (js/idioma-inicio.js) no llega a pintarse */
+html.saltando body{visibility:hidden}

@@ -16,5 +16,8 @@
     }
     requestAnimationFrame(vuelta);
   }
-  requestAnimationFrame(vuelta);
+  // (25 nov 2026, velocidad): el bucle solo corre si hay escena 3D; sin ella, antes giraba igual 60 veces por segundo sin hacer nada
+  let va = false;
+  const empieza = () => { if (!va) { va = true; requestAnimationFrame(vuelta); } };
+  if (window.Sala3D) empieza(); else document.addEventListener('elixire-3d', empieza, { once: true });
 })();

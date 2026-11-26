@@ -302,7 +302,7 @@
     if (!tarjeta) return;
     const p = invitaPC, c = p && p.codigo, lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en';
     $('#gi-codigo').textContent = c ? c.replace(/(.{4})(?=.)/g, '$1 ') : '···· ···· ···· ····';
-    const enlace = c ? location.origin + '/#c=' + c + '&l=' + lengua + '&ll=1' + (sinVideoMio() ? '&voz=1' : '') : '';
+    const enlace = c ? location.origin + (lengua === 'es' ? '/es/' : '/') + '#c=' + c + '&l=' + lengua + '&ll=1' + (sinVideoMio() ? '&voz=1' : '') : '';
     const wa = $('#gi-wa'), co = $('#gi-correo');
     if (c) {
       wa.href = 'https://wa.me/?text=' + encodeURIComponent(tr('mensajeGrupo').replace('{enlace}', enlace).replace('{codigo}', c.replace(/(.{4})(?=.)/g, '$1 ')));

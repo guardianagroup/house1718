@@ -4,6 +4,8 @@
 // (sala.js). Al bajar, la misma sala se oscurece y debajo van cómo se escuchan las llamadas, la solución, la tecnología, la comparación y el acceso.
 'use strict';
 (() => {
+  // (26 nov 2026) esta página se va ya a la dirección de su idioma (js/idioma-inicio.js): nada de abrir la invitación dos veces
+  if (window.ElixireSalta) return;
   const $ = (s) => document.querySelector(s);
   const M = window.ElixireMotor;
   const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -167,7 +169,7 @@
     const a = $('#whatsapp');
     if (!codigo) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); delete a.dataset.codigo; delete a.dataset.texto; return; }
     const lengua = window.ElixireIdioma ? window.ElixireIdioma.actual() : 'en', voz = window.Elixire.tipo === 'voz';
-    const enlace = location.origin + '/#c=' + codigo + '&l=' + lengua + (voz ? '&voz=1' : '');
+    const enlace = location.origin + (lengua === 'es' ? '/es/' : '/') + '#c=' + codigo + '&l=' + lengua + (voz ? '&voz=1' : ''); // (la tarjeta de WhatsApp, en su idioma)
     const texto = tr(voz ? 'mensajeWaVoz' : 'mensajeWa').replace('{enlace}', enlace).replace('{codigo}', codigo.replace(/(.{4})(?=.)/g, '$1 '));
     a.href = 'https://wa.me/?text=' + encodeURIComponent(texto); a.removeAttribute('aria-disabled'); a.dataset.codigo = codigo; a.dataset.texto = texto;
   }

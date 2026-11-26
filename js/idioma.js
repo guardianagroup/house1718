@@ -122,7 +122,7 @@
     faq7P: 'How do I pay, and how is time used?', faq7R: 'You pay with Dodo Payments in a new tab. When you come back, each hour is a 60-minute code tied to this browser: it only works for whoever uses it first, so to continue on your phone, use “Move to phone”. Time runs by the minute while you are both in the conversation. The person who invites always pays with their own time; the invited person’s time is never used.',
     faq8P: 'What happens when time runs out?', faq8R: 'The call ends and the person who invited gets the option to buy more. As soon as they buy or paste a code, you can call again in the same conversation. If it is the other person who has time, they should be the one to invite.',
     preciosEtiqueta: 'PRICING', preciosTitulo: 'You only pay for the time you <em class="c-verde">talk</em>.', precio1T: '1 hour · USD 5', precio1: 'One-time payment, no subscription.', precio2T: '5 hours · USD 25', precio2: 'One-time payment, no subscription.', precio3T: '2 free minutes a day per device', precio3: 'Try it for free. The person who invites uses them; after that, time is paid and only runs while you are both in the conversation.', comprar: 'Buy',
-    preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. If you have not used a code, you can ask for a refund within 14 days of purchase: <a href="refunds.html">refunds and cancellations</a>.',
+    preciosNota: 'Payments are processed by Dodo Payments in a new tab. Each hour is a 60-minute code tied to this browser; it is also sent to you by email, as a receipt. If you have not used a code, you can ask for a refund within 14 days of purchase: <a href="/refunds.html">refunds and cancellations</a>.',
     e7C2: 'Post-quantum encryption', e7C3: 'Always end-to-end', e7C4: 'No account or number', e7C5: 'No history', e7C6: 'Open source', pieCodigo: 'Open source', e7Si: 'Yes', e7Parcial: 'Only if turned on, paid or partly', e7No: 'No', e7NotaZoom: 'Threema is preparing post-quantum encryption with IBM.', paisSuiza: 'Switzerland',
     lema: 'Private video calls with post-quantum encryption.',
     espiaTitulo: 'Browser extension detected{n}', espiaTexto: 'It could read your messages and see the call. For more privacy, use a private window without extensions.', 
@@ -341,13 +341,37 @@
     
     otroSalio: 'The other person has left 1718. To talk again, send them a new invitation.', invitarDeNuevo: 'Invite again', previaFoto: 'Send photo', previaFotos: 'Send photos', previaArchivo: 'Send file', previaArchivos: 'Send files', quitar: 'Remove', parar: 'Stop', borrarTodos: 'Delete for everyone', borrarMi: 'Delete for me', copiarMsg: 'Copy', copiadoMsg: 'Copied', mensajeBorrado: 'You deleted this message', mensajeBorradoSuyo: 'This message was deleted', girarCamara: 'Flip camera',
   };
-  const TITULO = { es: '1718 · Conversaciones privadas poscuánticas', en: '1718 · Private post-quantum conversations' };
-  const ES = {}; // lo original de la página, para volver al español
-  let actual = 'es';
-  for (const el of document.querySelectorAll('[data-t]')) { const k = el.dataset.t; if (!(k in ES)) ES[k] = el.innerHTML; }
-  for (const el of document.querySelectorAll('[data-t-placeholder]')) { const k = el.dataset.tPlaceholder; if (!(k in ES)) ES[k] = el.getAttribute('placeholder') || ''; }
+  const TITULO = { es: '1718 · Videollamadas privadas con encriptado poscuántico', en: '1718 · Private video calls with post-quantum encryption' }; // (los de herramientas/seo.py)
+  // (26 nov 2026, SEO) cada dirección llega ya escrita en su idioma (herramientas/seo.py): / en inglés y /es/ en español. El español
+  // que hace falta para cambiar sin recargar sale, en /es/, de la propia página; en /, se trae de /es/ la primera vez que se pide.
+  const PAGINA = document.documentElement.getAttribute('data-idioma-pagina') === 'es' ? 'es' : 'en';
+  const ES = {}, BASE = {}; // el español; lo que trae escrito esta página (por si faltara algún texto)
+  let actual = PAGINA;
+  for (const el of document.querySelectorAll('[data-t]')) { const k = el.dataset.t; if (!(k in BASE)) BASE[k] = el.innerHTML; }
+  for (const el of document.querySelectorAll('[data-t-placeholder]')) { const k = el.dataset.tPlaceholder; if (!(k in BASE)) BASE[k] = el.getAttribute('placeholder') || ''; }
+  if (PAGINA === 'es') Object.assign(ES, BASE);
   for (const k of Object.keys(ES_MAS)) if (!(k in ES)) ES[k] = ES_MAS[k];
-  const t = (k) => (actual === 'en' ? EN[k] : ES[k]) || ES[k] || EN[k] || k;
+  const t = (k) => (actual === 'en' ? EN[k] : ES[k]) || ES[k] || EN[k] || BASE[k] || k;
+  let esListo = PAGINA === 'es', cargaES = null;
+  const traeES = () => {
+    if (esListo) return Promise.resolve();
+    if (!cargaES) cargaES = fetch('/es/', { credentials: 'same-origin' })
+      .then((r) => { if (!r.ok) throw new Error('/es/ ' + r.status); return r.text(); })
+      .then((html) => {
+        // un documento inerte: ni ejecuta scripts ni carga nada; solo se leen sus textos
+        const d = new DOMParser().parseFromString(html, 'text/html'), visto = {};
+        for (const el of d.querySelectorAll('[data-t]')) { const k = el.dataset.t; if (!(k in visto)) { visto[k] = 1; ES[k] = el.innerHTML; } }
+        for (const el of d.querySelectorAll('[data-t-placeholder]')) { const k = el.dataset.tPlaceholder; if (!(k in visto)) { visto[k] = 1; ES[k] = el.getAttribute('placeholder') || ''; } }
+        esListo = true;
+      })
+      .catch((e) => { cargaES = null; throw e; });
+    return cargaES;
+  };
+  // la dirección sigue al idioma (sin recargar), para que al volver a abrirla o al compartirla salga en el que se eligió
+  const direccion = (k) => {
+    if (!/^\/(es\/)?$/.test(location.pathname)) return;
+    try { history.replaceState(history.state, '', (k === 'es' ? '/es/' : '/') + location.search + location.hash); } catch (_) {}
+  };
   function pon(idioma) {
     actual = idioma === 'en' ? 'en' : 'es';
     document.documentElement.lang = actual; document.title = TITULO[actual];
@@ -359,24 +383,28 @@
     for (const b of document.querySelectorAll('[data-idioma]')) b.setAttribute('aria-pressed', String(b.dataset.idioma === actual));
     document.dispatchEvent(new CustomEvent('elixire-idioma', { detail: { idioma: actual } }));
   }
-  // De partida, en inglés (dueño, 13:09); solo se guarda lo que la persona elige con ES/EN.
-  let guardado = null; try { guardado = localStorage.getItem('elixire-lengua'); } catch (_) {}
-  const delEnlace = (/[#&]l=(es|en)\b/.exec(location.hash || '') || [])[1]; // la invitación lleva el idioma de quien la manda
-  const inicial = (guardado || delEnlace) === 'es' ? 'es' : 'en';
+  // De partida, el de la dirección (y quien eligió el otro ya ha ido a la suya: js/idioma-inicio.js); solo se guarda lo que la
+  // persona elige con ES/EN.
   // ES / EN (dueño, 23 nov 12:15: «ponlo bien profesional… se da y no sabes si has clicado; va como a tirones»): al tocar, la ficha
   // y el botón cambian en el acto; la página se traduce justo después de pintarlos (la ficha se desliza suave mientras tanto). Tocar el
   // idioma que ya está no hace nada.
   const grupoIdioma = document.querySelector('.idiomas');
   let pedido = actual, traduceT = 0;
   const marca = (k) => { pedido = k; if (grupoIdioma) grupoIdioma.dataset.pedido = k; for (const b of document.querySelectorAll('[data-idioma]')) b.setAttribute('aria-pressed', String(b.dataset.idioma === k)); };
-  for (const b of document.querySelectorAll('[data-idioma]')) b.addEventListener('click', () => {
-    const k = b.dataset.idioma === 'en' ? 'en' : 'es';
-    if (k === pedido) return;
-    marca(k); try { localStorage.setItem('elixire-lengua', k); } catch (_) {}
-    cancelAnimationFrame(traduceT); traduceT = requestAnimationFrame(() => setTimeout(() => { if (pedido === k && actual !== k) pon(k); }, 0));
-  });
+  for (const b of document.querySelectorAll('[data-idioma]')) {
+    // en /, el español se pide en cuanto el dedo o el ratón se acercan a ES, para que al tocar cambie en el acto
+    if (!esListo && b.dataset.idioma === 'es') for (const ev of ['pointerenter', 'touchstart', 'focus']) b.addEventListener(ev, () => { traeES().catch(() => {}); }, { passive: true });
+    b.addEventListener('click', () => {
+      const k = b.dataset.idioma === 'en' ? 'en' : 'es';
+      if (k === pedido) return;
+      marca(k); try { localStorage.setItem('elixire-lengua', k); } catch (_) {}
+      cancelAnimationFrame(traduceT);
+      (k === 'es' ? traeES() : Promise.resolve()).then(() => {
+        traduceT = requestAnimationFrame(() => setTimeout(() => { if (pedido === k && actual !== k) { pon(k); direccion(k); } }, 0));
+      }, () => { if (pedido === k) { marca(actual); try { localStorage.setItem('elixire-lengua', actual); } catch (_) {} } });
+    });
+  }
   window.ElixireIdioma = { t, pon, actual: () => actual };
-  if (inicial !== 'es') pon(inicial);
   marca(actual);
   document.documentElement.classList.remove('traduciendo');
   if (grupoIdioma) requestAnimationFrame(() => requestAnimationFrame(() => grupoIdioma.classList.add('listo')));

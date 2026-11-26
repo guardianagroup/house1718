@@ -561,7 +561,7 @@ const creaMotor = (OPC) => {
   let L = null, obrero = null;
   function trabajador() {
     if (!obrero) {
-      obrero = new Worker('js/medios-pq.js?v=20261119-2');
+      obrero = new Worker('/js/medios-pq.js?v=20261119-2');
       obrero.onmessage = (e) => { const m = e.data || {}; if (m.tipo === 'visto' && L && L.rx === m.id) { L.visto = true; emite('llamada', estadoLlamada()); } if (m.tipo === 'fallo' && L && L.estado === 'hablando' && m.cuenta && m.cuenta.seguidos > 60) emite('llamada-aviso', 'descifra'); };
     }
     return obrero;
@@ -1179,7 +1179,7 @@ const creaMotor = (OPC) => {
     const mic = L.local.getAudioTracks()[0], snd = emisor('audio'); if (!mic || !snd) return false;
     try {
       if (si) {
-        if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); await actx.audioWorklet.addModule('js/cambia-voz.js' + (verJs ? '?v=' + verJs : '')); }
+        if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); await actx.audioWorklet.addModule('/js/cambia-voz.js' + (verJs ? '?v=' + verJs : '')); }
         if (actx.state === 'suspended') await actx.resume();
         if (vozN) { for (const n of vozN.nodos) { try { n.disconnect(); } catch (_) {} } }
         const src = actx.createMediaStreamSource(new MediaStream([mic])), dst = actx.createMediaStreamDestination();
